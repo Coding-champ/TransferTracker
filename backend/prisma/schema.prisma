@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model League {
+  id               Int    @id @default(autoincrement())
+  name             String
+  country          String
+  tier             Int    @default(1)
+  seasonStartMonth Int    @default(8)
+  createdAt        DateTime @default(now()) @map("created_at")
+  
+  clubs Club[]
+  
+  @@map("leagues")
+}
+
+model Club {
+  id              Int      @id @default(autoincrement())
+  name            String
+  shortName       String?  @map("short_name")
+  leagueId        Int      @map("league_id")
+  country         String
+  logoUrl         String?  @map("logo_url")
+  stadiumCapacity Int?     @map("stadium_capacity")
+  foundingYear    Int?     @map("founding_year")
+  clubValue       BigInt?  @map("club_value")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  league League @relation(fields: [leagueId], references: [id])
+  
+  transfersOut Transfer[] @relation("OldClub")
+  transfersIn  Transfer[] @relation("NewClub")
+  
+  @@map("clubs")
+}
+
+model Transfer {
+  id                  Int      @id @default(autoincrement())
+  playerName          String   @map("player_name")
+  oldClubId           Int?     @map("old_club_id")
+  newClubId           Int      @map("new_club_id")
+  transferFee         BigInt?  @map("transfer_fee")
+  transferType        String   @map("transfer_type") // 'sale', 'loan', 'free', 'loan_with_option'
+  date                DateTime
+  season              String
+  
+  // Player details
+  playerPosition      String?  @map("player_position")
+  playerAgeAtTransfer Int?     @map("player_age_at_transfer")
+  marketValue         BigInt?  @map("market_value")
+  
+  // Transfer details
+  contractDuration    Int?     @map("contract_duration")
+  agentFee           BigInt?  @map("agent_fee")
+  loanDuration       Int?     @map("loan_duration")
+  hasBuyOption       Boolean  @default(false) @map("has_buy_option")
+  buyOptionFee       BigInt?  @map("buy_option_fee")
+  buyObligation      Boolean  @default(false) @map("buy_obligation")
+  
+  createdAt          DateTime @default(now()) @map("created_at")
+  
+  oldClub Club? @relation("OldClub", fields: [oldClubId], references: [id])
+  newClub Club  @relation("NewClub", fields: [newClubId], references: [id])
+  
+  @@map("transfers")
+}
