@@ -64,8 +64,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
 
   // Color scale for leagues
   const colorScale = d3.scaleOrdinal<string>()
-    .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A'])
-    .range(['#d70909', '#3d0845', '#ff6b35', '#004225']);
+    .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1'])
+    .range(['#d70909', '#3d0845', '#ff6b35', '#004225', '#1e3a8a']);
 
   // Fetch network data
   useEffect(() => {
@@ -118,15 +118,17 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
 
     svg.attr('width', width).attr('height', height);
 
-    const g = svg.append('g');
+    // Create zoom container
+    const zoomGroup = svg.append('g').attr('class', 'zoom-group');
 
-    // Add zoom behavior
+    // Define zoom behavior FIRST
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 3])
       .on('zoom', (event) => {
-        g.attr('transform', event.transform);
+        zoomGroup.attr('transform', event.transform);
       });
 
+    // Apply zoom to SVG
     svg.call(zoom);
 
     // Create simulation
@@ -140,7 +142,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .force('collision', d3.forceCollide().radius(30));
 
     // Create arrow marker for directed edges
-    svg.append('defs').append('marker')
+    const defs = svg.append('defs');
+    defs.append('marker')
       .attr('id', 'arrowhead')
       .attr('viewBox', '-0 -5 10 10')
       .attr('refX', 25)
@@ -154,8 +157,9 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .attr('fill', '#666')
       .style('stroke', 'none');
 
-    // Create links
-    const links = g.selectAll('.link')
+    // Create links inside zoom group
+    const linkGroup = zoomGroup.append('g').attr('class', 'links');
+    const links = linkGroup.selectAll('.link')
       .data(networkData.edges)
       .enter().append('line')
       .attr('class', 'link')
@@ -173,8 +177,9 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
         d3.select(this).attr('stroke', '#999').attr('stroke-opacity', 0.6);
       });
 
-    // Create nodes
-    const nodes = g.selectAll('.node')
+    // Create nodes inside zoom group  
+    const nodeGroup = zoomGroup.append('g').attr('class', 'nodes');
+    const nodes = nodeGroup.selectAll('.node')
       .data(networkData.nodes)
       .enter().append('circle')
       .attr('class', 'node')
@@ -191,6 +196,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
         d3.select(this).attr('stroke-width', 2);
       })
       .on('click', function(event, d) {
+        event.stopPropagation();
         // Toggle fixed position
         if (d.fx === null || d.fx === undefined) {
           d.fx = d.x;
@@ -200,23 +206,11 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
           d.fy = null;
         }
         simulation.alpha(0.3).restart();
-      })
-      .call(d3.drag<SVGCircleElement, NetworkNode>()
-        .on('start', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        })
-        .on('drag', (event, d) => {
-          d.fx = event.x;
-          d.fy = event.y;
-        })
-        .on('end', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0);
-        }));
+      });
 
-    // Add labels
-    const labels = g.selectAll('.label')
+    // Create labels inside zoom group
+    const labelGroup = zoomGroup.append('g').attr('class', 'labels');
+    const labels = labelGroup.selectAll('.label')
       .data(networkData.nodes)
       .enter().append('text')
       .attr('class', 'label')
@@ -228,21 +222,127 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .attr('dy', '.35em')
       .style('pointer-events', 'none');
 
-    // Update positions on simulation tick
+    // Drag behavior for nodes - IMPORTANT: prevent zoom interference
+    const dragHandler = d3.drag<SVGCircleElement, NetworkNode>()
+      .on('start', function(event, d) {
+        event.sourceEvent.stopPropagation(); // Prevent zoom
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      })
+      .on('drag', function(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      })
+      .on('end', function(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+      });
+
+    // Apply drag to nodes
+    nodes.call(dragHandler);
+
+    // Simulation tick - CRITICAL: Only update element positions, never transform
     simulation.on('tick', () => {
+      // Update link positions
       links
         .attr('x1', (d) => (d.source as NetworkNode).x!)
         .attr('y1', (d) => (d.source as NetworkNode).y!)
         .attr('x2', (d) => (d.target as NetworkNode).x!)
         .attr('y2', (d) => (d.target as NetworkNode).y!);
 
+      // Update node positions
       nodes
         .attr('cx', (d) => d.x!)
         .attr('cy', (d) => d.y!);
 
+      // Update label positions
       labels
         .attr('x', (d) => d.x!)
         .attr('y', (d) => d.y! + 35);
+
+      // DO NOT modify any transform attributes here!
+    });
+
+    // Add zoom controls OUTSIDE the zoom group
+    const controlsGroup = svg.append('g')
+      .attr('class', 'zoom-controls')
+      .attr('transform', 'translate(20, 20)');
+
+    // Zoom In Button
+    const zoomInButton = controlsGroup.append('g').attr('class', 'zoom-in');
+    zoomInButton.append('rect')
+      .attr('width', 30)
+      .attr('height', 30)
+      .attr('fill', 'white')
+      .attr('stroke', '#ccc')
+      .attr('rx', 3)
+      .style('cursor', 'pointer');
+
+    zoomInButton.append('text')
+      .attr('x', 15)
+      .attr('y', 20)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '16px')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#333')
+      .style('pointer-events', 'none')
+      .text('+');
+
+    zoomInButton.on('click', function(event) {
+      event.stopPropagation();
+      svg.transition().duration(300).call(zoom.scaleBy as any, 1.5);
+    });
+
+    // Zoom Out Button
+    const zoomOutButton = controlsGroup.append('g').attr('class', 'zoom-out');
+    zoomOutButton.append('rect')
+      .attr('y', 35)
+      .attr('width', 30)
+      .attr('height', 30)
+      .attr('fill', 'white')
+      .attr('stroke', '#ccc')
+      .attr('rx', 3)
+      .style('cursor', 'pointer');
+
+    zoomOutButton.append('text')
+      .attr('x', 15)
+      .attr('y', 55)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '16px')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#333')
+      .style('pointer-events', 'none')
+      .text('−');
+
+    zoomOutButton.on('click', function(event) {
+      event.stopPropagation();
+      svg.transition().duration(300).call(zoom.scaleBy as any, 0.67);
+    });
+
+    // Reset Button
+    const resetButton = controlsGroup.append('g').attr('class', 'zoom-reset');
+    resetButton.append('rect')
+      .attr('y', 70)
+      .attr('width', 30)
+      .attr('height', 30)
+      .attr('fill', 'white')
+      .attr('stroke', '#ccc')
+      .attr('rx', 3)
+      .style('cursor', 'pointer');
+
+    resetButton.append('text')
+      .attr('x', 15)
+      .attr('y', 90)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '12px')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#333')
+      .style('pointer-events', 'none')
+      .text('⌂');
+
+    resetButton.on('click', function(event) {
+      event.stopPropagation();
+      svg.transition().duration(500).call(zoom.transform as any, d3.zoomIdentity);
     });
 
     // Cleanup function
@@ -320,11 +420,13 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
                 style={{ minHeight: '600px' }}
               ></svg>
               {/* Instructions overlay */}
-              <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded-lg p-3 text-xs text-gray-600 max-w-xs">
+              <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 text-xs text-gray-600 max-w-xs">
                 <div className="font-medium mb-1">Controls:</div>
-                <div>• Drag to pan • Scroll to zoom</div>
-                <div>• Drag nodes to move • Click to pin</div>
-                <div>• Hover for details</div>
+                <div>• Mouse wheel to zoom</div>
+                <div>• Drag to pan</div>
+                <div>• Drag nodes to move</div>
+                <div>• Click nodes to pin/unpin</div>
+                <div>• Use zoom buttons (top-left)</div>
               </div>
             </div>
           </div>
@@ -336,7 +438,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
           <div className="bg-white rounded-lg shadow-lg p-4">
             <h4 className="text-lg font-semibold mb-4">Legend</h4>
             <div className="space-y-3">
-              {['Bundesliga', 'Premier League', 'La Liga', 'Serie A'].map(league => (
+              {['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1'].map(league => (
                 <div key={league} className="flex items-center">
                   <div 
                     className="w-4 h-4 rounded-full mr-3 border border-gray-300"
