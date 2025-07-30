@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 
 interface NetworkNode extends d3.SimulationNodeDatum {
@@ -57,10 +57,20 @@ interface TransferNetworkProps {
 
 const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [networkData, setNetworkData] = useState<NetworkData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
-  const [hoveredEdge, setHoveredEdge] = useState<NetworkEdge | null>(null);
+  
+  // CRITICAL: State für UI-Panel getrennt von D3-Visualisierung
+  const [selectedNodeData, setSelectedNodeData] = useState<NetworkNode | null>(null);
+  const [hoveredEdgeData, setHoveredEdgeData] = useState<NetworkEdge | null>(null);
+  
+  // Refs für D3 Elemente - diese sind persistent!
+  const simulationRef = useRef<d3.Simulation<NetworkNode, NetworkEdge> | null>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const currentTransformRef = useRef(d3.zoomIdentity);
+  const isDraggingRef = useRef(false);
+  const isInitializedRef = useRef(false);
 
   // Color scale for leagues
   const colorScale = d3.scaleOrdinal<string>()
@@ -95,6 +105,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
         
         if (result.success) {
           setNetworkData(result.data);
+          isInitializedRef.current = false; // Reset bei neuen Daten
         }
       } catch (error) {
         console.error('Failed to fetch network data:', error);
@@ -106,9 +117,12 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     fetchNetworkData();
   }, [filters]);
 
-  // D3 visualization
+  // CRITICAL: D3 Visualisierung nur einmal initialisieren
   useEffect(() => {
-    if (!networkData || !svgRef.current) return;
+    if (!networkData || !svgRef.current || isInitializedRef.current) return;
+
+    console.log('Initializing D3 visualization...');
+    isInitializedRef.current = true;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove(); // Clear previous render
@@ -121,15 +135,30 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     // Create zoom container
     const zoomGroup = svg.append('g').attr('class', 'zoom-group');
 
-    // Define zoom behavior FIRST
+    // Zoom behavior - wird nur einmal definiert!
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 3])
+      .filter((event) => {
+        if (isDraggingRef.current) return false;
+        
+        const target = event.target as Element;
+        const isNode = target.classList.contains('node') || target.closest('.node');
+        
+        if (event.type === 'wheel') return true;
+        if (event.type === 'mousedown' && !isNode) return true;
+        
+        return false;
+      })
       .on('zoom', (event) => {
-        zoomGroup.attr('transform', event.transform);
+        if (!isDraggingRef.current) {
+          currentTransformRef.current = event.transform;
+          zoomGroup.attr('transform', event.transform);
+        }
       });
 
     // Apply zoom to SVG
     svg.call(zoom);
+    zoomRef.current = zoom;
 
     // Create simulation
     const simulation = d3.forceSimulation<NetworkNode>(networkData.nodes)
@@ -140,6 +169,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .force('charge', d3.forceManyBody().strength(-300))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(30));
+
+    simulationRef.current = simulation;
 
     // Create arrow marker for directed edges
     const defs = svg.append('defs');
@@ -169,11 +200,12 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .attr('marker-end', 'url(#arrowhead)')
       .style('cursor', 'pointer')
       .on('mouseover', function(event, d) {
-        setHoveredEdge(d);
+        // CRITICAL: State-Update ohne React Re-Render
+        setHoveredEdgeData({...d}); // Kopie erstellen um Referenz-Probleme zu vermeiden
         d3.select(this).attr('stroke', '#ff6b35').attr('stroke-opacity', 1);
       })
       .on('mouseout', function(event, d) {
-        setHoveredEdge(null);
+        setHoveredEdgeData(null);
         d3.select(this).attr('stroke', '#999').attr('stroke-opacity', 0.6);
       });
 
@@ -187,25 +219,32 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .attr('fill', (d) => colorScale(d.league))
       .attr('stroke', '#fff')
       .attr('stroke-width', 2)
-      .style('cursor', 'pointer')
+      .style('cursor', 'move')
       .on('mouseover', function(event, d) {
-        setSelectedNode(d);
-        d3.select(this).attr('stroke-width', 4);
+        if (!isDraggingRef.current) {
+          // CRITICAL: State-Update ohne React Re-Render
+          setSelectedNodeData({...d}); // Kopie erstellen
+          d3.select(this).attr('stroke-width', 4);
+        }
       })
       .on('mouseout', function(event, d) {
-        d3.select(this).attr('stroke-width', 2);
+        if (!isDraggingRef.current) {
+          d3.select(this).attr('stroke-width', 2);
+        }
       })
       .on('click', function(event, d) {
-        event.stopPropagation();
-        // Toggle fixed position
-        if (d.fx === null || d.fx === undefined) {
-          d.fx = d.x;
-          d.fy = d.y;
-        } else {
-          d.fx = null;
-          d.fy = null;
+        if (!isDraggingRef.current) {
+          event.stopPropagation();
+          // Toggle fixed position
+          if (d.fx === null || d.fx === undefined) {
+            d.fx = d.x;
+            d.fy = d.y;
+          } else {
+            d.fx = null;
+            d.fy = null;
+          }
+          simulation.alpha(0.3).restart();
         }
-        simulation.alpha(0.3).restart();
       });
 
     // Create labels inside zoom group
@@ -222,48 +261,48 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       .attr('dy', '.35em')
       .style('pointer-events', 'none');
 
-    // Drag behavior for nodes - IMPORTANT: prevent zoom interference
+    // Drag behavior
     const dragHandler = d3.drag<SVGCircleElement, NetworkNode>()
       .on('start', function(event, d) {
-        event.sourceEvent.stopPropagation(); // Prevent zoom
+        isDraggingRef.current = true;
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
+        d3.select(this).attr('stroke-width', 4);
       })
       .on('drag', function(event, d) {
         d.fx = event.x;
         d.fy = event.y;
       })
       .on('end', function(event, d) {
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 100);
         if (!event.active) simulation.alphaTarget(0);
+        d3.select(this).attr('stroke-width', 2);
       });
 
     // Apply drag to nodes
     nodes.call(dragHandler);
 
-    // Simulation tick - CRITICAL: Only update element positions, never transform
+    // Simulation tick
     simulation.on('tick', () => {
-      // Update link positions
       links
         .attr('x1', (d) => (d.source as NetworkNode).x!)
         .attr('y1', (d) => (d.source as NetworkNode).y!)
         .attr('x2', (d) => (d.target as NetworkNode).x!)
         .attr('y2', (d) => (d.target as NetworkNode).y!);
 
-      // Update node positions
       nodes
         .attr('cx', (d) => d.x!)
         .attr('cy', (d) => d.y!);
 
-      // Update label positions
       labels
         .attr('x', (d) => d.x!)
         .attr('y', (d) => d.y! + 35);
-
-      // DO NOT modify any transform attributes here!
     });
 
-    // Add zoom controls OUTSIDE the zoom group
+    // Zoom controls - AUSSERHALB der zoom group!
     const controlsGroup = svg.append('g')
       .attr('class', 'zoom-controls')
       .attr('transform', 'translate(20, 20)');
@@ -347,14 +386,17 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
 
     // Cleanup function
     return () => {
-      simulation.stop();
+      if (simulationRef.current) {
+        simulationRef.current.stop();
+      }
+      isDraggingRef.current = false;
     };
-  }, [networkData, colorScale]);
+  }, [networkData, colorScale]); // Nur bei networkData-Änderung
 
   // Clear selected node when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
-      setSelectedNode(null);
+      setSelectedNodeData(null);
     };
 
     document.addEventListener('click', handleClickOutside);
@@ -402,7 +444,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={containerRef}>
       <div className="flex flex-col xl:flex-row gap-6">
         {/* Main Network Visualization */}
         <div className="flex-1">
@@ -423,8 +465,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
               <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 text-xs text-gray-600 max-w-xs">
                 <div className="font-medium mb-1">Controls:</div>
                 <div>• Mouse wheel to zoom</div>
-                <div>• Drag to pan</div>
-                <div>• Drag nodes to move</div>
+                <div>• Drag empty space to pan</div>
+                <div>• Drag nodes to move them</div>
                 <div>• Click nodes to pin/unpin</div>
                 <div>• Use zoom buttons (top-left)</div>
               </div>
@@ -456,18 +498,18 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
           </div>
 
           {/* Selected Node Info */}
-          {selectedNode && (
+          {selectedNodeData && (
             <div className="bg-white rounded-lg shadow-lg p-4">
               <h4 className="text-lg font-semibold mb-3">Club Details</h4>
               <div className="space-y-3">
                 <div>
-                  <h5 className="font-medium text-lg">{selectedNode.name}</h5>
+                  <h5 className="font-medium text-lg">{selectedNodeData.name}</h5>
                   <p className="text-sm text-gray-600 flex items-center">
                     <span 
                       className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: colorScale(selectedNode.league) }}
+                      style={{ backgroundColor: colorScale(selectedNodeData.league) }}
                     ></span>
-                    {selectedNode.league} • {selectedNode.country}
+                    {selectedNodeData.league} • {selectedNodeData.country}
                   </p>
                 </div>
                 
@@ -475,13 +517,13 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
                   <div className="bg-blue-50 rounded-lg p-3">
                     <div className="text-blue-600 font-medium">Transfers In</div>
                     <div className="text-2xl font-bold text-blue-800">
-                      {selectedNode.stats.transfersIn}
+                      {selectedNodeData.stats.transfersIn}
                     </div>
                   </div>
                   <div className="bg-red-50 rounded-lg p-3">
                     <div className="text-red-600 font-medium">Transfers Out</div>
                     <div className="text-2xl font-bold text-red-800">
-                      {selectedNode.stats.transfersOut}
+                      {selectedNodeData.stats.transfersOut}
                     </div>
                   </div>
                 </div>
@@ -490,20 +532,20 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Money Spent:</span>
                     <span className="font-medium text-red-600">
-                      {formatCurrency(selectedNode.stats.totalSpent)}
+                      {formatCurrency(selectedNodeData.stats.totalSpent)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Money Received:</span>
                     <span className="font-medium text-green-600">
-                      {formatCurrency(selectedNode.stats.totalReceived)}
+                      {formatCurrency(selectedNodeData.stats.totalReceived)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-gray-600 font-medium">Net Spend:</span>
-                    <span className={`font-bold ${selectedNode.stats.netSpend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {selectedNode.stats.netSpend > 0 ? '-' : '+'}
-                      {formatCurrency(Math.abs(selectedNode.stats.netSpend))}
+                    <span className={`font-bold ${selectedNodeData.stats.netSpend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {selectedNodeData.stats.netSpend > 0 ? '-' : '+'}
+                      {formatCurrency(Math.abs(selectedNodeData.stats.netSpend))}
                     </span>
                   </div>
                 </div>
@@ -512,14 +554,14 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
           )}
 
           {/* Hovered Edge Info */}
-          {hoveredEdge && (
+          {hoveredEdgeData && (
             <div className="bg-white rounded-lg shadow-lg p-4">
               <h4 className="text-lg font-semibold mb-3">Transfer Connection</h4>
               <div className="space-y-3">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-800">
-                      {hoveredEdge.stats.transferCount}
+                      {hoveredEdgeData.stats.transferCount}
                     </div>
                     <div className="text-sm text-gray-600">Transfers</div>
                   </div>
@@ -529,19 +571,19 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Value:</span>
                     <span className="font-medium">
-                      {formatCurrency(hoveredEdge.stats.totalValue)}
+                      {formatCurrency(hoveredEdgeData.stats.totalValue)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Average Value:</span>
                     <span className="font-medium">
-                      {formatCurrency(hoveredEdge.stats.avgTransferValue)}
+                      {formatCurrency(hoveredEdgeData.stats.avgTransferValue)}
                     </span>
                   </div>
                   <div className="pt-2 border-t">
                     <span className="text-gray-600">Transfer Types:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {hoveredEdge.stats.types.map(type => (
+                      {hoveredEdgeData.stats.types.map(type => (
                         <span 
                           key={type} 
                           className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
@@ -554,11 +596,11 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
                 </div>
 
                 {/* Recent transfers preview */}
-                {hoveredEdge.transfers.length > 0 && (
+                {hoveredEdgeData.transfers.length > 0 && (
                   <div className="pt-3 border-t">
                     <div className="text-xs text-gray-600 mb-2">Recent Transfers:</div>
                     <div className="space-y-1 max-h-20 overflow-y-auto">
-                      {hoveredEdge.transfers.slice(0, 3).map((transfer, idx) => (
+                      {hoveredEdgeData.transfers.slice(0, 3).map((transfer, idx) => (
                         <div key={idx} className="text-xs text-gray-700">
                           <span className="font-medium">{transfer.playerName}</span>
                           {transfer.transferFee && (
