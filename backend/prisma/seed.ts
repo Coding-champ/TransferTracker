@@ -2,359 +2,712 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Kontinente Mapping
+const CONTINENTS = {
+  EUROPE: 'Europe',
+  SOUTH_AMERICA: 'South America',
+  NORTH_AMERICA: 'North America',
+  AFRICA: 'Africa',
+  ASIA: 'Asia'
+};
+
+// Transfer-Fenster
+const TRANSFER_WINDOWS = {
+  SUMMER: 'summer',
+  WINTER: 'winter'
+};
+
+// Nationalitäten für diverse Spieler
+const NATIONALITIES = [
+  'Germany', 'England', 'Spain', 'Italy', 'France', 'Brazil', 'Argentina', 
+  'Netherlands', 'Portugal', 'Belgium', 'Croatia', 'Poland', 'Denmark',
+  'Sweden', 'Norway', 'Austria', 'Switzerland', 'Czech Republic', 'Hungary',
+  'Serbia', 'Ukraine', 'Turkey', 'Morocco', 'Algeria', 'Nigeria', 'Ghana',
+  'Senegal', 'Ivory Coast', 'Japan', 'South Korea', 'Australia', 'USA',
+  'Mexico', 'Colombia', 'Uruguay', 'Chile', 'Ecuador', 'Peru'
+];
+
+// Spielerpositionen
+const POSITIONS = [
+  'Goalkeeper', 'Centre-Back', 'Left-Back', 'Right-Back', 'Defensive Midfield',
+  'Central Midfield', 'Attacking Midfield', 'Left Midfield', 'Right Midfield',
+  'Left Winger', 'Right Winger', 'Centre-Forward', 'Second Striker'
+];
+
+// Realistische Spielernamen für verschiedene Nationalitäten
+const PLAYER_NAMES = {
+  German: ['Max Müller', 'Leon Schmidt', 'Lukas Weber', 'Jonas Fischer', 'David Meyer', 'Tim Wagner', 'Niklas Bauer'],
+  English: ['Harry Johnson', 'James Smith', 'Oliver Brown', 'Jack Wilson', 'Charlie Davies', 'George Evans', 'Tom Roberts'],
+  Spanish: ['Carlos García', 'Diego Martínez', 'Pablo López', 'Sergio Rodríguez', 'Álvaro Fernández', 'Marco Silva'],
+  Italian: ['Marco Rossi', 'Luca Romano', 'Andrea Conti', 'Francesco Bianchi', 'Alessandro Greco', 'Matteo Villa'],
+  French: ['Antoine Dubois', 'Kylian Martin', 'Lucas Bernard', 'Hugo Petit', 'Alexandre Moreau', 'Théo Laurent'],
+  Brazilian: ['João Silva', 'Gabriel Santos', 'Matheus Oliveira', 'Lucas Pereira', 'Rafael Costa', 'Bruno Almeida'],
+  Argentine: ['Mateo González', 'Santiago Rodríguez', 'Emiliano Martínez', 'Nicolás López', 'Facundo García'],
+  Dutch: ['Daan de Jong', 'Lars van den Berg', 'Sem Bakker', 'Thijs Visser', 'Stijn Janssen', 'Milan Peters'],
+  Portuguese: ['João Pereira', 'Diogo Silva', 'André Santos', 'Rúben Costa', 'Gonçalo Ferreira', 'Miguel Sousa']
+};
+
 async function main() {
-  console.log('🌱 Start seeding...');
+  console.log('🌱 Starting enhanced database seeding...');
+
+  // FIXED: Datenbankverbindung prüfen
+  console.log('🔧 Checking database connection...');
+  try {
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
+  }
 
   // Clear existing data
-  console.log('🧹 Cleaning existing data...');
-  await prisma.transfer.deleteMany({});
+  console.log('🧹 Clearing existing data in correct order...');
+  // FIXED: Korrekte Reihenfolge für Foreign Key Constraints
+  await prisma.transferSuccess.deleteMany({});
+  await prisma.playerTransfer.deleteMany({});
+  await prisma.leaguePerformance.deleteMany({});
+  await prisma.transfer.deleteMany({}); // Transfers vor Players löschen
+  await prisma.player.deleteMany({});
   await prisma.club.deleteMany({});
   await prisma.league.deleteMany({});
-  
-  console.log('✅ Existing data cleared');
 
-  // Create Leagues
+  // Create leagues with enhanced data
   console.log('🏆 Creating leagues...');
-  const bundesliga = await prisma.league.create({
-    data: {
-      name: 'Bundesliga',
-      country: 'Germany',
-      tier: 1,
-      seasonStartMonth: 8
-    }
-  });
-
-  const premierLeague = await prisma.league.create({
-    data: {
-      name: 'Premier League',
-      country: 'England',
-      tier: 1,
-      seasonStartMonth: 8
-    }
-  });
-
-  const laLiga = await prisma.league.create({
-    data: {
-      name: 'La Liga',
-      country: 'Spain',
-      tier: 1,
-      seasonStartMonth: 8
-    }
-  });
-
-  const serieA = await prisma.league.create({
-    data: {
-      name: 'Serie A',
-      country: 'Italy',
-      tier: 1,
-      seasonStartMonth: 8
-    }
-  });
-
-  const ligue1 = await prisma.league.create({
-    data: {
-      name: 'Ligue 1',
-      country: 'France',
-      tier: 1,
-      seasonStartMonth: 8
-    }
-  });
-
-  console.log('✅ Created 5 leagues');
-
-  // Create Clubs
-  console.log('⚽ Creating clubs...');
-  const clubs = [
-    // Bundesliga (Germany)
-    { name: 'FC Bayern München', shortName: 'Bayern', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(4200000000), foundingYear: 1900, stadiumCapacity: 75000 },
-    { name: 'Borussia Dortmund', shortName: 'BVB', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(1900000000), foundingYear: 1909, stadiumCapacity: 81365 },
-    { name: 'RB Leipzig', shortName: 'Leipzig', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(1200000000), foundingYear: 2009, stadiumCapacity: 47069 },
-    { name: 'Bayer Leverkusen', shortName: 'Leverkusen', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(980000000), foundingYear: 1904, stadiumCapacity: 30210 },
-    { name: 'Eintracht Frankfurt', shortName: 'Frankfurt', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(650000000), foundingYear: 1899, stadiumCapacity: 51500 },
-    { name: 'Borussia Mönchengladbach', shortName: 'Gladbach', leagueId: bundesliga.id, country: 'Germany', clubValue: BigInt(450000000), foundingYear: 1900, stadiumCapacity: 54057 },
-
-    // Premier League (England)
-    { name: 'Manchester City', shortName: 'Man City', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(5100000000), foundingYear: 1880, stadiumCapacity: 55017 },
-    { name: 'Arsenal FC', shortName: 'Arsenal', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(2800000000), foundingYear: 1886, stadiumCapacity: 60260 },
-    { name: 'Liverpool FC', shortName: 'Liverpool', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(4400000000), foundingYear: 1892, stadiumCapacity: 53394 },
-    { name: 'Chelsea FC', shortName: 'Chelsea', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(3200000000), foundingYear: 1905, stadiumCapacity: 40834 },
-    { name: 'Manchester United', shortName: 'Man Utd', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(6550000000), foundingYear: 1878, stadiumCapacity: 74140 },
-    { name: 'Tottenham Hotspur', shortName: 'Spurs', leagueId: premierLeague.id, country: 'England', clubValue: BigInt(2300000000), foundingYear: 1882, stadiumCapacity: 62850 },
-
-    // La Liga (Spain)
-    { name: 'Real Madrid', shortName: 'Real', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(6600000000), foundingYear: 1902, stadiumCapacity: 81044 },
-    { name: 'FC Barcelona', shortName: 'Barca', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(5500000000), foundingYear: 1899, stadiumCapacity: 99354 },
-    { name: 'Atlético Madrid', shortName: 'Atlético', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(1500000000), foundingYear: 1903, stadiumCapacity: 68456 },
-    { name: 'Sevilla FC', shortName: 'Sevilla', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(900000000), foundingYear: 1890, stadiumCapacity: 43883 },
-    { name: 'Real Sociedad', shortName: 'Sociedad', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(600000000), foundingYear: 1909, stadiumCapacity: 39500 },
-    { name: 'Valencia CF', shortName: 'Valencia', leagueId: laLiga.id, country: 'Spain', clubValue: BigInt(580000000), foundingYear: 1919, stadiumCapacity: 49430 },
-
-    // Serie A (Italy)
-    { name: 'AC Milan', shortName: 'Milan', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(1800000000), foundingYear: 1899, stadiumCapacity: 75923 },
-    { name: 'Inter Milan', shortName: 'Inter', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(1900000000), foundingYear: 1908, stadiumCapacity: 75923 },
-    { name: 'Juventus FC', shortName: 'Juventus', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(2400000000), foundingYear: 1897, stadiumCapacity: 41507 },
-    { name: 'AS Roma', shortName: 'Roma', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(1100000000), foundingYear: 1927, stadiumCapacity: 70634 },
-    { name: 'SSC Napoli', shortName: 'Napoli', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(1600000000), foundingYear: 1926, stadiumCapacity: 54726 },
-    { name: 'Atalanta BC', shortName: 'Atalanta', leagueId: serieA.id, country: 'Italy', clubValue: BigInt(750000000), foundingYear: 1907, stadiumCapacity: 21300 },
-
-    // Ligue 1 (France)
-    { name: 'Paris Saint-Germain', shortName: 'PSG', leagueId: ligue1.id, country: 'France', clubValue: BigInt(4100000000), foundingYear: 1970, stadiumCapacity: 47929 },
-    { name: 'Olympique de Marseille', shortName: 'Marseille', leagueId: ligue1.id, country: 'France', clubValue: BigInt(850000000), foundingYear: 1899, stadiumCapacity: 67394 },
-    { name: 'Olympique Lyonnais', shortName: 'Lyon', leagueId: ligue1.id, country: 'France', clubValue: BigInt(620000000), foundingYear: 1950, stadiumCapacity: 59186 },
-    { name: 'AS Monaco', shortName: 'Monaco', leagueId: ligue1.id, country: 'France', clubValue: BigInt(580000000), foundingYear: 1924, stadiumCapacity: 18523 },
-    { name: 'OGC Nice', shortName: 'Nice', leagueId: ligue1.id, country: 'France', clubValue: BigInt(420000000), foundingYear: 1904, stadiumCapacity: 35624 },
-    { name: 'Lille OSC', shortName: 'Lille', leagueId: ligue1.id, country: 'France', clubValue: BigInt(380000000), foundingYear: 1944, stadiumCapacity: 50186 }
-  ];
-
-  const createdClubs = [];
-  for (const club of clubs) {
-    try {
-      const createdClub = await prisma.club.create({ data: club });
-      createdClubs.push(createdClub);
-    } catch (error) {
-      console.error(`❌ Error creating club ${club.name}:`, error);
-      throw error;
-    }
-  }
-
-  console.log(`✅ Created ${createdClubs.length} clubs`);
-
-  // Enhanced player names with more realistic variety
-  const playerNames = [
-    // German players
-    'Max Müller', 'Leon Weber', 'Felix Schmidt', 'Luca Fischer', 'Noah Meyer', 'Ben Schulz',
-    'Paul Wagner', 'Luis Koch', 'Jonas Becker', 'Finn Richter', 'Tim Hoffmann', 'Jan Krüger',
-    
-    // English players
-    'James Smith', 'Harry Johnson', 'Charlie Wilson', 'George Brown', 'Oliver Taylor', 'Jack Davies',
-    'William Evans', 'Thomas Moore', 'Joshua White', 'Daniel Harris', 'Samuel Clark', 'Matthew Lewis',
-    
-    // Spanish players
-    'Alejandro García', 'Pablo Martínez', 'Diego López', 'Carlos Rodríguez', 'Miguel Pérez', 'Javier Sánchez',
-    'Sergio Gómez', 'Adrián Ruiz', 'Álvaro Hernández', 'Raúl Jiménez', 'Fernando Moreno', 'Manuel Muñoz',
-    
-    // Italian players
-    'Marco Rossi', 'Francesco Russo', 'Alessandro Ferrari', 'Andrea Esposito', 'Matteo Bianchi', 'Luca Romano',
-    'Davide Colombo', 'Gabriele Ricci', 'Lorenzo Marino', 'Simone Greco', 'Nicola Costa', 'Filippo Conti',
-    
-    // French players
-    'Lucas Martin', 'Nathan Bernard', 'Hugo Dubois', 'Théo Thomas', 'Maxime Robert', 'Antoine Petit',
-    'Julien Durand', 'Alexandre Moreau', 'Baptiste Laurent', 'Romain Simon', 'Nicolas Michel', 'Pierre Leroy',
-    
-    // International players
-    'João Silva', 'Pedro Santos', 'André Oliveira', 'Rafael Costa', 'Bruno Ferreira', 'Gonçalo Pereira',
-    'Kylian Dupont', 'Raphaël Girard', 'Mohamed Hassan', 'Youssef Benali', 'Karim Mansouri', 'Omar Ziani',
-    'Viktor Petrov', 'Aleksandr Kozlov', 'Dmitri Volkov', 'Nikolai Popov', 'Andrei Smirnov', 'Pavel Fedorov',
-    'Erik Andersen', 'Lars Nielsen', 'Mads Hansen', 'Christian Johansen', 'Anders Larsen', 'Michael Olsen'
-  ];
-
-  const positions = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
-  const transferTypes = ['sale', 'loan', 'free', 'loan_with_option'];
-  const seasons = ['2022/23', '2023/24', '2024/25'];
-
-  // Generate more realistic transfers
-  console.log('💰 Creating transfers...');
-  const transfers = [];
-  
-  // Track which players have been transferred to avoid duplicates
-  const usedPlayerNames = new Set<string>();
-  
-  for (let i = 0; i < 800; i++) {
-    try {
-      // Select clubs for transfer
-      const oldClub = createdClubs[Math.floor(Math.random() * createdClubs.length)];
-      let newClub = createdClubs[Math.floor(Math.random() * createdClubs.length)];
-      
-      // Ensure different clubs and avoid same league transfers sometimes for realism
-      let attempts = 0;
-      while ((newClub.id === oldClub.id || (Math.random() > 0.7 && newClub.leagueId === oldClub.leagueId)) && attempts < 10) {
-        newClub = createdClubs[Math.floor(Math.random() * createdClubs.length)];
-        attempts++;
+  const leagues = await Promise.all([
+    // Tier 1 European Leagues
+    prisma.league.create({
+      data: {
+        name: 'Bundesliga',
+        country: 'Germany',
+        continent: CONTINENTS.EUROPE,
+        tier: 1,
+        uefaCoefficient: 85.5,
+        seasonStartMonth: 8
       }
-
-      // Generate unique player name
-      let playerName = playerNames[Math.floor(Math.random() * playerNames.length)];
-      let nameAttempts = 0;
-      while (usedPlayerNames.has(playerName) && nameAttempts < 50) {
-        playerName = playerNames[Math.floor(Math.random() * playerNames.length)];
-        nameAttempts++;
+    }),
+    prisma.league.create({
+      data: {
+        name: 'Premier League',
+        country: 'England',
+        continent: CONTINENTS.EUROPE,
+        tier: 1,
+        uefaCoefficient: 92.3,
+        seasonStartMonth: 8
       }
-      
-      // If we can't find a unique name, modify it
-      if (usedPlayerNames.has(playerName)) {
-        playerName = `${playerName} ${Math.floor(Math.random() * 100)}`;
+    }),
+    prisma.league.create({
+      data: {
+        name: 'La Liga',
+        country: 'Spain',
+        continent: CONTINENTS.EUROPE,
+        tier: 1,
+        uefaCoefficient: 88.7,
+        seasonStartMonth: 8
       }
-      usedPlayerNames.add(playerName);
-
-      const transferType = transferTypes[Math.floor(Math.random() * transferTypes.length)];
-      const position = positions[Math.floor(Math.random() * positions.length)];
-      const season = seasons[Math.floor(Math.random() * seasons.length)];
-      const playerAge = Math.floor(Math.random() * 15) + 18; // 18-32 years
-      
-      // Generate more realistic transfer fees based on age, position, and league
-      let transferFee = null;
-      if (transferType === 'sale') {
-        let baseFee = 1000000; // 1M base
-        
-        // Age factor (peak at 24-27)
-        if (playerAge >= 24 && playerAge <= 27) {
-          baseFee *= 3;
-        } else if (playerAge >= 20 && playerAge <= 23) {
-          baseFee *= 2;
-        } else if (playerAge >= 28 && playerAge <= 30) {
-          baseFee *= 1.5;
-        }
-        
-        // Position factor
-        if (position === 'Forward') {
-          baseFee *= 2;
-        } else if (position === 'Midfielder') {
-          baseFee *= 1.5;
-        } else if (position === 'Defender') {
-          baseFee *= 1.2;
-        }
-        
-        // League factor (based on buying club)
-        const buyingLeague = createdClubs.find(c => c.id === newClub.id)?.leagueId;
-        if (buyingLeague === premierLeague.id) {
-          baseFee *= 2;
-        } else if (buyingLeague === laLiga.id || buyingLeague === bundesliga.id) {
-          baseFee *= 1.5;
-        }
-        
-        // Add randomness
-        transferFee = Math.floor(baseFee * (0.5 + Math.random() * 1.5));
-        
-        // Cap at reasonable maximum
-        transferFee = Math.min(transferFee, 150000000);
-        
-      } else if (transferType === 'loan_with_option') {
-        transferFee = Math.floor(Math.random() * 30000000) + 5000000; // 5M to 35M
+    }),
+    prisma.league.create({
+      data: {
+        name: 'Serie A',
+        country: 'Italy',
+        continent: CONTINENTS.EUROPE,
+        tier: 1,
+        uefaCoefficient: 79.2,
+        seasonStartMonth: 8
       }
-
-      // Generate date within season
-      const startYear = parseInt(season.split('/')[0]);
-      const seasonStart = new Date(startYear, 6, 1); // July 1st
-      const seasonEnd = new Date(startYear + 1, 5, 30); // June 30th
-      
-      // Weight transfers towards transfer windows (July-August, January)
-      let randomDate: Date;
-      if (Math.random() > 0.3) {
-        // Summer window (July-August)
-        const summerStart = new Date(startYear, 6, 1); // July 1st
-        const summerEnd = new Date(startYear, 7, 31); // August 31st
-        randomDate = new Date(summerStart.getTime() + Math.random() * (summerEnd.getTime() - summerStart.getTime()));
-      } else {
-        // Winter window (January)
-        const winterStart = new Date(startYear + 1, 0, 1); // January 1st
-        const winterEnd = new Date(startYear + 1, 0, 31); // January 31st
-        randomDate = new Date(winterStart.getTime() + Math.random() * (winterEnd.getTime() - winterStart.getTime()));
+    }),
+    prisma.league.create({
+      data: {
+        name: 'Ligue 1',
+        country: 'France',
+        continent: CONTINENTS.EUROPE,
+        tier: 1,
+        uefaCoefficient: 58.9,
+        seasonStartMonth: 8
       }
-
-      // 15% chance of free agent (no old club)
-      const oldClubId = Math.random() > 0.15 ? oldClub.id : null;
-
-      const marketValue = transferFee ? 
-        BigInt(Math.floor(Number(transferFee) * (0.8 + Math.random() * 0.4))) : 
-        BigInt(Math.floor(Math.random() * 20000000) + 1000000);
-
-      const transfer = {
-        playerName,
-        oldClubId,
-        newClubId: newClub.id,
-        transferFee: transferFee ? BigInt(transferFee) : null,
-        transferType,
-        date: randomDate,
-        season,
-        playerPosition: position,
-        playerAgeAtTransfer: playerAge,
-        marketValue,
-        contractDuration: Math.floor(Math.random() * 4) + 2, // 2-5 years
-        agentFee: transferFee ? BigInt(Math.floor(Number(transferFee) * 0.05)) : null, // 5% agent fee
-        loanDuration: transferType.includes('loan') ? Math.floor(Math.random() * 12) + 6 : null, // 6-18 months
-        hasBuyOption: transferType === 'loan_with_option',
-        buyOptionFee: transferType === 'loan_with_option' ? BigInt(Math.floor(Math.random() * 40000000) + 10000000) : null,
-        buyObligation: transferType === 'loan_with_option' && Math.random() > 0.7
-      };
-
-      transfers.push(transfer);
-      
-      if (i % 100 === 0) {
-        console.log(`📊 Generated ${i} transfers...`);
+    }),
+    // Tier 2 European Leagues
+    prisma.league.create({
+      data: {
+        name: '2. Bundesliga',
+        country: 'Germany',
+        continent: CONTINENTS.EUROPE,
+        tier: 2,
+        uefaCoefficient: 35.2,
+        seasonStartMonth: 8
       }
-      
-    } catch (error) {
-      console.error(`❌ Error generating transfer ${i}:`, error);
-    }
-  }
-
-  // Insert transfers in batches to avoid memory issues
-  console.log('💾 Inserting transfers into database...');
-  const batchSize = 50;
-  let insertedCount = 0;
-  
-  for (let i = 0; i < transfers.length; i += batchSize) {
-    try {
-      const batch = transfers.slice(i, i + batchSize);
-      await prisma.transfer.createMany({
-        data: batch,
-        skipDuplicates: true
-      });
-      insertedCount += batch.length;
-      
-      if (i % (batchSize * 5) === 0) {
-        console.log(`💾 Inserted ${insertedCount} transfers...`);
+    }),
+    prisma.league.create({
+      data: {
+        name: 'Championship',
+        country: 'England',
+        continent: CONTINENTS.EUROPE,
+        tier: 2,
+        uefaCoefficient: 42.1,
+        seasonStartMonth: 8
       }
-    } catch (error) {
-      console.error(`❌ Error inserting batch starting at ${i}:`, error);
-    }
-  }
-
-  console.log(`✅ Successfully created ${insertedCount} transfers`);
-
-  // Verify the data
-  const finalCounts = await Promise.all([
-    prisma.league.count(),
-    prisma.club.count(),
-    prisma.transfer.count()
+    }),
+    // Other Continents
+    prisma.league.create({
+      data: {
+        name: 'Série A',
+        country: 'Brazil',
+        continent: CONTINENTS.SOUTH_AMERICA,
+        tier: 1,
+        uefaCoefficient: 65.4,
+        seasonStartMonth: 4
+      }
+    }),
+    prisma.league.create({
+      data: {
+        name: 'Primera División',
+        country: 'Argentina',
+        continent: CONTINENTS.SOUTH_AMERICA,
+        tier: 1,
+        uefaCoefficient: 58.7,
+        seasonStartMonth: 2
+      }
+    }),
+    prisma.league.create({
+      data: {
+        name: 'MLS',
+        country: 'USA',
+        continent: CONTINENTS.NORTH_AMERICA,
+        tier: 1,
+        uefaCoefficient: 25.8,
+        seasonStartMonth: 3
+      }
+    })
   ]);
 
-  console.log('\n🎉 Seeding completed successfully!');
-  console.log('📊 Final database state:');
-  console.log(`   - Leagues: ${finalCounts[0]}`);
-  console.log(`   - Clubs: ${finalCounts[1]}`);
-  console.log(`   - Transfers: ${finalCounts[2]}`);
+  // Create clubs with enhanced data
+  console.log('⚽ Creating clubs...');
+  const clubs: any[] = [];
   
-  // Show some sample statistics
-  const totalValue = await prisma.transfer.aggregate({
-    _sum: { transferFee: true },
-    where: { transferFee: { not: null } }
+  const clubsData = [
+    // Bundesliga
+    { name: 'Bayern München', shortName: 'Bayern', city: 'Munich', league: 'Bundesliga', country: 'Germany', value: 3000000000n, stadium: 75000 },
+    { name: 'Borussia Dortmund', shortName: 'BVB', city: 'Dortmund', league: 'Bundesliga', country: 'Germany', value: 1200000000n, stadium: 81365 },
+    { name: 'RB Leipzig', shortName: 'Leipzig', city: 'Leipzig', league: 'Bundesliga', country: 'Germany', value: 800000000n, stadium: 47069 },
+    { name: 'Bayer Leverkusen', shortName: 'Leverkusen', city: 'Leverkusen', league: 'Bundesliga', country: 'Germany', value: 600000000n, stadium: 30210 },
+    
+    // Premier League
+    { name: 'Manchester City', shortName: 'Man City', city: 'Manchester', league: 'Premier League', country: 'England', value: 4000000000n, stadium: 55097 },
+    { name: 'Liverpool FC', shortName: 'Liverpool', city: 'Liverpool', league: 'Premier League', country: 'England', value: 3500000000n, stadium: 54074 },
+    { name: 'Manchester United', shortName: 'Man United', city: 'Manchester', league: 'Premier League', country: 'England', value: 3200000000n, stadium: 74879 },
+    { name: 'Arsenal FC', shortName: 'Arsenal', city: 'London', league: 'Premier League', country: 'England', value: 2800000000n, stadium: 60704 },
+    { name: 'Chelsea FC', shortName: 'Chelsea', city: 'London', league: 'Premier League', country: 'England', value: 2500000000n, stadium: 40834 },
+    
+    // La Liga
+    { name: 'Real Madrid', shortName: 'Real', city: 'Madrid', league: 'La Liga', country: 'Spain', value: 5000000000n, stadium: 81044 },
+    { name: 'FC Barcelona', shortName: 'Barça', city: 'Barcelona', league: 'La Liga', country: 'Spain', value: 4500000000n, stadium: 99354 },
+    { name: 'Atlético Madrid', shortName: 'Atlético', city: 'Madrid', league: 'La Liga', country: 'Spain', value: 1000000000n, stadium: 68456 },
+    { name: 'Sevilla FC', shortName: 'Sevilla', city: 'Sevilla', league: 'La Liga', country: 'Spain', value: 400000000n, stadium: 43883 },
+    
+    // Serie A
+    { name: 'Juventus FC', shortName: 'Juventus', city: 'Turin', league: 'Serie A', country: 'Italy', value: 1800000000n, stadium: 41507 },
+    { name: 'AC Milan', shortName: 'Milan', city: 'Milan', league: 'Serie A', country: 'Italy', value: 1200000000n, stadium: 80018 },
+    { name: 'Inter Milan', shortName: 'Inter', city: 'Milan', league: 'Serie A', country: 'Italy', value: 1000000000n, stadium: 80018 },
+    { name: 'AS Roma', shortName: 'Roma', city: 'Rome', league: 'Serie A', country: 'Italy', value: 600000000n, stadium: 70634 },
+    
+    // Ligue 1
+    { name: 'Paris Saint-Germain', shortName: 'PSG', city: 'Paris', league: 'Ligue 1', country: 'France', value: 2800000000n, stadium: 47929 },
+    { name: 'Olympique de Marseille', shortName: 'Marseille', city: 'Marseille', league: 'Ligue 1', country: 'France', value: 300000000n, stadium: 67394 },
+    { name: 'AS Monaco', shortName: 'Monaco', city: 'Monaco', league: 'Ligue 1', country: 'France', value: 500000000n, stadium: 18523 },
+    
+    // 2nd Tier
+    { name: 'Hamburger SV', shortName: 'HSV', city: 'Hamburg', league: '2. Bundesliga', country: 'Germany', value: 150000000n, stadium: 57000 },
+    { name: 'FC Schalke 04', shortName: 'Schalke', city: 'Gelsenkirchen', league: '2. Bundesliga', country: 'Germany', value: 200000000n, stadium: 62271 },
+    { name: 'Leeds United', shortName: 'Leeds', city: 'Leeds', league: 'Championship', country: 'England', value: 180000000n, stadium: 37890 },
+    
+    // South America
+    { name: 'Flamengo', shortName: 'Fla', city: 'Rio de Janeiro', league: 'Série A', country: 'Brazil', value: 200000000n, stadium: 78838 },
+    { name: 'Palmeiras', shortName: 'Palmeiras', city: 'São Paulo', league: 'Série A', country: 'Brazil', value: 180000000n, stadium: 43713 },
+    { name: 'Boca Juniors', shortName: 'Boca', city: 'Buenos Aires', league: 'Primera División', country: 'Argentina', value: 120000000n, stadium: 54000 },
+    { name: 'River Plate', shortName: 'River', city: 'Buenos Aires', league: 'Primera División', country: 'Argentina', value: 100000000n, stadium: 70074 },
+    
+    // MLS
+    { name: 'LA Galaxy', shortName: 'Galaxy', city: 'Los Angeles', league: 'MLS', country: 'USA', value: 80000000n, stadium: 27000 },
+    { name: 'Atlanta United', shortName: 'Atlanta', city: 'Atlanta', league: 'MLS', country: 'USA', value: 85000000n, stadium: 42500 }
+  ];
+
+  for (const clubData of clubsData) {
+    const league = leagues.find(l => l.name === clubData.league);
+    if (league) {
+      const club = await prisma.club.create({
+        data: {
+          name: clubData.name,
+          shortName: clubData.shortName,
+          city: clubData.city,
+          country: clubData.country,
+          clubValue: clubData.value,
+          stadiumCapacity: clubData.stadium,
+          foundingYear: Math.floor(Math.random() * 50) + 1900,
+          leagueId: league.id
+        }
+      });
+      clubs.push(club);
+    }
+  }
+
+  console.log('👥 Creating players...');
+  const players = [];
+  const playerNames = Object.values(PLAYER_NAMES).flat();
+  
+  for (let i = 0; i < 200; i++) {
+    const nationality = NATIONALITIES[Math.floor(Math.random() * NATIONALITIES.length)];
+    const name = playerNames[Math.floor(Math.random() * playerNames.length)] + ` ${i}`;
+    const currentClub = clubs[Math.floor(Math.random() * clubs.length)];
+    
+    const player = await prisma.player.create({
+      data: {
+        name: name,
+        nationality: nationality,
+        position: POSITIONS[Math.floor(Math.random() * POSITIONS.length)],
+        dateOfBirth: new Date(1990 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
+        currentClubId: currentClub.id
+      }
+    });
+    players.push(player);
+  }
+
+  console.log('💰 Creating enhanced transfers...');
+  const transfers: { id: number; createdAt: Date; updatedAt: Date; playerName: string; playerNationality: string | null; playerPosition: string | null; playerAgeAtTransfer: number | null; marketValueAtTransfer: bigint | null; transferFee: bigint | null; transferType: string; transferWindow: string; date: Date; season: string; contractDuration: number | null; isLoanToBuy: boolean; originalLoanId: number | null; wasSuccessful: boolean | null; roiPercentage: number | null; oldClubId: number | null; newClubId: number; source: string | null; externalId: string | null; }[] = [];
+  
+  // Helper function to create realistic transfers
+  const createTransfer = async (data: any) => {
+    const transfer = await prisma.transfer.create({ data });
+    transfers.push(transfer);
+    return transfer;
+  };
+
+  // Transfer scenarios for different seasons
+  const seasons = ['2022/23', '2023/24', '2024/25'];
+  
+  for (const season of seasons) {
+    const isCurrentSeason = season === '2024/25';
+    const transferCount = isCurrentSeason ? 150 : 200; // Weniger Transfers in aktueller Saison
+    
+    for (let i = 0; i < transferCount; i++) {
+      const player = players[Math.floor(Math.random() * players.length)];
+      const newClub = clubs[Math.floor(Math.random() * clubs.length)];
+      let oldClub = null;
+      
+      // 80% der Transfers haben einen alten Club
+      if (Math.random() > 0.2) {
+        oldClub = clubs[Math.floor(Math.random() * clubs.length)];
+        // Stelle sicher, dass alter und neuer Club unterschiedlich sind
+        while (oldClub.id === newClub.id) {
+          oldClub = clubs[Math.floor(Math.random() * clubs.length)];
+        }
+      }
+
+      // Transfer-Typ bestimmen
+      const transferTypes = ['sale', 'loan', 'free', 'loan_with_option'];
+      let transferType = transferTypes[Math.floor(Math.random() * transferTypes.length)];
+      
+      // Transfer-Fenster bestimmen (70% Sommer, 30% Winter)
+      const transferWindow = Math.random() > 0.3 ? TRANSFER_WINDOWS.SUMMER : TRANSFER_WINDOWS.WINTER;
+      
+      // Transfer-Datum basierend auf Saison und Fenster
+      let transferDate: Date;
+      const seasonYear = parseInt(season.split('/')[0]);
+      
+      if (transferWindow === TRANSFER_WINDOWS.SUMMER) {
+        transferDate = new Date(seasonYear, 6 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 30) + 1); // Juli-August
+      } else {
+        transferDate = new Date(seasonYear + 1, Math.floor(Math.random() * 2), Math.floor(Math.random() * 30) + 1); // Januar-Februar
+      }
+
+      // Transfer-Fee basierend auf Liga-Tier und Transfer-Typ
+      let transferFee: bigint | null = null;
+      let marketValue: bigint | null = null;
+      
+      if (transferType !== 'free' && transferType !== 'loan') {
+        // Basis-Marktwert abhängig von Liga-Tier
+        const newClubLeague = leagues.find(l => l.id === newClub.leagueId);
+        const oldClubLeague = oldClub ? leagues.find(l => l.id === oldClub.leagueId) : null;
+        
+        let baseValue = 1000000; // 1M Base
+        if (newClubLeague?.tier === 1) baseValue *= (2 + Math.random() * 8); // 2-10M für Tier 1
+        if (newClubLeague?.tier === 2) baseValue *= (0.5 + Math.random() * 2); // 0.5-2.5M für Tier 2
+        
+        marketValue = BigInt(Math.floor(baseValue));
+        
+        // Transfer-Fee ist normalerweise 80-120% des Marktwerts
+        const feeMultiplier = 0.8 + Math.random() * 0.4;
+        transferFee = BigInt(Math.floor(Number(marketValue) * feeMultiplier));
+      }
+
+      // Vertragslaufzeit (1-5 Jahre, meist 3-4)
+      const contractDuration = Math.random() > 0.8 ? 
+        (Math.random() > 0.5 ? 1 : 5) : // 20% Chance auf 1 oder 5 Jahre
+        (Math.random() > 0.5 ? 3 : 4); // 80% Chance auf 3 oder 4 Jahre
+
+      const transferData = {
+        playerName: player.name,
+        playerNationality: player.nationality,
+        playerPosition: player.position,
+        playerAgeAtTransfer: Math.floor((transferDate.getTime() - player.dateOfBirth!.getTime()) / (365.25 * 24 * 60 * 60 * 1000)),
+        marketValueAtTransfer: marketValue,
+        transferFee: transferFee,
+        transferType: transferType,
+        transferWindow: transferWindow,
+        date: transferDate,
+        season: season,
+        contractDuration: contractDuration,
+        oldClubId: oldClub?.id || null,
+        newClubId: newClub.id,
+        source: 'seed_data'
+      };
+
+      await createTransfer(transferData);
+    }
+  }
+
+  // Erstelle Loan-to-Buy Ketten
+  console.log('🔄 Creating loan-to-buy chains...');
+  const loanTransfers = transfers.filter(t => t.transferType === 'loan_with_option');
+  
+  for (let i = 0; i < Math.min(20, loanTransfers.length); i++) {
+    const loanTransfer = loanTransfers[i];
+    
+    // 60% Chance dass Loan-to-Buy aktiviert wird
+    if (Math.random() > 0.4) {
+      const purchaseDate = new Date(loanTransfer.date);
+      purchaseDate.setFullYear(purchaseDate.getFullYear() + 1); // Ein Jahr später
+      
+      const purchaseValue = loanTransfer.marketValueAtTransfer ? 
+        BigInt(Math.round(Number(loanTransfer.marketValueAtTransfer) * (1.1 + Math.random() * 0.3))) : // 10-40% Wertsteigerung
+        BigInt(5000000 + Math.random() * 15000000); // 5-20M falls kein Marktwert
+
+      await createTransfer({
+        playerName: loanTransfer.playerName,
+        playerNationality: loanTransfer.playerNationality,
+        playerPosition: loanTransfer.playerPosition,
+        playerAgeAtTransfer: loanTransfer.playerAgeAtTransfer! + 1,
+        marketValueAtTransfer: purchaseValue,
+        transferFee: purchaseValue,
+        transferType: 'loan_to_buy',
+        transferWindow: loanTransfer.transferWindow,
+        date: purchaseDate,
+        season: purchaseDate.getFullYear() + '/' + (purchaseDate.getFullYear() + 1).toString().slice(-2),
+        contractDuration: 3 + Math.floor(Math.random() * 3), // 3-5 Jahre
+        oldClubId: loanTransfer.oldClubId,
+        newClubId: loanTransfer.newClubId,
+        isLoanToBuy: true,
+        originalLoanId: loanTransfer.id,
+        source: 'seed_data'
+      });
+    }
+  }
+
+  // FIXED: Erstelle Spieler-Karriere-Ketten (gleicher Spieler, mehrere Transfers)
+  console.log('📈 Creating player career chains...');
+  for (let i = 0; i < 30; i++) {
+    const player = players[Math.floor(Math.random() * players.length)];
+    const careerTransfers = [];
+    
+    // Karriere-Progression: Klein → Mittel → Groß
+    const smallClubs = clubs.filter(c => c.clubValue! < 200000000n);
+    const mediumClubs = clubs.filter(c => c.clubValue! >= 200000000n && c.clubValue! < 1000000000n);
+    const bigClubs = clubs.filter(c => c.clubValue! >= 1000000000n);
+    
+    // Stelle sicher, dass wir Clubs haben
+    if (smallClubs.length === 0 || mediumClubs.length === 0 || bigClubs.length === 0) {
+      continue;
+    }
+    
+    const careerClubs = [
+      smallClubs[Math.floor(Math.random() * smallClubs.length)],
+      mediumClubs[Math.floor(Math.random() * mediumClubs.length)],
+      bigClubs[Math.floor(Math.random() * bigClubs.length)]
+    ];
+
+    let currentValue = BigInt(Math.round(500000 + Math.random() * 2000000)); // Start: 0.5-2.5M
+    
+    for (let transferIndex = 1; transferIndex < careerClubs.length; transferIndex++) {
+      const oldClub = careerClubs[transferIndex - 1];
+      const newClub = careerClubs[transferIndex];
+      
+      // Wertsteigerung bei jedem Transfer
+      const valueIncrease = 1.5 + Math.random() * 2; // 1.5x - 3.5x Steigerung
+      const newValue = BigInt(Math.floor(Number(currentValue) * valueIncrease));
+      
+      const transferDate = new Date(2022 + transferIndex, 6, Math.floor(Math.random() * 30) + 1);
+      const season = transferDate.getFullYear() + '/' + (transferDate.getFullYear() + 1).toString().slice(-2);
+      
+      try {
+        const careerTransfer = await createTransfer({
+          playerName: player.name,
+          playerNationality: player.nationality,
+          playerPosition: player.position,
+          playerAgeAtTransfer: Math.max(16, 20 + transferIndex * 2), // Mindestens 16 Jahre
+          marketValueAtTransfer: newValue,
+          transferFee: BigInt(Math.floor(Number(newValue) * (0.9 + Math.random() * 0.2))), // 90-110% des Marktwerts
+          transferType: 'sale',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: transferDate,
+          season: season,
+          contractDuration: 3 + Math.floor(Math.random() * 2),
+          oldClubId: oldClub.id,
+          newClubId: newClub.id,
+          source: 'career_progression'
+        });
+        
+        careerTransfers.push(careerTransfer);
+        currentValue = newValue;
+        
+        // FIXED: Player-Transfer History erstellen mit besserer Fehlerbehandlung
+        try {
+          await prisma.playerTransfer.create({
+            data: {
+              playerId: player.id,
+              transferId: careerTransfer.id,
+              gamesPlayed: 20 + Math.floor(Math.random() * 15), // 20-35 Spiele
+              goalsScored: player.position?.includes('Forward') || player.position?.includes('Winger') ? 
+                Math.floor(Math.random() * 15) : Math.floor(Math.random() * 5), // Mehr Tore für Stürmer
+              marketValueEnd: BigInt(Math.floor(Number(newValue) * (1.1 + Math.random() * 0.4))), // Wertsteigerung während der Zeit
+              wasRegularStarter: Math.random() > 0.3 // 70% Chance auf Stammplatz
+            }
+          });
+        } catch (error) {
+          console.warn(`⚠️ Could not create PlayerTransfer for ${player.name}:`, error);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Could not create career transfer for ${player.name}:`, error);
+        break;
+      }
+    }
+  }
+
+  // Erstelle Transfer-Erfolg Metriken
+  console.log('📊 Creating transfer success metrics...');
+  const successfulTransfers = transfers.filter(t => t.transferFee && Number(t.transferFee) > 5000000); // Nur teure Transfers bewerten
+  
+  for (let i = 0; i < Math.min(50, successfulTransfers.length); i++) {
+    const transfer = successfulTransfers[i];
+    
+    await prisma.transferSuccess.create({
+      data: {
+        transferId: transfer.id,
+        performanceRating: 3 + Math.random() * 7, // 3-10 Rating
+        marketValueGrowth: transfer.marketValueAtTransfer ? 
+          BigInt(Math.round(Number(transfer.marketValueAtTransfer) * (Math.random() * 0.8 - 0.2))) : // -20% bis +60% Wertsteigerung
+          BigInt(Math.random() * 10000000 - 2000000), // -2M bis +8M
+        contractExtensions: Math.floor(Math.random() * 3), // 0-2 Verlängerungen
+        trophiesWon: Math.floor(Math.random() * 4), // 0-3 Titel
+        evaluatedAfterYears: 1 + Math.floor(Math.random() * 3), // Nach 1-3 Jahren bewertet
+        lastEvaluated: new Date()
+      }
+    });
+  }
+
+  // Erstelle Liga-Performance Daten
+  console.log('🏆 Creating league performance data...');
+  for (const league of leagues) {
+    for (const season of seasons) {
+      const leagueTransfers = transfers.filter(t => {
+        const club = clubs.find(c => c.id === t.newClubId);
+        return club?.leagueId === league.id && t.season === season;
+      });
+      
+      const totalFees = leagueTransfers
+        .filter(t => t.transferFee)
+        .reduce((sum, t) => sum + Number(t.transferFee!), 0);
+      
+      const avgFee = leagueTransfers.length > 0 ? totalFees / leagueTransfers.length : 0;
+      
+      // Top-Spending Club in dieser Liga
+      const clubSpending = new Map<number, number>();
+      leagueTransfers.forEach(t => {
+        if (t.transferFee) {
+          const current = clubSpending.get(t.newClubId) || 0;
+          clubSpending.set(t.newClubId, current + Number(t.transferFee));
+        }
+      });
+      
+      let topSpendingClub = '';
+      let maxSpending = 0;
+      for (const [clubId, spending] of clubSpending) {
+        if (spending > maxSpending) {
+          maxSpending = spending;
+          const club = clubs.find(c => c.id === clubId);
+          topSpendingClub = club?.name || '';
+        }
+      }
+      
+      await prisma.leaguePerformance.create({
+        data: {
+          leagueId: league.id,
+          season: season,
+          avgTransferFee: avgFee > 0 ? BigInt(Math.floor(avgFee)) : null,
+          totalTransfers: leagueTransfers.length,
+          topSpendingClub: topSpendingClub || null,
+          uefaRanking: league.tier // Vereinfacht: Tier als Ranking
+        }
+      });
+    }
+  }
+
+  // FIXED: Berechne ROI für Transfers mit Follow-up Sales
+  console.log('💹 Calculating ROI for transfers...');
+  const playersWithMultipleTransfers = new Map<string, any[]>();
+  
+  // Gruppiere Transfers nach Spieler
+  transfers.forEach(transfer => {
+    const playerName = transfer.playerName;
+    if (!playersWithMultipleTransfers.has(playerName)) {
+      playersWithMultipleTransfers.set(playerName, []);
+    }
+    playersWithMultipleTransfers.get(playerName)!.push(transfer);
   });
 
+  // Berechne ROI für Spieler mit mehreren Transfers
+  for (const [playerName, playerTransfers] of playersWithMultipleTransfers) {
+    if (playerTransfers.length < 2) continue;
+    
+    // Sortiere nach Datum
+    playerTransfers.sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    for (let i = 0; i < playerTransfers.length - 1; i++) {
+      const buyTransfer = playerTransfers[i];
+      const sellTransfer = playerTransfers[i + 1];
+      
+      if (buyTransfer.transferFee && sellTransfer.transferFee && 
+          sellTransfer.oldClubId === buyTransfer.newClubId &&
+          Number(buyTransfer.transferFee) > 0) { // Vermeide Division durch 0
+        
+        try {
+          // ROI berechnen
+          const buyPrice = Number(buyTransfer.transferFee);
+          const sellPrice = Number(sellTransfer.transferFee);
+          const roi = ((sellPrice - buyPrice) / buyPrice) * 100;
+          
+          // Verhindere extreme ROI-Werte
+          const clampedROI = Math.max(-100, Math.min(1000, roi));
+          
+          // Update Buy-Transfer mit ROI
+          await prisma.transfer.update({
+            where: { id: buyTransfer.id },
+            data: {
+              roiPercentage: Math.round(clampedROI * 100) / 100, // Runde auf 2 Dezimalstellen
+              wasSuccessful: clampedROI > 0 // Erfolgreich wenn Gewinn gemacht
+            }
+          });
+        } catch (error) {
+          console.warn(`⚠️ Could not update ROI for transfer ${buyTransfer.id}:`, error);
+        }
+      }
+    }
+  }
+
+  console.log('✅ Enhanced database seeding completed!');
+  
+  // Statistics
+  const stats = {
+    leagues: await prisma.league.count(),
+    clubs: await prisma.club.count(),
+    players: await prisma.player.count(),
+    transfers: await prisma.transfer.count(),
+    playerTransfers: await prisma.playerTransfer.count(),
+    transferSuccess: await prisma.transferSuccess.count(),
+    leaguePerformances: await prisma.leaguePerformance.count(),
+    loanToBuyTransfers: await prisma.transfer.count({ where: { isLoanToBuy: true } }),
+    transfersWithROI: await prisma.transfer.count({ where: { roiPercentage: { not: null } } })
+  };
+  
+  console.log('📈 Database Statistics:');
+  console.table(stats);
+  
+  // Sample data insights
+  console.log('\n🔍 Sample Data Insights:');
+  
   const topTransfer = await prisma.transfer.findFirst({
     where: { transferFee: { not: null } },
     orderBy: { transferFee: 'desc' },
+    include: { newClub: true, oldClub: true }
+  });
+  
+  if (topTransfer) {
+    console.log(`💰 Most expensive transfer: ${topTransfer.playerName} from ${topTransfer.oldClub?.name || 'Free Agent'} to ${topTransfer.newClub.name} for €${(Number(topTransfer.transferFee!) / 1000000).toFixed(1)}M`);
+  }
+  
+  const bestROI = await prisma.transfer.findFirst({
+    where: { roiPercentage: { not: null } },
+    orderBy: { roiPercentage: 'desc' },
+    include: { newClub: true }
+  });
+  
+  if (bestROI) {
+    console.log(`📈 Best ROI: ${bestROI.playerName} at ${bestROI.newClub.name} with ${bestROI.roiPercentage?.toFixed(1)}% return`);
+  }
+  
+  const transferWindows = await prisma.transfer.groupBy({
+    by: ['transferWindow'],
+    _count: { transferWindow: true }
+  });
+  
+  console.log('🗓️ Transfer Windows:');
+  transferWindows.forEach(window => {
+    console.log(`  ${window.transferWindow}: ${window._count.transferWindow} transfers`);
+  });
+  
+  // FIXED: Korrigierte Kontinental-Statistiken ohne $queryRaw
+  const continentStats = await prisma.league.findMany({
     include: {
-      oldClub: { select: { name: true } },
-      newClub: { select: { name: true } }
+      clubs: {
+        include: {
+          transfersIn: {
+            where: {
+              transferFee: { not: null }
+            }
+          }
+        }
+      }
     }
   });
 
-  console.log(`💰 Total transfer value: €${(Number(totalValue._sum.transferFee || 0) / 1000000).toFixed(0)}M`);
-  if (topTransfer) {
-    console.log(`🏆 Highest transfer: ${topTransfer.playerName} (€${(Number(topTransfer.transferFee!) / 1000000).toFixed(1)}M)`);
-    console.log(`   From: ${topTransfer.oldClub?.name || 'Free Agent'} → To: ${topTransfer.newClub.name}`);
-  }
+  const continentData = continentStats.reduce((acc: any[], league) => {
+    const transfersInLeague = league.clubs.flatMap(club => club.transfersIn);
+    const totalFees = transfersInLeague.reduce((sum, transfer) => 
+      sum + (transfer.transferFee ? Number(transfer.transferFee) : 0), 0
+    );
+    const avgFee = transfersInLeague.length > 0 ? totalFees / transfersInLeague.length : 0;
+    
+    const existingContinent = acc.find(item => item.continent === league.continent);
+    if (existingContinent) {
+      existingContinent.transfer_count += transfersInLeague.length;
+      existingContinent.total_fees += totalFees;
+    } else {
+      acc.push({
+        continent: league.continent,
+        transfer_count: transfersInLeague.length,
+        total_fees: totalFees,
+        avg_fee: avgFee
+      });
+    }
+    return acc;
+  }, []);
+
+  // Berechne finale Durchschnitte
+  continentData.forEach(continent => {
+    continent.avg_fee = continent.transfer_count > 0 ? 
+      continent.total_fees / continent.transfer_count : 0;
+  });
+
+  console.log('🌍 Transfers by Continent:');
+  console.table(continentData.map(c => ({
+    Continent: c.continent,
+    Transfers: c.transfer_count,
+    'Avg Fee (€M)': (c.avg_fee / 1000000).toFixed(2)
+  })));
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-    console.log('\n🔌 Database connection closed');
-    process.exit(0);
-  })
-  .catch(async (e) => {
-    console.error('\n❌ Seeding failed:', e);
-    await prisma.$disconnect();
+  .catch((e) => {
+    console.error('❌ Seeding failed:', e);
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });

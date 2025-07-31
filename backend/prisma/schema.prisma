@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -11,65 +12,167 @@ datasource db {
 }
 
 model League {
-  id               Int    @id @default(autoincrement())
-  name             String
+  id               Int                 @id @default(autoincrement())
+  name             String              @unique
   country          String
-  tier             Int    @default(1)
-  seasonStartMonth Int    @default(8)
-  createdAt        DateTime @default(now()) @map("created_at")
+  continent        String              // Europa, Südamerika, etc.
+  tier             Int                 @default(1) // Liga-Tier (1, 2, 3, etc.)
+  seasonStartMonth Int                 @default(8)
+  uefaCoefficient  Float?              // UEFA Koeffizient für Ranking
   
-  clubs Club[]
+  // Relations
+  clubs            Club[]
+  performances     LeaguePerformance[] // FIXED: Added missing relation
   
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
   @@map("leagues")
 }
 
 model Club {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   name            String
-  shortName       String?  @map("short_name")
-  leagueId        Int      @map("league_id")
+  shortName       String?
   country         String
-  logoUrl         String?  @map("logo_url")
-  stadiumCapacity Int?     @map("stadium_capacity")
-  foundingYear    Int?     @map("founding_year")
-  clubValue       BigInt?  @map("club_value")
-  createdAt       DateTime @default(now()) @map("created_at")
+  city            String?   // Stadt des Clubs
+  logoUrl         String?
+  clubValue       BigInt?
+  foundingYear    Int?
+  stadiumCapacity Int?
+  isActive        Boolean   @default(true)
   
-  league League @relation(fields: [leagueId], references: [id])
+  // Relations
+  league          League    @relation(fields: [leagueId], references: [id])
+  leagueId        Int
   
-  transfersOut Transfer[] @relation("OldClub")
-  transfersIn  Transfer[] @relation("NewClub")
+  // Transfer relations
+  transfersIn     Transfer[] @relation("NewClub")
+  transfersOut    Transfer[] @relation("OldClub")
   
+  // FIXED: Added relation to players
+  currentPlayers  Player[]   @relation("CurrentClub")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   @@map("clubs")
 }
 
 model Transfer {
-  id                  Int      @id @default(autoincrement())
-  playerName          String   @map("player_name")
-  oldClubId           Int?     @map("old_club_id")
-  newClubId           Int      @map("new_club_id")
-  transferFee         BigInt?  @map("transfer_fee")
-  transferType        String   @map("transfer_type") // 'sale', 'loan', 'free', 'loan_with_option'
-  date                DateTime
-  season              String
+  id                    Int       @id @default(autoincrement())
+  playerName            String
+  playerNationality     String?   // Nationalität des Spielers
+  playerPosition        String?
+  playerAgeAtTransfer   Int?
+  marketValueAtTransfer BigInt?   // Marktwert zum Transfer-Zeitpunkt
   
-  // Player details
-  playerPosition      String?  @map("player_position")
-  playerAgeAtTransfer Int?     @map("player_age_at_transfer")
-  marketValue         BigInt?  @map("market_value")
+  // Transfer Details
+  transferFee           BigInt?
+  transferType          String    // sale, loan, free, loan_with_option, loan_to_buy
+  transferWindow        String    // "summer", "winter"
+  date                  DateTime
+  season                String
+  contractDuration      Int?      // Vertragslaufzeit in Jahren
   
-  // Transfer details
-  contractDuration    Int?     @map("contract_duration")
-  agentFee           BigInt?  @map("agent_fee")
-  loanDuration       Int?     @map("loan_duration")
-  hasBuyOption       Boolean  @default(false) @map("has_buy_option")
-  buyOptionFee       BigInt?  @map("buy_option_fee")
-  buyObligation      Boolean  @default(false) @map("buy_obligation")
+  // FIXED: Improved Loan-to-Buy Tracking with better relation names
+  isLoanToBuy          Boolean   @default(false)
+  originalLoanId       Int?      
+  originalLoan         Transfer? @relation("OriginalLoan", fields: [originalLoanId], references: [id])
+  followUpPurchases    Transfer[] @relation("OriginalLoan")
   
-  createdAt          DateTime @default(now()) @map("created_at")
+  // Success Metrics (calculated fields)
+  wasSuccessful        Boolean?  // War der Transfer erfolgreich?
+  roiPercentage        Float?    // Return on Investment
   
-  oldClub Club? @relation("OldClub", fields: [oldClubId], references: [id])
-  newClub Club  @relation("NewClub", fields: [newClubId], references: [id])
+  // Club Relations
+  oldClub              Club?     @relation("OldClub", fields: [oldClubId], references: [id])
+  oldClubId            Int?
+  newClub              Club      @relation("NewClub", fields: [newClubId], references: [id])
+  newClubId            Int
   
+  // FIXED: Added missing relations
+  playerTransfer       PlayerTransfer?
+  success              TransferSuccess?
+  
+  // Additional metadata
+  source               String?   // Datenquelle
+  externalId           String?   // Externe ID (für Datenimport)
+  
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
   @@map("transfers")
+}
+
+model Player {
+  id               Int             @id @default(autoincrement())
+  name             String
+  nationality      String
+  dateOfBirth      DateTime?
+  position         String?
+  
+  // FIXED: Better relation name and added to Club model
+  currentClubId    Int?
+  currentClub      Club?           @relation("CurrentClub", fields: [currentClubId], references: [id])
+  
+  transferHistory  PlayerTransfer[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("player")
+}
+
+model PlayerTransfer {
+  id              Int      @id @default(autoincrement())
+  playerId        Int
+  player          Player   @relation(fields: [playerId], references: [id])
+  transferId      Int      @unique
+  transfer        Transfer @relation(fields: [transferId], references: [id])
+  
+  // Performance metrics nach Transfer
+  gamesPlayed     Int?
+  goalsScored     Int?
+  marketValueEnd  BigInt?  // Marktwert am Ende der Periode
+  wasRegularStarter Boolean @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("playerTransfer")
+}
+
+model LeaguePerformance {
+  id               Int      @id @default(autoincrement())
+  leagueId         Int
+  league           League   @relation(fields: [leagueId], references: [id])
+  season           String
+  avgTransferFee   BigInt?
+  totalTransfers   Int      @default(0)
+  topSpendingClub  String?
+  uefaRanking      Int?
+  
+  @@unique([leagueId, season])
+  @@map("leaguePerformance")
+}
+
+model TransferSuccess {
+  id                 Int      @id @default(autoincrement())
+  transferId         Int      @unique
+  transfer           Transfer @relation(fields: [transferId], references: [id])
+  
+  // Erfolgs-Metriken
+  performanceRating  Float?   // 1-10 Rating
+  marketValueGrowth  BigInt?  // Marktwert-Steigerung
+  contractExtensions Int      @default(0) // Anzahl Vertragsverlängerungen
+  trophiesWon        Int      @default(0) // Titel mit neuem Club
+  
+  // Berechnet nach X Jahren
+  evaluatedAfterYears Int?
+  lastEvaluated      DateTime?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("transferSuccess")
 }
