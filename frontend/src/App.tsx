@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import TransferNetwork from './components/TransferTracker';
+import TransferNetwork from './components/TransferNetwork'; // ✅ FIXED: Changed from TransferTracker
 import FilterPanel from './components/FilterPanel';
 import { FilterState } from './types';
 import { countActiveFilters } from './utils';
@@ -72,7 +72,7 @@ function App() {
         {/* Filter Panel */}
         <FilterPanel onFiltersChange={handleFiltersChange} />
         
-        {/* Network Visualization */}
+        {/* Network Visualization - ✅ FIXED: Now using TransferNetwork */}
         <TransferNetwork filters={filters} />
         
         {/* Enhanced Footer Info */}

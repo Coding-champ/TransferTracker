@@ -34,6 +34,9 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const currentTransformRef = useRef(d3.zoomIdentity);
   const isInitializedRef = useRef(false);
+  
+  // 🔧 FIX: Add missing isDraggingRef for zoom bug fix
+  const isDraggingRef = useRef(false);
 
   // Enhanced color scale for leagues
   const colorScale = d3.scaleOrdinal<string>()
@@ -58,10 +61,13 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     // Create zoom container
     const zoomGroup = svg.append('g').attr('class', 'zoom-group');
 
-    // Enhanced zoom behavior
+    // 🔧 FIX: Enhanced zoom behavior with proper isDragging check
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 5])
       .filter((event) => {
+        // 🔧 FIX: Add missing isDraggingRef check that was in original
+        if (isDraggingRef.current) return false;
+        
         const target = event.target as Element;
         const isNode = target.classList.contains('node') || target.closest('.node');
         
@@ -71,8 +77,11 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
         return false;
       })
       .on('zoom', (event) => {
-        currentTransformRef.current = event.transform;
-        zoomGroup.attr('transform', event.transform);
+        // 🔧 FIX: Add isDragging check to prevent zoom during drag
+        if (!isDraggingRef.current) {
+          currentTransformRef.current = event.transform;
+          zoomGroup.attr('transform', event.transform);
+        }
       });
 
     svg.call(zoom);
@@ -114,8 +123,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     // Create labels
     const { labels, roiLabels } = createLabels(zoomGroup, networkData.nodes);
 
-    // Setup drag behavior
-    const dragHandler = createDragBehavior(simulation, handleDragStart, handleDragEnd);
+    // 🔧 FIX: Setup drag behavior with proper isDraggingRef integration
+    const dragHandler = createDragBehavior(simulation, handleDragStart, handleDragEnd, isDraggingRef);
     nodeCircles.call(dragHandler);
 
     // Simulation tick function
@@ -139,6 +148,8 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       if (simulationRef.current) {
         simulationRef.current.stop();
       }
+      // 🔧 FIX: Reset dragging state on cleanup
+      isDraggingRef.current = false;
     };
   }, [networkData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd]);
 
@@ -282,7 +293,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   );
 };
 
-// Optimized helper functions for D3 visualization
+// 🔧 FIX: Optimized helper functions for D3 visualization
 const createArrowMarkers = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
   const defs = svg.append('defs');
   
@@ -454,13 +465,17 @@ const createLabels = (
   return { labels, roiLabels };
 };
 
+// 🔧 FIX: Updated drag behavior with isDraggingRef integration
 const createDragBehavior = (
   simulation: d3.Simulation<NetworkNode, NetworkEdge>,
   onDragStart: () => void,
-  onDragEnd: () => void
+  onDragEnd: () => void,
+  isDraggingRef: React.MutableRefObject<boolean>
 ) => {
   return d3.drag<SVGCircleElement, NetworkNode>()
     .on('start', function(event, d) {
+      // 🔧 FIX: Set isDraggingRef immediately on drag start
+      isDraggingRef.current = true;
       onDragStart();
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
@@ -475,6 +490,10 @@ const createDragBehavior = (
       onDragEnd();
       if (!event.active) simulation.alphaTarget(0);
       d3.select(this).attr('stroke-width', 2);
+      // 🔧 FIX: Reset isDraggingRef with timeout like in original
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 100);
     });
 };
 
