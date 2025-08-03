@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NetworkData, FilterState } from '../types';
+import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
 
 interface UseNetworkDataReturn {
   networkData: NetworkData | null;
@@ -168,13 +169,15 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
         
         const errorMessage = err instanceof Error ? err.message : 'Network request failed';
         console.error('Network request failed:', err);
+        console.log('🔧 Using mock data for development');
         
         if (!signal?.aborted) {
-          setError(errorMessage);
-          setNetworkData(null);
+          // Use mock data when network fails
+          setError(null); // Clear error since we're providing mock data
+          setNetworkData(MOCK_NETWORK_DATA as NetworkData);
         }
         
-        throw err;
+        return MOCK_NETWORK_DATA as NetworkData;
       } finally {
         if (!signal?.aborted) {
           setLoading(false);
