@@ -118,10 +118,9 @@ function App() {
             <div>
               <h4 className="font-medium text-gray-900 mb-2">🎯 Advanced Filtering</h4>
               <ul className="space-y-1 text-gray-600">
-                <li>• Geographic filters (continents, countries)</li>
+                <li>• Geographic filters</li>
                 <li>• Performance metrics (ROI, success rate)</li>
-                <li>• Contract analysis (duration, loan-to-buy)</li>
-                <li>• Player demographics (age, nationality)</li>
+                <li>• Player demographics</li>
               </ul>
             </div>
             <div>
@@ -129,7 +128,6 @@ function App() {
               <ul className="space-y-1 text-gray-600">
                 <li>• Success rate indicators</li>
                 <li>• Transfer window analysis</li>
-                <li>• Performance ratings display</li>
                 <li>• ROI metrics visualization</li>
               </ul>
             </div>
@@ -137,10 +135,8 @@ function App() {
               <h4 className="font-medium text-gray-900 mb-2">🔍 Navigation & Controls</h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• Zoom in/out with mouse wheel</li>
-                <li>• Pan by dragging empty space</li>
                 <li>• Drag nodes to reposition them</li>
                 <li>• Click nodes to pin/unpin position</li>
-                <li>• Collapsible filter sections</li>
               </ul>
             </div>
             <div>
@@ -148,7 +144,6 @@ function App() {
               <ul className="space-y-1 text-gray-600">
                 <li>• Loan-to-buy conversion tracking</li>
                 <li>• Transfer success analytics</li>
-                <li>• Multi-dimensional filtering</li>
                 <li>• Quick filter presets</li>
               </ul>
             </div>
@@ -161,10 +156,9 @@ function App() {
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-500">
-            <p>Enhanced Football Transfer Network Visualization</p>
+            <p>Football Transfer Network</p>
             <p className="mt-1">
-              Built with React, D3.js, TypeScript & PostgreSQL • 
-              Features: Advanced Filtering, Performance Analytics, ROI Tracking
+              Built with React, D3.js & Express.js
             </p>
             <div className="mt-2 flex justify-center space-x-4 text-xs">
               <span>🎯 Multi-dimensional Analysis</span>

@@ -651,12 +651,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
             }}
             className="px-3 py-1 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-md transition-colors"
           >
-            Premier League Only
-          </button>
-          <button
-            onClick={() => updateFilter('continents', ['Europe'])}
-            className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md transition-colors"
-          >
             European Leagues
           </button>
           <button
@@ -682,21 +676,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
             className="px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md transition-colors"
           >
             Successful Only
-          </button>
-          <button
-            onClick={() => {
-              updateFilter('transferWindows', ['summer']);
-              updateFilter('seasons', ['2023/24']);
-            }}
-            className="px-3 py-1 text-sm bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-md transition-colors"
-          >
-            Summer 2023/24
-          </button>
-          <button
-            onClick={() => updateFilter('isLoanToBuy', true)}
-            className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-md transition-colors"
-          >
-            Loan-to-Buy
           </button>
         </div>
       </div>

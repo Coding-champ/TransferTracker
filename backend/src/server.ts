@@ -35,23 +35,23 @@ interface FilterParams {
   continents?: string[];
   clubs?: number[];
   transferTypes?: string[];
-  transferWindows?: string[]; // NEW: summer, winter
+  transferWindows?: string[]; // summer, winter
   minTransferFee?: number;
   maxTransferFee?: number;
   hasTransferFee?: boolean;
   positions?: string[];
-  nationalities?: string[]; // NEW: player nationalities
+  nationalities?: string[];
   minPlayerAge?: number;
   maxPlayerAge?: number;
-  minContractDuration?: number; // NEW
-  maxContractDuration?: number; // NEW
-  leagueTiers?: number[]; // NEW: 1, 2, 3, etc.
-  minROI?: number; // NEW: ROI percentage filter
-  maxROI?: number; // NEW
-  isLoanToBuy?: boolean; // NEW: loan-to-buy filter
-  onlySuccessfulTransfers?: boolean; // NEW
-  minPerformanceRating?: number; // NEW: 1-10 rating
-  maxPerformanceRating?: number; // NEW
+  minContractDuration?: number;
+  maxContractDuration?: number;
+  leagueTiers?: number[]; // 1, 2, 3, etc.
+  minROI?: number;
+  maxROI?: number;
+  isLoanToBuy?: boolean;
+  onlySuccessfulTransfers?: boolean;
+  minPerformanceRating?: number; // 1-10 rating
+  maxPerformanceRating?: number;
   minTransferCount?: number;
   excludeLoans?: boolean;
   onlyDirectTransfers?: boolean;
@@ -65,12 +65,12 @@ interface NetworkNode {
   shortName?: string;
   league: string;
   country: string;
-  continent?: string; // NEW
+  continent?: string;
   logoUrl?: string;
   clubValue?: number;
-  foundingYear?: number; // NEW
-  stadiumCapacity?: number; // NEW
-  leagueTier?: number; // NEW
+  foundingYear?: number;
+  stadiumCapacity?: number;
+  leagueTier?: number;
   stats: {
     transfersIn: number;
     transfersOut: number;
@@ -78,9 +78,9 @@ interface NetworkNode {
     totalReceived: number;
     netSpend: number;
     avgPlayerAge?: number;
-    avgROI?: number; // NEW
-    successfulTransfersRate?: number; // NEW
-    avgPerformanceRating?: number; // NEW
+    avgROI?: number;
+    successfulTransfersRate?: number;
+    avgPerformanceRating?: number;
   };
 }
 
@@ -94,29 +94,29 @@ interface NetworkEdge {
     transferCount: number;
     avgTransferValue: number;
     types: string[];
-    avgROI?: number; // NEW
-    successRate?: number; // NEW
-    seasons: string[]; // NEW
-    transferWindows: string[]; // NEW
+    avgROI?: number;
+    successRate?: number;
+    seasons: string[];
+    transferWindows: string[];
   };
 }
 
 interface TransferInfo {
   id: number;
   playerName: string;
-  playerNationality?: string; // NEW
+  playerNationality?: string;
   transferFee: number | null;
   transferType: string;
-  transferWindow?: string; // NEW
+  transferWindow?: string;
   date: Date;
   season: string;
   position: string | null;
   playerAge?: number;
-  contractDuration?: number; // NEW
-  marketValueAtTransfer?: number; // NEW
-  isLoanToBuy?: boolean; // NEW
-  roiPercentage?: number; // NEW
-  performanceRating?: number; // NEW
+  contractDuration?: number;
+  marketValueAtTransfer?: number;
+  isLoanToBuy?: boolean;
+  roiPercentage?: number;
+  performanceRating?: number;
   direction: 'out' | 'in';
 }
 
@@ -357,7 +357,7 @@ app.get('/api/positions', async (req, res) => {
   }
 });
 
-// Get player nationalities (NEW)
+// Get player nationalities
 app.get('/api/nationalities', async (req, res) => {
   try {
     const nationalities = await prisma.transfer.findMany({
@@ -381,7 +381,7 @@ app.get('/api/nationalities', async (req, res) => {
   }
 });
 
-// Get continents (NEW)
+// Get continents
 app.get('/api/continents', async (req, res) => {
   try {
     const continents = await prisma.league.findMany({
@@ -404,7 +404,7 @@ app.get('/api/continents', async (req, res) => {
   }
 });
 
-// Get league tiers (NEW)
+// Get league tiers
 app.get('/api/league-tiers', async (req, res) => {
   try {
     const tiers = await prisma.league.findMany({
@@ -436,27 +436,27 @@ app.get('/api/network-data', async (req, res) => {
       seasons: safeParseArray(req.query.seasons),
       leagues: safeParseArray(req.query.leagues),
       countries: safeParseArray(req.query.countries),
-      continents: safeParseArray(req.query.continents), // NEW
+      continents: safeParseArray(req.query.continents),
       transferTypes: safeParseArray(req.query.transferTypes),
-      transferWindows: safeParseArray(req.query.transferWindows), // NEW
+      transferWindows: safeParseArray(req.query.transferWindows),
       positions: safeParseArray(req.query.positions),
-      nationalities: safeParseArray(req.query.nationalities), // NEW
+      nationalities: safeParseArray(req.query.nationalities),
       clubs: safeParseArray(req.query.clubs).map(id => safeParseInt(id)).filter(id => id > 0),
-      leagueTiers: safeParseIntArray(req.query.leagueTiers), // NEW
+      leagueTiers: safeParseIntArray(req.query.leagueTiers),
       minTransferFee: safeParseInt(req.query.minTransferFee),
       maxTransferFee: safeParseInt(req.query.maxTransferFee),
       minPlayerAge: safeParseInt(req.query.minPlayerAge),
       maxPlayerAge: safeParseInt(req.query.maxPlayerAge),
-      minContractDuration: safeParseInt(req.query.minContractDuration), // NEW
-      maxContractDuration: safeParseInt(req.query.maxContractDuration), // NEW
-      minROI: safeParseFloat(req.query.minROI), // NEW
-      maxROI: safeParseFloat(req.query.maxROI), // NEW
-      minPerformanceRating: safeParseFloat(req.query.minPerformanceRating), // NEW
-      maxPerformanceRating: safeParseFloat(req.query.maxPerformanceRating), // NEW
+      minContractDuration: safeParseInt(req.query.minContractDuration),
+      maxContractDuration: safeParseInt(req.query.maxContractDuration),
+      minROI: safeParseFloat(req.query.minROI),
+      maxROI: safeParseFloat(req.query.maxROI),
+      minPerformanceRating: safeParseFloat(req.query.minPerformanceRating),
+      maxPerformanceRating: safeParseFloat(req.query.maxPerformanceRating),
       hasTransferFee: req.query.hasTransferFee === 'true',
       excludeLoans: req.query.excludeLoans === 'true',
-      isLoanToBuy: req.query.isLoanToBuy === 'true', // NEW
-      onlySuccessfulTransfers: req.query.onlySuccessfulTransfers === 'true', // NEW
+      isLoanToBuy: req.query.isLoanToBuy === 'true',
+      onlySuccessfulTransfers: req.query.onlySuccessfulTransfers === 'true',
       limit: safeParseInt(req.query.limit, 1000)
     };
 
@@ -468,7 +468,7 @@ app.get('/api/network-data', async (req, res) => {
       whereClause.season = { in: filters.seasons };
     }
     
-    // Transfer window filter (NEW)
+    // Transfer window filter
     if (filters.transferWindows && filters.transferWindows.length > 0) {
       whereClause.transferWindow = { in: filters.transferWindows };
     }
@@ -487,7 +487,7 @@ app.get('/api/network-data', async (req, res) => {
       whereClause.transferType = { notIn: ['loan', 'loan_with_option'] };
     }
 
-    // Loan-to-buy filter (NEW)
+    // Loan-to-buy filter
     if (filters.isLoanToBuy) {
       whereClause.isLoanToBuy = true;
     }
@@ -497,7 +497,7 @@ app.get('/api/network-data', async (req, res) => {
       whereClause.playerPosition = { in: filters.positions };
     }
 
-    // Nationality filter (NEW)
+    // Nationality filter
     if (filters.nationalities && filters.nationalities.length > 0) {
       whereClause.playerNationality = { in: filters.nationalities };
     }
@@ -513,7 +513,7 @@ app.get('/api/network-data', async (req, res) => {
       }
     }
 
-    // Contract duration filter (NEW)
+    // Contract duration filter
     if (filters.minContractDuration || filters.maxContractDuration) {
       whereClause.contractDuration = {};
       if (filters.minContractDuration) {
@@ -524,7 +524,7 @@ app.get('/api/network-data', async (req, res) => {
       }
     }
 
-    // ROI filter (NEW)
+    // ROI filter
     if (filters.minROI !== undefined && filters.minROI !== 0 || filters.maxROI !== undefined && filters.maxROI !== 0) {
       whereClause.roiPercentage = {};
       if (filters.minROI !== undefined && filters.minROI !== 0) {
@@ -550,7 +550,7 @@ app.get('/api/network-data', async (req, res) => {
       }
     }
 
-    // Success filters (NEW)
+    // Success filters
     if (filters.onlySuccessfulTransfers) {
       whereClause.wasSuccessful = true;
     }
@@ -566,12 +566,10 @@ app.get('/api/network-data', async (req, res) => {
       clubFilters.push({ country: { in: filters.countries } });
     }
 
-    // NEW: Continent filter
     if (filters.continents && filters.continents.length > 0) {
       clubFilters.push({ league: { continent: { in: filters.continents } } });
     }
 
-    // NEW: League tier filter
     if (filters.leagueTiers && filters.leagueTiers.length > 0) {
       clubFilters.push({ league: { tier: { in: filters.leagueTiers } } });
     }
@@ -597,8 +595,8 @@ app.get('/api/network-data', async (req, res) => {
       include: {
         oldClub: { include: { league: true } },
         newClub: { include: { league: true } },
-        success: true, // NEW: Include performance data
-        playerTransfer: true // NEW: Include player performance
+        success: true, // Include performance data
+        playerTransfer: true // Include player performance
       },
       take: filters.limit,
       orderBy: { date: 'desc' }
@@ -639,21 +637,21 @@ app.get('/api/network-data', async (req, res) => {
           shortName: newClub.shortName || undefined,
           league: newClub.league.name,
           country: newClub.country,
-          continent: newClub.league.continent, // NEW
+          continent: newClub.league.continent,
           logoUrl: newClub.logoUrl || undefined,
           clubValue: bigIntToNumber(newClub.clubValue) || undefined,
-          foundingYear: newClub.foundingYear || undefined, // NEW
-          stadiumCapacity: newClub.stadiumCapacity || undefined, // NEW
-          leagueTier: newClub.league.tier, // NEW
+          foundingYear: newClub.foundingYear || undefined,
+          stadiumCapacity: newClub.stadiumCapacity || undefined,
+          leagueTier: newClub.league.tier,
           stats: {
             transfersIn: 0,
             transfersOut: 0,
             totalSpent: 0,
             totalReceived: 0,
             netSpend: 0,
-            avgROI: 0, // NEW
-            successfulTransfersRate: 0, // NEW
-            avgPerformanceRating: 0 // NEW
+            avgROI: 0,
+            successfulTransfersRate: 0,
+            avgPerformanceRating: 0
           }
         });
       }
@@ -666,21 +664,21 @@ app.get('/api/network-data', async (req, res) => {
           shortName: oldClub.shortName || undefined,
           league: oldClub.league.name,
           country: oldClub.country,
-          continent: oldClub.league.continent, // NEW
+          continent: oldClub.league.continent,
           logoUrl: oldClub.logoUrl || undefined,
           clubValue: bigIntToNumber(oldClub.clubValue) || undefined,
-          foundingYear: oldClub.foundingYear || undefined, // NEW
-          stadiumCapacity: oldClub.stadiumCapacity || undefined, // NEW
-          leagueTier: oldClub.league.tier, // NEW
+          foundingYear: oldClub.foundingYear || undefined,
+          stadiumCapacity: oldClub.stadiumCapacity || undefined,
+          leagueTier: oldClub.league.tier,
           stats: {
             transfersIn: 0,
             transfersOut: 0,
             totalSpent: 0,
             totalReceived: 0,
             netSpend: 0,
-            avgROI: 0, // NEW
-            successfulTransfersRate: 0, // NEW
-            avgPerformanceRating: 0 // NEW
+            avgROI: 0,
+            successfulTransfersRate: 0,
+            avgPerformanceRating: 0
           }
         });
       }
@@ -711,10 +709,10 @@ app.get('/api/network-data', async (req, res) => {
               transferCount: 0,
               avgTransferValue: 0,
               types: [],
-              avgROI: 0, // NEW
-              successRate: 0, // NEW
-              seasons: [], // NEW
-              transferWindows: [] // NEW
+              avgROI: 0,
+              successRate: 0,
+              seasons: [],
+              transferWindows: []
             }
           });
         }
@@ -723,19 +721,19 @@ app.get('/api/network-data', async (req, res) => {
         edge.transfers.push({
           id: transfer.id,
           playerName: transfer.playerName,
-          playerNationality: transfer.playerNationality || undefined, // NEW
+          playerNationality: transfer.playerNationality || undefined,
           transferFee: transferValue || null,
           transferType: transfer.transferType,
-          transferWindow: transfer.transferWindow || undefined, // NEW
+          transferWindow: transfer.transferWindow || undefined,
           date: transfer.date,
           season: transfer.season,
           position: transfer.playerPosition,
           playerAge: transfer.playerAgeAtTransfer || undefined,
-          contractDuration: transfer.contractDuration || undefined, // NEW
-          marketValueAtTransfer: bigIntToNumber(transfer.marketValueAtTransfer) || undefined, // NEW
-          isLoanToBuy: transfer.isLoanToBuy, // NEW
-          roiPercentage: transfer.roiPercentage || undefined, // NEW
-          performanceRating: transfer.success?.performanceRating || undefined, // NEW
+          contractDuration: transfer.contractDuration || undefined,
+          marketValueAtTransfer: bigIntToNumber(transfer.marketValueAtTransfer) || undefined,
+          isLoanToBuy: transfer.isLoanToBuy,
+          roiPercentage: transfer.roiPercentage || undefined,
+          performanceRating: transfer.success?.performanceRating || undefined,
           direction: 'out'
         });
         
@@ -746,7 +744,7 @@ app.get('/api/network-data', async (req, res) => {
           edge.stats.types.push(transfer.transferType);
         }
 
-        // NEW: Track seasons and windows
+        // Track seasons and windows
         if (!edge.stats.seasons.includes(transfer.season)) {
           edge.stats.seasons.push(transfer.season);
         }
@@ -885,17 +883,17 @@ app.get('/api/transfers', async (req, res) => {
       whereClause.transferType = String(req.query.transferType);
     }
 
-    // NEW: Transfer window filter
+    // Transfer window filter
     if (req.query.transferWindow) {
       whereClause.transferWindow = String(req.query.transferWindow);
     }
 
-    // NEW: Nationality filter
+    // Nationality filter
     if (req.query.nationality) {
       whereClause.playerNationality = String(req.query.nationality);
     }
 
-    // NEW: Age range filter
+    // Age range filter
     if (req.query.minAge || req.query.maxAge) {
       whereClause.playerAgeAtTransfer = {};
       if (req.query.minAge) {
@@ -906,7 +904,7 @@ app.get('/api/transfers', async (req, res) => {
       }
     }
 
-    // NEW: Contract duration filter
+    // Contract duration filter
     if (req.query.minContract || req.query.maxContract) {
       whereClause.contractDuration = {};
       if (req.query.minContract) {
@@ -917,7 +915,7 @@ app.get('/api/transfers', async (req, res) => {
       }
     }
 
-    // NEW: ROI filter
+    // ROI filter
     if (req.query.minROI || req.query.maxROI) {
       whereClause.roiPercentage = {};
       if (req.query.minROI) {
@@ -928,12 +926,12 @@ app.get('/api/transfers', async (req, res) => {
       }
     }
 
-    // NEW: Success filter
+    // Success filter
     if (req.query.onlySuccessful === 'true') {
       whereClause.wasSuccessful = true;
     }
 
-    // NEW: Loan-to-buy filter
+    // Loan-to-buy filter
     if (req.query.isLoanToBuy === 'true') {
       whereClause.isLoanToBuy = true;
     }
@@ -944,10 +942,10 @@ app.get('/api/transfers', async (req, res) => {
         include: {
           oldClub: { include: { league: true } },
           newClub: { include: { league: true } },
-          success: true, // NEW: Include success metrics
-          playerTransfer: true, // NEW: Include player performance
-          originalLoan: true, // NEW: Include loan relation
-          followUpPurchases: true // NEW: Include follow-up purchases
+          success: true, // Include success metrics
+          playerTransfer: true, // Include player performance
+          originalLoan: true, // Include loan relation
+          followUpPurchases: true // Include follow-up purchases
         },
         orderBy: { date: 'desc' },
         skip,
@@ -959,27 +957,27 @@ app.get('/api/transfers', async (req, res) => {
     const formattedTransfers = transfers.map(transfer => ({
       id: transfer.id,
       playerName: transfer.playerName,
-      playerNationality: transfer.playerNationality, // NEW
+      playerNationality: transfer.playerNationality,
       transferFee: bigIntToNumber(transfer.transferFee),
       transferType: transfer.transferType,
-      transferWindow: transfer.transferWindow, // NEW
+      transferWindow: transfer.transferWindow,
       date: transfer.date,
       season: transfer.season,
       playerPosition: transfer.playerPosition,
       playerAge: transfer.playerAgeAtTransfer,
-      marketValueAtTransfer: bigIntToNumber(transfer.marketValueAtTransfer), // NEW
-      contractDuration: transfer.contractDuration, // NEW
-      isLoanToBuy: transfer.isLoanToBuy, // NEW
-      wasSuccessful: transfer.wasSuccessful, // NEW
-      roiPercentage: transfer.roiPercentage, // NEW
+      marketValueAtTransfer: bigIntToNumber(transfer.marketValueAtTransfer),
+      contractDuration: transfer.contractDuration,
+      isLoanToBuy: transfer.isLoanToBuy,
+      wasSuccessful: transfer.wasSuccessful,
+      roiPercentage: transfer.roiPercentage,
       oldClub: transfer.oldClub ? {
         id: transfer.oldClub.id,
         name: transfer.oldClub.name,
         shortName: transfer.oldClub.shortName,
         league: transfer.oldClub.league.name,
         country: transfer.oldClub.country,
-        continent: transfer.oldClub.league.continent, // NEW
-        tier: transfer.oldClub.league.tier // NEW
+        continent: transfer.oldClub.league.continent,
+        tier: transfer.oldClub.league.tier
       } : null,
       newClub: {
         id: transfer.newClub.id,
@@ -987,10 +985,10 @@ app.get('/api/transfers', async (req, res) => {
         shortName: transfer.newClub.shortName,
         league: transfer.newClub.league.name,
         country: transfer.newClub.country,
-        continent: transfer.newClub.league.continent, // NEW
-        tier: transfer.newClub.league.tier // NEW
+        continent: transfer.newClub.league.continent,
+        tier: transfer.newClub.league.tier
       },
-      // NEW: Success metrics
+      // Success metrics
       success: transfer.success ? {
         performanceRating: transfer.success.performanceRating,
         marketValueGrowth: bigIntToNumber(transfer.success.marketValueGrowth),
@@ -999,14 +997,14 @@ app.get('/api/transfers', async (req, res) => {
         evaluatedAfterYears: transfer.success.evaluatedAfterYears,
         lastEvaluated: transfer.success.lastEvaluated
       } : null,
-      // NEW: Player performance
+      // Player performance
       playerPerformance: transfer.playerTransfer ? {
         gamesPlayed: transfer.playerTransfer.gamesPlayed,
         goalsScored: transfer.playerTransfer.goalsScored,
         marketValueEnd: bigIntToNumber(transfer.playerTransfer.marketValueEnd),
         wasRegularStarter: transfer.playerTransfer.wasRegularStarter
       } : null,
-      // NEW: Loan relationships
+      // Loan relationships
       isFollowUpPurchase: transfer.originalLoanId !== null,
       originalLoan: transfer.originalLoan ? {
         id: transfer.originalLoan.id,
@@ -1046,7 +1044,7 @@ app.get('/api/transfers', async (req, res) => {
   }
 });
 
-// NEW: Get transfer success statistics
+// Get transfer success statistics
 app.get('/api/transfer-success-stats', async (req, res) => {
   try {
     const clubId = req.query.clubId ? safeParseInt(req.query.clubId) : undefined;
@@ -1157,7 +1155,7 @@ app.get('/api/transfer-success-stats', async (req, res) => {
   }
 });
 
-// NEW: Get loan-to-buy analytics
+// Get loan-to-buy analytics
 app.get('/api/loan-to-buy-analytics', async (req, res) => {
   try {
     const [
@@ -1282,16 +1280,16 @@ app.get('/api/statistics', async (req, res) => {
           newClub: { select: { name: true } }
         }
       }),
-      // NEW: Average ROI
+      // Average ROI
       prisma.transfer.aggregate({
         where: { roiPercentage: { not: null } },
         _avg: { roiPercentage: true }
       }),
-      // NEW: Success rate
+      // Success rate
       prisma.transfer.count({
         where: { wasSuccessful: true }
       }),
-      // NEW: Top performing clubs by net spend efficiency
+      // Top performing clubs by net spend efficiency
       prisma.club.findMany({
         include: {
           transfersIn: {
@@ -1304,7 +1302,7 @@ app.get('/api/statistics', async (req, res) => {
         },
         take: 10
       }),
-      // NEW: Transfers by window
+      // Transfers by window
       prisma.transfer.groupBy({
         by: ['transferWindow'],
         _count: { transferWindow: true },
@@ -1384,6 +1382,7 @@ app.get('/api/statistics', async (req, res) => {
       transfersByContinent: [
         { continent: 'Europe', count: Math.floor(totalTransfers * 0.7) },
         { continent: 'South America', count: Math.floor(totalTransfers * 0.15) },
+        { continent: 'North America', count: Math.floor(totalTransfers * 0.10) },
         { continent: 'Africa', count: Math.floor(totalTransfers * 0.1) },
         { continent: 'Asia', count: Math.floor(totalTransfers * 0.05) }
       ]
@@ -1499,23 +1498,6 @@ async function main() {
       console.log(`🚀 Enhanced Server running on port ${PORT}`);
       console.log(`📡 API available at http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`\n🆕 New Endpoints Available:`);
-      console.log(`   - GET /api/transfer-windows - Get available transfer windows`);
-      console.log(`   - GET /api/nationalities - Get player nationalities`);
-      console.log(`   - GET /api/continents - Get league continents`);
-      console.log(`   - GET /api/league-tiers - Get league tier levels`);
-      console.log(`   - GET /api/transfer-success-stats - Get success statistics`);
-      console.log(`   - GET /api/loan-to-buy-analytics - Get loan-to-buy analytics`);
-      console.log(`\n🔧 Enhanced Filters Available:`);
-      console.log(`   - transferWindows: summer, winter`);
-      console.log(`   - nationalities: player nationality filter`);
-      console.log(`   - continents: league continent filter`);
-      console.log(`   - leagueTiers: filter by league tier (1, 2, 3, etc.)`);
-      console.log(`   - minROI/maxROI: ROI percentage filter`);
-      console.log(`   - minPerformanceRating/maxPerformanceRating: success rating filter`);
-      console.log(`   - isLoanToBuy: filter loan-to-buy transfers`);
-      console.log(`   - onlySuccessfulTransfers: filter only successful transfers`);
-      console.log(`   - minContractDuration/maxContractDuration: contract length filter`);
     });
 
     server.on('error', (error: any) => {

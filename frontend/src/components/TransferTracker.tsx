@@ -4,48 +4,6 @@ import { NetworkNode, NetworkEdge, NetworkData, FilterState } from '../types';
 import { formatCurrency, formatDate, formatPercentage, getLeagueColor } from '../utils';
 import { apiService } from '../services/api';
 
-/*interface NetworkNode extends d3.SimulationNodeDatum {
-  id: string;
-  name: string;
-  shortName?: string;
-  league: string;
-  country: string;
-  continent?: string;
-  logoUrl?: string;
-  clubValue?: number;
-  foundingYear?: number;
-  stadiumCapacity?: number;
-  leagueTier?: number;
-  stats: {
-    transfersIn: number;
-    transfersOut: number;
-    totalSpent: number;
-    totalReceived: number;
-    netSpend: number;
-    avgPlayerAge?: number;
-    avgROI?: number;
-    successfulTransfersRate?: number;
-    avgPerformanceRating?: number;
-  };
-}
-
-interface NetworkEdge extends d3.SimulationLinkDatum<NetworkNode> {
-  id: string;
-  source: string | NetworkNode;
-  target: string | NetworkNode;
-  transfers: TransferInfo[];
-  stats: {
-    totalValue: number;
-    transferCount: number;
-    avgTransferValue: number;
-    types: string[];
-    avgROI?: number;
-    successRate?: number;
-    seasons: string[];
-    transferWindows: string[];
-  };
-}*/
-
 interface TransferInfo {
   id: number;
   playerName: string;
@@ -64,24 +22,6 @@ interface TransferInfo {
   performanceRating?: number;
   direction: 'out' | 'in';
 }
-
-/*interface NetworkData {
-  nodes: NetworkNode[];
-  edges: NetworkEdge[];
-  metadata: {
-    totalTransfers: number;
-    totalValue: number;
-    dateRange: {
-      start: string | null;
-      end: string | null;
-    };
-    clubCount: number;
-    edgeCount: number;
-    avgROI: number;
-    successRate: number;
-    filters: any;
-  };
-}*/
 
 interface TransferNetworkProps {
   filters: {
@@ -593,28 +533,6 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
-
-  /*const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `€${(value / 1000000).toFixed(1)}M`;
-    }
-    if (value >= 1000) {
-      return `€${(value / 1000).toFixed(0)}K`;
-    }
-    return `€${value}`;
-  };*/
-
-  /*const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };*/
-
-  /*const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };*/
 
   if (loading) {
     return (
