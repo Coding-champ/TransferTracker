@@ -5,45 +5,41 @@ import TransferNetwork from '../TransferNetwork';
 import { FilterState } from '../../types';
 
 // Mock the network data hook
-const mockUseNetworkData = jest.fn(() => ({
-  networkData: {
-    nodes: [
-      { id: '1', name: 'Test Club 1', league: 'Bundesliga', x: 100, y: 100, stats: { transfersIn: 5, transfersOut: 3 } },
-      { id: '2', name: 'Test Club 2', league: 'Premier League', x: 200, y: 200, stats: { transfersIn: 2, transfersOut: 4 } }
-    ],
-    edges: [
-      { 
-        source: '1', 
-        target: '2', 
-        stats: { transferCount: 3, successRate: 75 },
-        transfers: []
-      }
-    ],
-    metadata: { successRate: 75 }
-  },
-  loading: false,
-  error: null,
-  refetch: jest.fn()
-}));
-
 jest.mock('../../hooks/useNetworkData', () => ({
-  useNetworkData: mockUseNetworkData
+  useNetworkData: jest.fn(() => ({
+    networkData: {
+      nodes: [
+        { id: '1', name: 'Test Club 1', league: 'Bundesliga', x: 100, y: 100, stats: { transfersIn: 5, transfersOut: 3 } },
+        { id: '2', name: 'Test Club 2', league: 'Premier League', x: 200, y: 200, stats: { transfersIn: 2, transfersOut: 4 } }
+      ],
+      edges: [
+        { 
+          source: '1', 
+          target: '2', 
+          stats: { transferCount: 3, successRate: 75 },
+          transfers: []
+        }
+      ],
+      metadata: { successRate: 75 }
+    },
+    loading: false,
+    error: null,
+    refetch: jest.fn()
+  }))
 }));
 
 // Mock the network interactions hook
-const mockUseNetworkInteractions = jest.fn(() => ({
-  selectedNodeData: null,
-  hoveredEdgeData: null,
-  isDraggingRef: { current: false },
-  handleNodeHover: jest.fn(),
-  handleNodeClick: jest.fn(),
-  handleEdgeHover: jest.fn(),
-  handleDragStart: jest.fn(),
-  handleDragEnd: jest.fn()
-}));
-
 jest.mock('../../hooks/useNetworkInteractions', () => ({
-  useNetworkInteractions: mockUseNetworkInteractions
+  useNetworkInteractions: jest.fn(() => ({
+    selectedNodeData: null,
+    hoveredEdgeData: null,
+    isDraggingRef: { current: false },
+    handleNodeHover: jest.fn(),
+    handleNodeClick: jest.fn(),
+    handleEdgeHover: jest.fn(),
+    handleDragStart: jest.fn(),
+    handleDragEnd: jest.fn()
+  }))
 }));
 
 // Mock D3 to prevent actual DOM manipulation during tests
@@ -120,14 +116,16 @@ describe('TransferNetwork Zoom Behavior', () => {
     render(<TransferNetwork filters={defaultFilters} />);
     
     // Verify that the hook is called and isDraggingRef is available
-    expect(mockUseNetworkInteractions).toHaveBeenCalled();
+    const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');
+    expect(useNetworkInteractions).toHaveBeenCalled();
   });
 
   test('drag handlers are properly connected', () => {
     render(<TransferNetwork filters={defaultFilters} />);
     
     // Verify drag handlers are available through hook call
-    expect(mockUseNetworkInteractions).toHaveBeenCalled();
+    const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');
+    expect(useNetworkInteractions).toHaveBeenCalled();
   });
 
   test('zoom control instructions are displayed', () => {
@@ -161,13 +159,15 @@ describe('TransferNetwork Integration with useNetworkInteractions', () => {
     render(<TransferNetwork filters={defaultFilters} />);
     
     // Verify that the component is using the shared isDraggingRef
-    expect(mockUseNetworkInteractions).toHaveBeenCalled();
+    const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');
+    expect(useNetworkInteractions).toHaveBeenCalled();
   });
 
   test('drag start and end are properly coordinated', () => {
     render(<TransferNetwork filters={defaultFilters} />);
     
     // Verify hooks are called
-    expect(mockUseNetworkInteractions).toHaveBeenCalled();
+    const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');
+    expect(useNetworkInteractions).toHaveBeenCalled();
   });
 });
