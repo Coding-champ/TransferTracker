@@ -22,6 +22,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   const {
     selectedNodeData,
     hoveredEdgeData,
+    isDraggingRef,
     handleNodeHover,
     handleNodeClick,
     handleEdgeHover,
@@ -34,9 +35,6 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const currentTransformRef = useRef(d3.zoomIdentity);
   const isInitializedRef = useRef(false);
-  
-  // 🔧 FIX: Add missing isDraggingRef for zoom bug fix
-  const isDraggingRef = useRef(false);
 
   // Enhanced color scale for leagues
   const colorScale = d3.scaleOrdinal<string>()
@@ -148,10 +146,9 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       if (simulationRef.current) {
         simulationRef.current.stop();
       }
-      // 🔧 FIX: Reset dragging state on cleanup
-      isDraggingRef.current = false;
+      // 🔧 FIX: isDraggingRef cleanup is handled in useNetworkInteractions
     };
-  }, [networkData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd]);
+  }, [networkData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, isDraggingRef]);
 
   // Initialize visualization when data changes
   useEffect(() => {
@@ -490,10 +487,7 @@ const createDragBehavior = (
       onDragEnd();
       if (!event.active) simulation.alphaTarget(0);
       d3.select(this).attr('stroke-width', 2);
-      // 🔧 FIX: Reset isDraggingRef with timeout like in original
-      setTimeout(() => {
-        isDraggingRef.current = false;
-      }, 100);
+      // 🔧 FIX: isDraggingRef timeout is now handled in useNetworkInteractions
     });
 };
 
