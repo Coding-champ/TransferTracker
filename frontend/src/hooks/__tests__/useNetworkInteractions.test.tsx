@@ -55,9 +55,9 @@ describe('useNetworkInteractions Hook', () => {
     // Should still be true immediately after drag end
     expect(result.current.isDraggingRef.current).toBe(true);
 
-    // Fast-forward time by 200ms (the timeout duration)
+    // Fast-forward time by 100ms (the timeout duration)
     act(() => {
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(100);
     });
 
     // Should now be false
@@ -92,7 +92,7 @@ describe('useNetworkInteractions Hook', () => {
     // End drag and wait for timeout
     act(() => {
       result.current.handleDragEnd();
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(100);
     });
 
     // Now hovering should work
@@ -129,7 +129,7 @@ describe('useNetworkInteractions Hook', () => {
     // End drag and wait for timeout
     act(() => {
       result.current.handleDragEnd();
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(100);
     });
 
     // Now edge hovering should work
@@ -158,9 +158,9 @@ describe('useNetworkInteractions Hook', () => {
       result.current.handleDragStart();
     });
 
-    // Wait 200ms - should still be dragging because second drag cleared the timeout
+    // Wait 100ms - should still be dragging because second drag cleared the timeout
     act(() => {
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(100);
     });
 
     expect(result.current.isDraggingRef.current).toBe(true);
@@ -200,7 +200,7 @@ describe('useNetworkInteractions Hook', () => {
     // End drag and wait
     act(() => {
       result.current.handleDragEnd();
-      jest.advanceTimersByTime(200);
+      jest.advanceTimersByTime(100);
     });
 
     // Now clear should work
@@ -243,5 +243,106 @@ describe('useNetworkInteractions Hook', () => {
     expect(mockNode.fx).toBeNull();
     expect(mockNode.fy).toBeNull();
     expect(mockSimulation.alpha).not.toHaveBeenCalled();
+  });
+
+  test('zoom behavior: hover events do not interfere with drag state', () => {
+    const { result } = renderHook(() => useNetworkInteractions());
+    
+    const mockNode = {
+      id: '1',
+      name: 'Test Club',
+      league: 'Bundesliga',
+      x: 100,
+      y: 100,
+      stats: { transfersIn: 5, transfersOut: 3 }
+    };
+
+    const mockEdge = {
+      source: '1',
+      target: '2',
+      stats: { transferCount: 3, successRate: 75 },
+      transfers: []
+    };
+
+    // Start dragging
+    act(() => {
+      result.current.handleDragStart();
+    });
+
+    // Hover over node while dragging
+    act(() => {
+      result.current.handleNodeHover(mockNode);
+    });
+
+    // Should not update selectedNodeData while dragging
+    expect(result.current.selectedNodeData).toBeNull();
+    expect(result.current.isDraggingRef.current).toBe(true);
+
+    // Hover over edge while dragging
+    act(() => {
+      result.current.handleEdgeHover(mockEdge);
+    });
+
+    // Should not update hoveredEdgeData while dragging
+    expect(result.current.hoveredEdgeData).toBeNull();
+    expect(result.current.isDraggingRef.current).toBe(true);
+
+    // End drag
+    act(() => {
+      result.current.handleDragEnd();
+      jest.advanceTimersByTime(100);
+    });
+
+    // Now hovering should work
+    act(() => {
+      result.current.handleNodeHover(mockNode);
+    });
+
+    expect(result.current.selectedNodeData).toEqual(mockNode);
+    expect(result.current.isDraggingRef.current).toBe(false);
+  });
+
+  test('zoom behavior: rapid hover events during drag transition', () => {
+    const { result } = renderHook(() => useNetworkInteractions());
+    
+    const mockNode = {
+      id: '1',
+      name: 'Test Club',
+      league: 'Bundesliga',
+      x: 100,
+      y: 100,
+      stats: { transfersIn: 5, transfersOut: 3 }
+    };
+
+    // Start and immediately end drag
+    act(() => {
+      result.current.handleDragStart();
+    });
+
+    act(() => {
+      result.current.handleDragEnd();
+    });
+
+    // Hover immediately after drag end (during timeout)
+    act(() => {
+      result.current.handleNodeHover(mockNode);
+    });
+
+    // Should not update while in timeout period
+    expect(result.current.selectedNodeData).toBeNull();
+    expect(result.current.isDraggingRef.current).toBe(true);
+
+    // Wait for timeout to complete
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    // Now hovering should work
+    act(() => {
+      result.current.handleNodeHover(mockNode);
+    });
+
+    expect(result.current.selectedNodeData).toEqual(mockNode);
+    expect(result.current.isDraggingRef.current).toBe(false);
   });
 });

@@ -106,7 +106,7 @@ export const useNetworkInteractions = (): UseNetworkInteractionsReturn => {
       isDraggingRef.current = false;
       dragTimeoutRef.current = null;
       console.log('🎯 Drag state reset - zoom re-enabled');
-    }, 200); // Increased timeout for more stable behavior
+    }, 100); // Timeout matches reference implementation for consistent behavior
   }, []);
 
   // Cleanup function (currently not used but available for future use)

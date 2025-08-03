@@ -113,10 +113,10 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     createArrowMarkers(svg);
 
     // Create links
-    const links = createLinks(zoomGroup, networkData.edges, handleEdgeHover);
+    const links = createLinks(zoomGroup, networkData.edges, handleEdgeHover, isDraggingRef);
 
     // Create nodes
-    const { nodes, nodeCircles } = createNodes(zoomGroup, networkData.nodes, colorScale, handleNodeHover, handleNodeClick, simulation);
+    const { nodes, nodeCircles } = createNodes(zoomGroup, networkData.nodes, colorScale, handleNodeHover, handleNodeClick, simulation, isDraggingRef);
 
     // Create labels
     const { labels, roiLabels } = createLabels(zoomGroup, networkData.nodes);
@@ -319,7 +319,8 @@ const createArrowMarkers = (svg: d3.Selection<SVGSVGElement, unknown, null, unde
 const createLinks = (
   container: d3.Selection<SVGGElement, unknown, null, undefined>,
   edges: NetworkEdge[],
-  onEdgeHover: (edge: NetworkEdge | null) => void
+  onEdgeHover: (edge: NetworkEdge | null) => void,
+  isDraggingRef: React.MutableRefObject<boolean>
 ) => {
   const linkGroup = container.append('g').attr('class', 'links');
   
@@ -342,19 +343,25 @@ const createLinks = (
     .attr('marker-end', d => d.markerEnd)
     .style('cursor', 'pointer')
     .on('mouseover', function(event, d) {
-      // Clone data to prevent mutations
-      onEdgeHover({ ...d, stats: { ...d.stats }, transfers: [...d.transfers] });
-      d3.select(this)
-        .attr('stroke', '#ff6b35')
-        .attr('stroke-opacity', 1)
-        .attr('stroke-width', Math.max(3, Math.sqrt(d.stats.transferCount) * 3));
+      // 🔧 FIX: Only process hover if not dragging
+      if (!isDraggingRef.current) {
+        // Clone data to prevent mutations
+        onEdgeHover({ ...d, stats: { ...d.stats }, transfers: [...d.transfers] });
+        d3.select(this)
+          .attr('stroke', '#ff6b35')
+          .attr('stroke-opacity', 1)
+          .attr('stroke-width', Math.max(3, Math.sqrt(d.stats.transferCount) * 3));
+      }
     })
     .on('mouseout', function(event, d) {
-      onEdgeHover(null);
-      d3.select(this)
-        .attr('stroke', d.strokeColor)
-        .attr('stroke-opacity', 0.6)
-        .attr('stroke-width', d.strokeWidth);
+      // 🔧 FIX: Only process hover if not dragging
+      if (!isDraggingRef.current) {
+        onEdgeHover(null);
+        d3.select(this)
+          .attr('stroke', d.strokeColor)
+          .attr('stroke-opacity', 0.6)
+          .attr('stroke-width', d.strokeWidth);
+      }
     });
 };
 
@@ -364,7 +371,8 @@ const createNodes = (
   colorScale: d3.ScaleOrdinal<string, string, never>,
   onNodeHover: (node: NetworkNode | null) => void,
   onNodeClick: (node: NetworkNode, simulation: any) => void,
-  simulation: d3.Simulation<NetworkNode, NetworkEdge>
+  simulation: d3.Simulation<NetworkNode, NetworkEdge>,
+  isDraggingRef: React.MutableRefObject<boolean>
 ) => {
   const nodeGroup = container.append('g').attr('class', 'nodes');
 
@@ -386,12 +394,18 @@ const createNodes = (
     .attr('stroke-width', 2)
     .style('cursor', 'move')
     .on('mouseover', function(event, d) {
-      // Clone data to prevent mutations
-      onNodeHover({ ...d, stats: { ...d.stats } });
-      d3.select(this).attr('stroke-width', 4);
+      // 🔧 FIX: Only process hover if not dragging
+      if (!isDraggingRef.current) {
+        // Clone data to prevent mutations
+        onNodeHover({ ...d, stats: { ...d.stats } });
+        d3.select(this).attr('stroke-width', 4);
+      }
     })
     .on('mouseout', function(event, d) {
-      d3.select(this).attr('stroke-width', 2);
+      // 🔧 FIX: Only process hover if not dragging
+      if (!isDraggingRef.current) {
+        d3.select(this).attr('stroke-width', 2);
+      }
     })
     .on('click', function(event, d) {
       event.stopPropagation();
