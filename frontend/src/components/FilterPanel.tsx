@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FilterState, League, Club } from '../types';
+import { FilterState, League } from '../types';
 import { formatCurrency, API_BASE_URL } from '../utils';
-import { apiService } from '../services/api';
 
 interface FilterPanelProps {
   onFiltersChange: (filters: FilterState) => void;
@@ -37,7 +36,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
 
   // Data states
   const [leagues, setLeagues] = useState<League[]>([]);
-  const [clubs, setClubs] = useState<Club[]>([]);
   const [seasons, setSeasons] = useState<string[]>([]);
   const [transferTypes, setTransferTypes] = useState<string[]>([]);
   const [transferWindows, setTransferWindows] = useState<string[]>([]);
@@ -58,7 +56,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
       try {
         const [
           leaguesRes,
-          clubsRes,
           seasonsRes,
           transferTypesRes,
           transferWindowsRes,
@@ -76,20 +73,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
           apiService.getNationalities(),
           apiService.getContinents(),
           apiService.getLeagueTiers()*/
-          fetch('http://localhost:3001/api/leagues'),
-          fetch('http://localhost:3001/api/clubs'),
-          fetch('http://localhost:3001/api/seasons'),
-          fetch('http://localhost:3001/api/transfer-types'),
-          fetch('http://localhost:3001/api/transfer-windows'),
-          fetch('http://localhost:3001/api/positions'),
-          fetch('http://localhost:3001/api/nationalities'),
-          fetch('http://localhost:3001/api/continents'),
-          fetch('http://localhost:3001/api/league-tiers')
+          fetch(`${API_BASE_URL}/leagues`),
+          fetch(`${API_BASE_URL}/seasons`),
+          fetch(`${API_BASE_URL}/transfer-types`),
+          fetch(`${API_BASE_URL}/transfer-windows`),
+          fetch(`${API_BASE_URL}/positions`),
+          fetch(`${API_BASE_URL}/nationalities`),
+          fetch(`${API_BASE_URL}/continents`),
+          fetch(`${API_BASE_URL}/league-tiers`)
         ]);
 
         const [
           leaguesData,
-          clubsData,
           seasonsData,
           transferTypesData,
           transferWindowsData,
@@ -99,7 +94,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
           leagueTiersData
         ] = await Promise.all([
           leaguesRes.json(),
-          clubsRes.json(),
           seasonsRes.json(),
           transferTypesRes.json(),
           transferWindowsRes.json(),
@@ -110,7 +104,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
         ]);
 
         if (leaguesData.success) setLeagues(leaguesData.data);
-        if (clubsData.success) setClubs(clubsData.data);
         if (seasonsData.success) setSeasons(seasonsData.data);
         if (transferTypesData.success) setTransferTypes(transferTypesData.data);
         if (transferWindowsData.success) setTransferWindows(transferWindowsData.data);

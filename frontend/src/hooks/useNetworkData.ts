@@ -167,7 +167,6 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           return null;
         }
         
-        const errorMessage = err instanceof Error ? err.message : 'Network request failed';
         console.error('Network request failed:', err);
         console.log('🔧 Using mock data for development');
         
