@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 import TransferNetwork from './components/TransferTracker';
 import FilterPanel from './components/FilterPanel';
@@ -39,42 +39,6 @@ function App() {
     setFilters(newFilters);
   };
 
-  const getActiveFilterCount = () => {
-    let count = 0;
-    
-    // Count array filters
-    count += filters.seasons.length;
-    count += filters.leagues.length;
-    count += filters.countries.length;
-    count += filters.continents.length;
-    count += filters.transferTypes.length;
-    count += filters.transferWindows.length;
-    count += filters.positions.length;
-    count += filters.nationalities.length;
-    count += filters.clubs.length;
-    count += filters.leagueTiers.length;
-    
-    // Count numeric filters
-    if (filters.minTransferFee) count++;
-    if (filters.maxTransferFee) count++;
-    if (filters.minPlayerAge) count++;
-    if (filters.maxPlayerAge) count++;
-    if (filters.minContractDuration) count++;
-    if (filters.maxContractDuration) count++;
-    if (filters.minROI !== undefined) count++;
-    if (filters.maxROI !== undefined) count++;
-    if (filters.minPerformanceRating !== undefined) count++;
-    if (filters.maxPerformanceRating !== undefined) count++;
-    
-    // Count boolean filters
-    if (filters.hasTransferFee) count++;
-    if (filters.excludeLoans) count++;
-    if (filters.isLoanToBuy) count++;
-    if (filters.onlySuccessfulTransfers) count++;
-    
-    return count;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -89,9 +53,9 @@ function App() {
                 <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                   Enhanced
                 </span>
-                {getActiveFilterCount() > 0 && (
+                {countActiveFilters(filters) > 0 && (
                   <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                    {getActiveFilterCount()} filters active
+                    {countActiveFilters(filters)} filters active
                   </span>
                 )}
               </div>

@@ -69,10 +69,7 @@ apiClient.interceptors.response.use(
 class ApiService {
   
   // ========== HEALTH & STATUS ==========
-  
-  /**
-   * Health check endpoint
-   */
+
   async checkHealth(): Promise<ApiResponse<{ message: string; timestamp: string; database: string }>> {
     const timer = createPerformanceTimer('Health Check');
     try {
