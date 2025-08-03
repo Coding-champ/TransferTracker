@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { NetworkNode, NetworkEdge } from '../types';
-import * as d3 from 'd3';
 
 interface UseNetworkInteractionsReturn {
   selectedNodeData: NetworkNode | null;
@@ -110,14 +109,14 @@ export const useNetworkInteractions = (): UseNetworkInteractionsReturn => {
     }, 200); // Increased timeout for more stable behavior
   }, []);
 
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    if (dragTimeoutRef.current) {
-      clearTimeout(dragTimeoutRef.current);
-      dragTimeoutRef.current = null;
-    }
-    isDraggingRef.current = false;
-  }, []);
+  // Cleanup function (currently not used but available for future use)
+  // const cleanup = useCallback(() => {
+  //   if (dragTimeoutRef.current) {
+  //     clearTimeout(dragTimeoutRef.current);
+  //     dragTimeoutRef.current = null;
+  //   }
+  //   isDraggingRef.current = false;
+  // }, []);
 
   // 🔧 FIX: Memoized return object with isDraggingRef exposed
   const returnValue = useMemo(() => ({

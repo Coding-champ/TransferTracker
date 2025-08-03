@@ -162,7 +162,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
 
   // Clear selected node when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClickOutside = (event: Event) => {
       // Only clear if not clicking on network elements
       const target = event?.target as Element;
       if (!target?.closest('.network-panel')) {
