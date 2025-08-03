@@ -129,7 +129,11 @@ describe('TransferNetwork Zoom Behavior', () => {
   });
 
   test('zoom control instructions are displayed', () => {
-    render(<TransferNetwork filters={defaultFilters} />);
+    render(
+      <TestWrapper>
+        <TransferNetwork />
+      </TestWrapper>
+    );
     
     expect(screen.getByText('🎮 Controls:')).toBeInTheDocument();
     expect(screen.getByText('• Mouse wheel to zoom (0.1x - 5x)')).toBeInTheDocument();
@@ -156,7 +160,11 @@ describe('TransferNetwork Integration with useNetworkInteractions', () => {
   };
 
   test('zoom behavior respects isDraggingRef from useNetworkInteractions', () => {
-    render(<TransferNetwork filters={defaultFilters} />);
+    render(
+      <TestWrapper>
+        <TransferNetwork />
+      </TestWrapper>
+    );
     
     // Verify that the component is using the shared isDraggingRef
     const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');
@@ -164,7 +172,11 @@ describe('TransferNetwork Integration with useNetworkInteractions', () => {
   });
 
   test('drag start and end are properly coordinated', () => {
-    render(<TransferNetwork filters={defaultFilters} />);
+    render(
+      <TestWrapper>
+        <TransferNetwork />
+      </TestWrapper>
+    );
     
     // Verify hooks are called
     const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');

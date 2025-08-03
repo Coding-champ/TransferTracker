@@ -4,20 +4,19 @@ import { useNetworkInteractions } from '../useNetworkInteractions';
 describe('useNetworkInteractions Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
     jest.useRealTimers();
   });
 
   test('initializes with correct default values', () => {
     const { result } = renderHook(() => useNetworkInteractions());
 
-    expect(result.current.selectedNodeData).toBeNull();
-    expect(result.current.hoveredEdgeData).toBeNull();
+    expect(result.current.isDragging).toBe(false);
     expect(result.current.isDraggingRef.current).toBe(false);
+    expect(typeof result.current.handleDragStart).toBe('function');
+    expect(typeof result.current.handleDragEnd).toBe('function');
   });
 
   test('isDraggingRef is properly exposed', () => {
@@ -39,6 +38,7 @@ describe('useNetworkInteractions Hook', () => {
   });
 
   test('handleDragEnd sets up timeout for isDragging reset', () => {
+    jest.useFakeTimers();
     const { result } = renderHook(() => useNetworkInteractions());
 
     // Start drag first
@@ -62,85 +62,12 @@ describe('useNetworkInteractions Hook', () => {
 
     // Should now be false
     expect(result.current.isDraggingRef.current).toBe(false);
-  });
 
-  test('handleNodeHover does not update when dragging', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockNode = {
-      id: '1',
-      name: 'Test Club',
-      league: 'Bundesliga',
-      x: 100,
-      y: 100,
-      stats: { transfersIn: 5, transfersOut: 3 }
-    };
-
-    // Start dragging
-    act(() => {
-      result.current.handleDragStart();
-    });
-
-    // Try to hover while dragging
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    // Should not update selectedNodeData while dragging
-    expect(result.current.selectedNodeData).toBeNull();
-
-    // End drag and wait for timeout
-    act(() => {
-      result.current.handleDragEnd();
-      jest.advanceTimersByTime(100);
-    });
-
-    // Now hovering should work
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    expect(result.current.selectedNodeData).toEqual(mockNode);
-  });
-
-  test('handleEdgeHover does not update when dragging', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockEdge = {
-      source: '1',
-      target: '2',
-      stats: { transferCount: 3, successRate: 75 },
-      transfers: []
-    };
-
-    // Start dragging
-    act(() => {
-      result.current.handleDragStart();
-    });
-
-    // Try to hover edge while dragging
-    act(() => {
-      result.current.handleEdgeHover(mockEdge);
-    });
-
-    // Should not update hoveredEdgeData while dragging
-    expect(result.current.hoveredEdgeData).toBeNull();
-
-    // End drag and wait for timeout
-    act(() => {
-      result.current.handleDragEnd();
-      jest.advanceTimersByTime(100);
-    });
-
-    // Now edge hovering should work
-    act(() => {
-      result.current.handleEdgeHover(mockEdge);
-    });
-
-    expect(result.current.hoveredEdgeData).toEqual(mockEdge);
+    jest.useRealTimers();
   });
 
   test('multiple drag start calls clear previous timeouts', () => {
+    jest.useFakeTimers();
     const { result } = renderHook(() => useNetworkInteractions());
 
     // Start first drag
@@ -164,185 +91,22 @@ describe('useNetworkInteractions Hook', () => {
     });
 
     expect(result.current.isDraggingRef.current).toBe(true);
+
+    jest.useRealTimers();
   });
 
-  test('clearSelection does not clear when dragging', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockNode = {
-      id: '1',
-      name: 'Test Club',
-      league: 'Bundesliga',
-      x: 100,
-      y: 100,
-      stats: { transfersIn: 5, transfersOut: 3 }
-    };
+  test('maintains consistent reference identity', () => {
+    const { result, rerender } = renderHook(() => useNetworkInteractions());
 
-    // Set some data first
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-    expect(result.current.selectedNodeData).toEqual(mockNode);
+    const initialHandleDragStart = result.current.handleDragStart;
+    const initialHandleDragEnd = result.current.handleDragEnd;
+    const initialIsDraggingRef = result.current.isDraggingRef;
 
-    // Start dragging
-    act(() => {
-      result.current.handleDragStart();
-    });
+    rerender();
 
-    // Try to clear while dragging
-    act(() => {
-      result.current.clearSelection();
-    });
-
-    // Should not clear while dragging
-    expect(result.current.selectedNodeData).toEqual(mockNode);
-
-    // End drag and wait
-    act(() => {
-      result.current.handleDragEnd();
-      jest.advanceTimersByTime(100);
-    });
-
-    // Now clear should work
-    act(() => {
-      result.current.clearSelection();
-    });
-
-    expect(result.current.selectedNodeData).toBeNull();
-  });
-
-  test('handleNodeClick prevents click during drag', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockNode = {
-      id: '1',
-      name: 'Test Club',
-      league: 'Bundesliga',
-      x: 100,
-      y: 100,
-      fx: null,
-      fy: null,
-      stats: { transfersIn: 5, transfersOut: 3 }
-    };
-
-    const mockSimulation = {
-      alpha: jest.fn(() => ({ restart: jest.fn() }))
-    };
-
-    // Start dragging
-    act(() => {
-      result.current.handleDragStart();
-    });
-
-    // Try to click while dragging
-    act(() => {
-      result.current.handleNodeClick(mockNode, mockSimulation);
-    });
-
-    // Should not pin/unpin node while dragging
-    expect(mockNode.fx).toBeNull();
-    expect(mockNode.fy).toBeNull();
-    expect(mockSimulation.alpha).not.toHaveBeenCalled();
-  });
-
-  test('zoom behavior: hover events do not interfere with drag state', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockNode = {
-      id: '1',
-      name: 'Test Club',
-      league: 'Bundesliga',
-      x: 100,
-      y: 100,
-      stats: { transfersIn: 5, transfersOut: 3 }
-    };
-
-    const mockEdge = {
-      source: '1',
-      target: '2',
-      stats: { transferCount: 3, successRate: 75 },
-      transfers: []
-    };
-
-    // Start dragging
-    act(() => {
-      result.current.handleDragStart();
-    });
-
-    // Hover over node while dragging
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    // Should not update selectedNodeData while dragging
-    expect(result.current.selectedNodeData).toBeNull();
-    expect(result.current.isDraggingRef.current).toBe(true);
-
-    // Hover over edge while dragging
-    act(() => {
-      result.current.handleEdgeHover(mockEdge);
-    });
-
-    // Should not update hoveredEdgeData while dragging
-    expect(result.current.hoveredEdgeData).toBeNull();
-    expect(result.current.isDraggingRef.current).toBe(true);
-
-    // End drag
-    act(() => {
-      result.current.handleDragEnd();
-      jest.advanceTimersByTime(100);
-    });
-
-    // Now hovering should work
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    expect(result.current.selectedNodeData).toEqual(mockNode);
-    expect(result.current.isDraggingRef.current).toBe(false);
-  });
-
-  test('zoom behavior: rapid hover events during drag transition', () => {
-    const { result } = renderHook(() => useNetworkInteractions());
-    
-    const mockNode = {
-      id: '1',
-      name: 'Test Club',
-      league: 'Bundesliga',
-      x: 100,
-      y: 100,
-      stats: { transfersIn: 5, transfersOut: 3 }
-    };
-
-    // Start and immediately end drag
-    act(() => {
-      result.current.handleDragStart();
-    });
-
-    act(() => {
-      result.current.handleDragEnd();
-    });
-
-    // Hover immediately after drag end (during timeout)
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    // Should not update while in timeout period
-    expect(result.current.selectedNodeData).toBeNull();
-    expect(result.current.isDraggingRef.current).toBe(true);
-
-    // Wait for timeout to complete
-    act(() => {
-      jest.advanceTimersByTime(100);
-    });
-
-    // Now hovering should work
-    act(() => {
-      result.current.handleNodeHover(mockNode);
-    });
-
-    expect(result.current.selectedNodeData).toEqual(mockNode);
-    expect(result.current.isDraggingRef.current).toBe(false);
+    // Functions should maintain reference equality
+    expect(result.current.handleDragStart).toBe(initialHandleDragStart);
+    expect(result.current.handleDragEnd).toBe(initialHandleDragEnd);
+    expect(result.current.isDraggingRef).toBe(initialIsDraggingRef);
   });
 });

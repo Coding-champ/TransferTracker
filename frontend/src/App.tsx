@@ -1,41 +1,15 @@
-import { useState } from 'react';
 import './App.css';
-import TransferNetwork from './components/TransferNetwork'; // ✅ FIXED: Changed from TransferTracker
+import TransferNetwork from './components/TransferNetwork';
 import FilterPanel from './components/FilterPanel';
-import { FilterState } from './types';
 import { countActiveFilters } from './utils';
+import { AppProvider, useAppContext } from './contexts/AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
-// Hauptkomponente der Anwendung
+// Main App content component that uses the context
+function AppContent() {
+  const { state, setFilters } = useAppContext();
 
-function App() {
-  const [filters, setFilters] = useState<FilterState>({
-    seasons: ['2023/24'],
-    leagues: [],
-    countries: [],
-    continents: [],
-    transferTypes: ['sale', 'loan', 'free', 'loan_with_option'],
-    transferWindows: [],
-    positions: [],
-    nationalities: [],
-    clubs: [],
-    leagueTiers: [],
-    minTransferFee: undefined,
-    maxTransferFee: undefined,
-    minPlayerAge: undefined,
-    maxPlayerAge: undefined,
-    minContractDuration: undefined,
-    maxContractDuration: undefined,
-    minROI: undefined,
-    maxROI: undefined,
-    minPerformanceRating: undefined,
-    maxPerformanceRating: undefined,
-    hasTransferFee: false,
-    excludeLoans: false,
-    isLoanToBuy: false,
-    onlySuccessfulTransfers: false
-  });
-
-  const handleFiltersChange = (newFilters: FilterState) => {
+  const handleFiltersChange = (newFilters: any) => {
     setFilters(newFilters);
   };
 
@@ -53,9 +27,9 @@ function App() {
                 <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                   Enhanced
                 </span>
-                {countActiveFilters(filters) > 0 && (
+                {countActiveFilters(state.filters) > 0 && (
                   <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                    {countActiveFilters(filters)} filters active
+                    {countActiveFilters(state.filters)} filters active
                   </span>
                 )}
               </div>
@@ -70,10 +44,14 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filter Panel */}
-        <FilterPanel onFiltersChange={handleFiltersChange} />
+        <ErrorBoundary>
+          <FilterPanel onFiltersChange={handleFiltersChange} />
+        </ErrorBoundary>
         
-        {/* Network Visualization - ✅ FIXED: Now using TransferNetwork */}
-        <TransferNetwork filters={filters} />
+        {/* Network Visualization */}
+        <ErrorBoundary>
+          <TransferNetwork />
+        </ErrorBoundary>
         
         {/* Enhanced Footer Info */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
@@ -134,6 +112,17 @@ function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Main App component wrapped with context provider
+function App() {
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
