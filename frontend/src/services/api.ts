@@ -1,7 +1,28 @@
-// src/services/api.ts
-import axios, { AxiosResponse } from 'axios';
+// API-Service-Klasse
+// Diese Klasse kapselt alle API-Aufrufe und bietet eine einfache Schnittstelle für die Frontend-Komponenten.
+// Sie enthält Methoden für die Kommunikation mit dem Backend, einschließlich Fehlerbehandlung, Caching und Performance-Optimierung.
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+import axios, { AxiosResponse } from 'axios';
+import { 
+  ApiResponse, 
+  League, 
+  Club, 
+  NetworkData, 
+  Transfer, 
+  Statistics, 
+  TransferSuccessStats, 
+  LoanToBuyAnalytics,
+  FilterParams, 
+  TransferQueryParams,
+  PaginatedResponse 
+} from '../types';
+import { 
+  API_BASE_URL, 
+  buildQueryParams, 
+  filtersToApiParams, 
+  debugLog, 
+  createPerformanceTimer 
+} from '../utils';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -15,7 +36,7 @@ const apiClient = axios.create({
 // Request interceptor for logging
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    debugLog(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => {
@@ -44,301 +65,354 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Types
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-  details?: string;
-}
-
-export interface League {
-  id: number;
-  name: string;
-  country: string;
-  tier: number;
-  seasonStartMonth: number;
-  clubCount: number;
-  createdAt: string;
-}
-
-export interface Club {
-  id: number;
-  name: string;
-  shortName?: string;
-  league: {
-    id: number;
-    name: string;
-    country: string;
-  };
-  country: string;
-  logoUrl?: string;
-  clubValue?: number;
-  foundingYear?: number;
-  stadiumCapacity?: number;
-  transferCount: {
-    in: number;
-    out: number;
-    total: number;
-  };
-}
-
-export interface NetworkNode {
-  id: string;
-  name: string;
-  shortName?: string;
-  league: string;
-  country: string;
-  logoUrl?: string;
-  clubValue?: number;
-  stats: {
-    transfersIn: number;
-    transfersOut: number;
-    totalSpent: number;
-    totalReceived: number;
-    netSpend: number;
-    avgPlayerAge?: number;
-  };
-}
-
-export interface NetworkEdge {
-  id: string;
-  source: string;
-  target: string;
-  transfers: TransferInfo[];
-  stats: {
-    totalValue: number;
-    transferCount: number;
-    avgTransferValue: number;
-    types: string[];
-  };
-}
-
-export interface TransferInfo {
-  id: number;
-  playerName: string;
-  transferFee: number | null;
-  transferType: string;
-  date: string;
-  position: string | null;
-  playerAge?: number;
-  direction: 'out' | 'in';
-}
-
-export interface NetworkData {
-  nodes: NetworkNode[];
-  edges: NetworkEdge[];
-  metadata: {
-    totalTransfers: number;
-    totalValue: number;
-    clubCount: number;
-    edgeCount: number;
-    dateRange: {
-      start: string | null;
-      end: string | null;
-    };
-    filters: any;
-  };
-}
-
-export interface Transfer {
-  id: number;
-  playerName: string;
-  transferFee: number | null;
-  transferType: string;
-  date: string;
-  season: string;
-  playerPosition: string | null;
-  playerAge: number | null;
-  marketValue: number | null;
-  contractDuration: number | null;
-  oldClub: {
-    id: number;
-    name: string;
-    shortName?: string;
-    league: string;
-    country: string;
-  } | null;
-  newClub: {
-    id: number;
-    name: string;
-    shortName?: string;
-    league: string;
-    country: string;
-  };
-}
-
-export interface Statistics {
-  totals: {
-    transfers: number;
-    clubs: number;
-    leagues: number;
-    transferValue: number;
-  };
-  topTransfer: {
-    playerName: string;
-    fee: number;
-    from: string;
-    to: string;
-    date: string;
-  } | null;
-  recentTransfers: Array<{
-    playerName: string;
-    from: string;
-    to: string;
-    fee: number | null;
-    date: string;
-  }>;
-}
-
-export interface FilterParams {
-  seasons?: string[];
-  leagues?: string[];
-  countries?: string[];
-  transferTypes?: string[];
-  positions?: string[];
-  clubs?: number[];
-  minTransferFee?: number;
-  maxTransferFee?: number;
-  minPlayerAge?: number;
-  maxPlayerAge?: number;
-  hasTransferFee?: boolean;
-  excludeLoans?: boolean;
-  limit?: number;
-}
-
-// API Service Class
+// ========== API SERVICE CLASS ==========
 class ApiService {
   
-  // Health check
+  // ========== HEALTH & STATUS ==========
+  
+  /**
+   * Health check endpoint
+   */
   async checkHealth(): Promise<ApiResponse<{ message: string; timestamp: string; database: string }>> {
-    const response: AxiosResponse<ApiResponse<{ message: string; timestamp: string; database: string }>> = 
-      await apiClient.get('/health');
-    return response.data;
+    const timer = createPerformanceTimer('Health Check');
+    try {
+      const response: AxiosResponse<ApiResponse<{ message: string; timestamp: string; database: string }>> = 
+        await apiClient.get('/health');
+      return response.data;
+    } finally {
+      timer();
+    }
   }
 
-  // Get all leagues
+  // ========== MASTER DATA ENDPOINTS ==========
+
+  /**
+   * Get all leagues with enhanced data
+   */
   async getLeagues(): Promise<ApiResponse<League[]>> {
-    const response: AxiosResponse<ApiResponse<League[]>> = await apiClient.get('/leagues');
-    return response.data;
+    const timer = createPerformanceTimer('Get Leagues');
+    try {
+      const response: AxiosResponse<ApiResponse<League[]>> = await apiClient.get('/leagues');
+      return response.data;
+    } finally {
+      timer();
+    }
   }
 
-  // Get all clubs (optionally filtered by league)
+  /**
+   * Get all clubs (optionally filtered by league)
+   */
   async getClubs(leagueId?: number): Promise<ApiResponse<Club[]>> {
-    const params = leagueId ? { leagueId } : {};
-    const response: AxiosResponse<ApiResponse<Club[]>> = await apiClient.get('/clubs', { params });
-    return response.data;
+    const timer = createPerformanceTimer('Get Clubs');
+    try {
+      const params = leagueId ? { leagueId } : {};
+      const response: AxiosResponse<ApiResponse<Club[]>> = await apiClient.get('/clubs', { params });
+      return response.data;
+    } finally {
+      timer();
+    }
   }
 
-  // Get available seasons
+  /**
+   * Get available seasons
+   */
   async getSeasons(): Promise<ApiResponse<string[]>> {
     const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/seasons');
     return response.data;
   }
 
-  // Get transfer types
+  /**
+   * Get transfer types
+   */
   async getTransferTypes(): Promise<ApiResponse<string[]>> {
     const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/transfer-types');
     return response.data;
   }
 
-  // Get player positions
+  /**
+   * Get transfer windows (NEW)
+   */
+  async getTransferWindows(): Promise<ApiResponse<string[]>> {
+    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/transfer-windows');
+    return response.data;
+  }
+
+  /**
+   * Get player positions
+   */
   async getPositions(): Promise<ApiResponse<string[]>> {
     const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/positions');
     return response.data;
   }
 
-  // Get network data with filters
+  /**
+   * Get player nationalities (NEW)
+   */
+  async getNationalities(): Promise<ApiResponse<string[]>> {
+    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/nationalities');
+    return response.data;
+  }
+
+  /**
+   * Get continents (NEW)
+   */
+  async getContinents(): Promise<ApiResponse<string[]>> {
+    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/continents');
+    return response.data;
+  }
+
+  /**
+   * Get league tiers (NEW)
+   */
+  async getLeagueTiers(): Promise<ApiResponse<number[]>> {
+    const response: AxiosResponse<ApiResponse<number[]>> = await apiClient.get('/league-tiers');
+    return response.data;
+  }
+
+  // ========== CORE DATA ENDPOINTS ==========
+
+  /**
+   * Get network data with enhanced filters
+   */
   async getNetworkData(filters: FilterParams = {}): Promise<ApiResponse<NetworkData>> {
-    // Convert arrays to comma-separated strings for query params
-    const params: any = {};
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          params[key] = value.join(',');
-        } else {
-          params[key] = value;
+    const timer = createPerformanceTimer('Get Network Data');
+    try {
+      // Convert filter object to query parameters
+      const params: any = {};
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value) && value.length > 0) {
+            params[key] = value.join(',');
+          } else if (typeof value === 'number' || typeof value === 'boolean') {
+            params[key] = value.toString();
+          }
         }
-      }
-    });
+      });
 
-    console.log('Requesting network data with filters:', params);
-    
-    const response: AxiosResponse<ApiResponse<NetworkData>> = 
-      await apiClient.get('/network-data', { params });
-    return response.data;
-  }
-
-  // Get transfers with pagination
-  async getTransfers(options: {
-    page?: number;
-    limit?: number;
-    clubId?: number;
-    season?: string;
-    transferType?: string;
-  } = {}): Promise<ApiResponse<{
-    transfers: Transfer[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
-  }>> {
-    const response = await apiClient.get('/transfers', { params: options });
-    return response.data;
-  }
-
-  // Get statistics
-  async getStatistics(): Promise<ApiResponse<Statistics>> {
-    const response: AxiosResponse<ApiResponse<Statistics>> = await apiClient.get('/statistics');
-    return response.data;
-  }
-
-  // Utility method to format currency
-  formatCurrency(amount: number | null): string {
-    if (!amount) return 'Free';
-    
-    if (amount >= 1000000) {
-      return `€${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      return `€${(amount / 1000).toFixed(0)}K`;
-    } else {
-      return `€${amount.toLocaleString()}`;
+      debugLog('Network data request params', params);
+      
+      const response: AxiosResponse<ApiResponse<NetworkData>> = 
+        await apiClient.get('/network-data', { params });
+      return response.data;
+    } finally {
+      timer();
     }
   }
 
-  // Utility method to format dates
-  formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  /**
+   * Get transfers with pagination and filters
+   */
+  async getTransfers(options: TransferQueryParams = {}): Promise<ApiResponse<PaginatedResponse<Transfer[]>>> {
+    const timer = createPerformanceTimer('Get Transfers');
+    try {
+      const response = await apiClient.get('/transfers', { params: options });
+      return response.data;
+    } finally {
+      timer();
+    }
   }
 
-  // Build query string from filters
-  private buildQueryString(filters: FilterParams): string {
-    const params = new URLSearchParams();
+  /**
+   * Get enhanced statistics
+   */
+  async getStatistics(): Promise<ApiResponse<Statistics>> {
+    const timer = createPerformanceTimer('Get Statistics');
+    try {
+      const response: AxiosResponse<ApiResponse<Statistics>> = await apiClient.get('/statistics');
+      return response.data;
+    } finally {
+      timer();
+    }
+  }
+
+  // ========== ENHANCED ANALYTICS ENDPOINTS ==========
+
+  /**
+   * Get transfer success statistics (NEW)
+   */
+  async getTransferSuccessStats(clubId?: number, season?: string): Promise<ApiResponse<TransferSuccessStats>> {
+    const timer = createPerformanceTimer('Get Success Stats');
+    try {
+      const params: any = {};
+      if (clubId) params.clubId = clubId;
+      if (season) params.season = season;
+      
+      const response: AxiosResponse<ApiResponse<TransferSuccessStats>> = 
+        await apiClient.get('/transfer-success-stats', { params });
+      return response.data;
+    } finally {
+      timer();
+    }
+  }
+
+  /**
+   * Get loan-to-buy analytics (NEW)
+   */
+  async getLoanToBuyAnalytics(): Promise<ApiResponse<LoanToBuyAnalytics>> {
+    const timer = createPerformanceTimer('Get Loan-to-Buy Analytics');
+    try {
+      const response: AxiosResponse<ApiResponse<LoanToBuyAnalytics>> = 
+        await apiClient.get('/loan-to-buy-analytics');
+      return response.data;
+    } finally {
+      timer();
+    }
+  }
+
+  // ========== BATCH DATA LOADING ==========
+
+  /**
+   * Load all filter data in one batch request
+   */
+  async loadAllFilterData(): Promise<{
+    leagues: League[];
+    clubs: Club[];
+    seasons: string[];
+    transferTypes: string[];
+    transferWindows: string[];
+    positions: string[];
+    nationalities: string[];
+    continents: string[];
+    leagueTiers: number[];
+  }> {
+    const timer = createPerformanceTimer('Load All Filter Data');
+    try {
+      const [
+        leaguesRes,
+        clubsRes,
+        seasonsRes,
+        transferTypesRes,
+        transferWindowsRes,
+        positionsRes,
+        nationalitiesRes,
+        continentsRes,
+        leagueTiersRes
+      ] = await Promise.all([
+        this.getLeagues(),
+        this.getClubs(),
+        this.getSeasons(),
+        this.getTransferTypes(),
+        this.getTransferWindows(),
+        this.getPositions(),
+        this.getNationalities(),
+        this.getContinents(),
+        this.getLeagueTiers()
+      ]);
+
+      return {
+        leagues: leaguesRes.success ? leaguesRes.data : [],
+        clubs: clubsRes.success ? clubsRes.data : [],
+        seasons: seasonsRes.success ? seasonsRes.data : [],
+        transferTypes: transferTypesRes.success ? transferTypesRes.data : [],
+        transferWindows: transferWindowsRes.success ? transferWindowsRes.data : [],
+        positions: positionsRes.success ? positionsRes.data : [],
+        nationalities: nationalitiesRes.success ? nationalitiesRes.data : [],
+        continents: continentsRes.success ? continentsRes.data : [],
+        leagueTiers: leagueTiersRes.success ? leagueTiersRes.data : []
+      };
+    } finally {
+      timer();
+    }
+  }
+
+  // ========== ERROR HANDLING UTILITIES ==========
+
+  /**
+   * Generic error handler for API responses
+   */
+  private handleApiError(error: any, context: string): never {
+    console.error(`API Error in ${context}:`, error);
     
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          params.set(key, value.join(','));
-        } else {
-          params.set(key, value.toString());
-        }
-      }
+    if (error.response) {
+      throw new Error(`${context} failed: ${error.response.data?.error || error.response.statusText}`);
+    } else if (error.request) {
+      throw new Error(`${context} failed: Network error`);
+    } else {
+      throw new Error(`${context} failed: ${error.message}`);
+    }
+  }
+
+  // ========== CACHING UTILITIES ==========
+  
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+  /**
+   * Get data from cache or fetch if expired
+   */
+  private async getCachedOrFetch<T>(
+    cacheKey: string, 
+    fetchFn: () => Promise<T>, 
+    ttlMs: number = 5 * 60 * 1000 // 5 minutes default
+  ): Promise<T> {
+    const cached = this.cache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < cached.ttl) {
+      debugLog(`Cache hit for ${cacheKey}`);
+      return cached.data;
+    }
+    
+    debugLog(`Cache miss for ${cacheKey}, fetching...`);
+    const data = await fetchFn();
+    
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: now,
+      ttl: ttlMs
     });
     
-    return params.toString();
+    return data;
+  }
+
+  /**
+   * Clear cache entry or entire cache
+   */
+  clearCache(key?: string): void {
+    if (key) {
+      this.cache.delete(key);
+      debugLog(`Cleared cache for ${key}`);
+    } else {
+      this.cache.clear();
+      debugLog('Cleared entire cache');
+    }
+  }
+
+  // ========== CACHED METHODS ==========
+
+  /**
+   * Get leagues with caching
+   */
+  async getLeaguesCached(): Promise<ApiResponse<League[]>> {
+    return this.getCachedOrFetch('leagues', () => this.getLeagues());
+  }
+
+  /**
+   * Get clubs with caching
+   */
+  async getClubsCached(leagueId?: number): Promise<ApiResponse<Club[]>> {
+    const cacheKey = `clubs_${leagueId || 'all'}`;
+    return this.getCachedOrFetch(cacheKey, () => this.getClubs(leagueId));
+  }
+
+  /**
+   * Get filter data with caching
+   */
+  async loadAllFilterDataCached(): Promise<{
+    leagues: League[];
+    clubs: Club[];
+    seasons: string[];
+    transferTypes: string[];
+    transferWindows: string[];
+    positions: string[];
+    nationalities: string[];
+    continents: string[];
+    leagueTiers: number[];
+  }> {
+    return this.getCachedOrFetch('all_filter_data', () => this.loadAllFilterData(), 10 * 60 * 1000); // 10 minutes
   }
 }
 
-// Export singleton instance
+// ========== EXPORT SINGLETON INSTANCE ==========
 export const apiService = new ApiService();
 export default apiService;

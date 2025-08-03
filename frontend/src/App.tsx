@@ -2,33 +2,10 @@ import React, { useState } from 'react';
 import './App.css';
 import TransferNetwork from './components/TransferTracker';
 import FilterPanel from './components/FilterPanel';
+import { FilterState } from './types';
+import { countActiveFilters } from './utils';
 
-interface FilterState {
-  seasons: string[];
-  leagues: string[];
-  countries: string[];
-  continents: string[];
-  transferTypes: string[];
-  transferWindows: string[];
-  positions: string[];
-  nationalities: string[];
-  clubs: number[];
-  leagueTiers: number[];
-  minTransferFee?: number;
-  maxTransferFee?: number;
-  minPlayerAge?: number;
-  maxPlayerAge?: number;
-  minContractDuration?: number;
-  maxContractDuration?: number;
-  minROI?: number;
-  maxROI?: number;
-  minPerformanceRating?: number;
-  maxPerformanceRating?: number;
-  hasTransferFee?: boolean;
-  excludeLoans?: boolean;
-  isLoanToBuy?: boolean;
-  onlySuccessfulTransfers?: boolean;
-}
+// Hauptkomponente der Anwendung
 
 function App() {
   const [filters, setFilters] = useState<FilterState>({
@@ -120,7 +97,7 @@ function App() {
               </div>
             </div>
             <div className="text-sm text-gray-500">
-              Advanced transfer analytics & visualization
+              Advanced Transfer Analytics
             </div>
           </div>
         </div>
@@ -176,31 +153,7 @@ function App() {
               </ul>
             </div>
           </div>
-          
-          {/* Quick Stats */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <h4 className="font-medium text-gray-900 mb-3">Current Filter Summary</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-blue-600">{filters.seasons.length}</div>
-                <div className="text-blue-800">Season{filters.seasons.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {filters.leagues.length || 'All'}
-                </div>
-                <div className="text-green-800">League{filters.leagues.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-purple-600">{filters.transferTypes.length}</div>
-                <div className="text-purple-800">Transfer Type{filters.transferTypes.length !== 1 ? 's' : ''}</div>
-              </div>
-              <div className="bg-orange-50 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-orange-600">{getActiveFilterCount()}</div>
-                <div className="text-orange-800">Total Filters</div>
-              </div>
-            </div>
-          </div>
+
         </div>
       </main>
 

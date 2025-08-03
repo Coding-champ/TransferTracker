@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
+import { NetworkNode, NetworkEdge, NetworkData, FilterState } from '../types';
+import { formatCurrency, formatDate, formatPercentage, getLeagueColor } from '../utils';
+import { apiService } from '../services/api';
 
-interface NetworkNode extends d3.SimulationNodeDatum {
+/*interface NetworkNode extends d3.SimulationNodeDatum {
   id: string;
   name: string;
   shortName?: string;
@@ -41,7 +44,7 @@ interface NetworkEdge extends d3.SimulationLinkDatum<NetworkNode> {
     seasons: string[];
     transferWindows: string[];
   };
-}
+}*/
 
 interface TransferInfo {
   id: number;
@@ -62,7 +65,7 @@ interface TransferInfo {
   direction: 'out' | 'in';
 }
 
-interface NetworkData {
+/*interface NetworkData {
   nodes: NetworkNode[];
   edges: NetworkEdge[];
   metadata: {
@@ -78,7 +81,7 @@ interface NetworkData {
     successRate: number;
     filters: any;
   };
-}
+}*/
 
 interface TransferNetworkProps {
   filters: {
@@ -591,7 +594,7 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const formatCurrency = (value: number) => {
+  /*const formatCurrency = (value: number) => {
     if (value >= 1000000) {
       return `€${(value / 1000000).toFixed(1)}M`;
     }
@@ -599,19 +602,19 @@ const TransferNetwork: React.FC<TransferNetworkProps> = ({ filters }) => {
       return `€${(value / 1000).toFixed(0)}K`;
     }
     return `€${value}`;
-  };
+  };*/
 
-  const formatDate = (dateString: string) => {
+  /*const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('de-DE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
-  };
+  };*/
 
-  const formatPercentage = (value: number) => {
+  /*const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
-  };
+  };*/
 
   if (loading) {
     return (

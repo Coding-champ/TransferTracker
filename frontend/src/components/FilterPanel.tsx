@@ -1,59 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { FilterState, League, Club } from '../types';
+import { formatCurrency, API_BASE_URL } from '../utils';
+import { apiService } from '../services/api';
 
 interface FilterPanelProps {
   onFiltersChange: (filters: FilterState) => void;
-}
-
-interface FilterState {
-  seasons: string[];
-  leagues: string[];
-  countries: string[];
-  continents: string[];
-  transferTypes: string[];
-  transferWindows: string[];
-  positions: string[];
-  nationalities: string[];
-  clubs: number[];
-  leagueTiers: number[];
-  minTransferFee?: number;
-  maxTransferFee?: number;
-  minPlayerAge?: number;
-  maxPlayerAge?: number;
-  minContractDuration?: number;
-  maxContractDuration?: number;
-  minROI?: number;
-  maxROI?: number;
-  minPerformanceRating?: number;
-  maxPerformanceRating?: number;
-  hasTransferFee?: boolean;
-  excludeLoans?: boolean;
-  isLoanToBuy?: boolean;
-  onlySuccessfulTransfers?: boolean;
-}
-
-interface League {
-  id: number;
-  name: string;
-  country: string;
-  continent: string;
-  tier: number;
-  clubCount: number;
-}
-
-interface Club {
-  id: number;
-  name: string;
-  shortName?: string;
-  league: {
-    name: string;
-    country: string;
-    continent: string;
-    tier: number;
-  };
-  country: string;
-  transferCount: {
-    total: number;
-  };
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
@@ -116,6 +67,15 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
           continentsRes,
           leagueTiersRes
         ] = await Promise.all([
+          /*apiService.getLeagues(),
+          apiService.getClubs(),
+          apiService.getSeasons(),
+          apiService.getTransferTypes(),
+          apiService.getTransferWindows(),
+          apiService.getPositions(),
+          apiService.getNationalities(),
+          apiService.getContinents(),
+          apiService.getLeagueTiers()*/
           fetch('http://localhost:3001/api/leagues'),
           fetch('http://localhost:3001/api/clubs'),
           fetch('http://localhost:3001/api/seasons'),
@@ -238,13 +198,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
     });
   };
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `€${(value / 1000000).toFixed(0)}M`;
-    }
-    return `€${(value / 1000).toFixed(0)}K`;
-  };
-
   const getUniqueCountries = () => {
     const countries = new Set<string>();
     leagues.forEach(league => countries.add(league.country));
@@ -263,7 +216,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
       <div className="border border-gray-200 rounded-lg">
         <button
           onClick={() => toggleSection(sectionKey)}
-          className="w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg flex items-center justify-between"
+          className="w-full px-4 py-2 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg flex items-center justify-between"
         >
           <h3 className="text-sm font-medium text-gray-700">{title}</h3>
           <span className="text-gray-400">
@@ -315,7 +268,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div className="bg-white rounded-lg shadow-lg p-3 mb-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Advanced Filters</h2>
         <div className="flex gap-2">
