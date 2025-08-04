@@ -2,30 +2,30 @@
 
 // ========== FILTER TYPES ==========
 export interface FilterState {
-  seasons: string[];
-  leagues: string[];
-  countries: string[];
-  continents: string[];
-  transferTypes: string[];
-  transferWindows: string[];
-  positions: string[];
-  nationalities: string[];
-  clubs: number[];
-  leagueTiers: number[];
-  minTransferFee?: number;
-  maxTransferFee?: number;
-  minPlayerAge?: number;
-  maxPlayerAge?: number;
-  minContractDuration?: number;
-  maxContractDuration?: number;
-  minROI?: number;
-  maxROI?: number;
-  minPerformanceRating?: number;
-  maxPerformanceRating?: number;
-  hasTransferFee?: boolean;
-  excludeLoans?: boolean;
-  isLoanToBuy?: boolean;
-  onlySuccessfulTransfers?: boolean;
+  readonly seasons: string[];
+  readonly leagues: string[];
+  readonly countries: string[];
+  readonly continents: string[];
+  readonly transferTypes: string[];
+  readonly transferWindows: string[];
+  readonly positions: string[];
+  readonly nationalities: string[];
+  readonly clubs: number[];
+  readonly leagueTiers: number[];
+  readonly minTransferFee?: number;
+  readonly maxTransferFee?: number;
+  readonly minPlayerAge?: number;
+  readonly maxPlayerAge?: number;
+  readonly minContractDuration?: number;
+  readonly maxContractDuration?: number;
+  readonly minROI?: number;
+  readonly maxROI?: number;
+  readonly minPerformanceRating?: number;
+  readonly maxPerformanceRating?: number;
+  readonly hasTransferFee?: boolean;
+  readonly excludeLoans?: boolean;
+  readonly isLoanToBuy?: boolean;
+  readonly onlySuccessfulTransfers?: boolean;
 }
 
 // ========== API RESPONSE TYPES ==========
@@ -201,20 +201,20 @@ export interface NetworkEdge extends d3.SimulationLinkDatum<NetworkNode> {
 }
 
 export interface NetworkData {
-  nodes: NetworkNode[];
-  edges: NetworkEdge[];
-  metadata: {
-    totalTransfers: number;
-    totalValue: number;
-    dateRange: {
-      start: string | null;
-      end: string | null;
+  readonly nodes: NetworkNode[];
+  readonly edges: NetworkEdge[];
+  readonly metadata: {
+    readonly totalTransfers: number;
+    readonly totalValue: number;
+    readonly dateRange: {
+      readonly start: string | null;
+      readonly end: string | null;
     };
-    clubCount: number;
-    edgeCount: number;
-    avgROI: number;
-    successRate: number;
-    filters: FilterState;
+    readonly clubCount: number;
+    readonly edgeCount: number;
+    readonly avgROI: number;
+    readonly successRate: number;
+    readonly filters: FilterState;
   };
 }
 

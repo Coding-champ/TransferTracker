@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FilterState } from '../../types';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, validateFilterCombination } from '../../utils';
 import { useFilterData } from './hooks/useFilterData';
 import BasicFilters from './filters/BasicFilters';
 import GeographicFilters from './filters/GeographicFilters';
@@ -20,9 +20,11 @@ interface FilterPanelProps {
 /**
  * Main FilterPanel component that orchestrates all filter sections
  * Refactored from a 879-line monolith into smaller, reusable components
+ * Optimized with React.memo and memoized callbacks for better performance
  */
-const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
-  const [filters, setFilters] = useState<FilterState>({
+const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange }) => {
+  // Memoize the initial filter state to prevent recreation
+  const initialFilters = useMemo<FilterState>(() => ({
     seasons: ['2023/24'],
     leagues: [],
     countries: [],
@@ -47,7 +49,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
     excludeLoans: false,
     isLoanToBuy: false,
     onlySuccessfulTransfers: false
-  });
+  }), []);
+
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
+
+  // Memoize filter validation warnings
+  const filterWarnings = useMemo(() => {
+    return validateFilterCombination(filters);
+  }, [filters]);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['seasons', 'leagues', 'transferTypes'])
@@ -119,33 +128,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
    * Reset all filters to default values
    */
   const resetFilters = useCallback(() => {
-    setFilters({
-      seasons: ['2023/24'],
-      leagues: [],
-      countries: [],
-      continents: [],
-      transferTypes: ['sale', 'loan', 'free', 'loan_with_option'],
-      transferWindows: [],
-      positions: [],
-      nationalities: [],
-      clubs: [],
-      leagueTiers: [],
-      minTransferFee: undefined,
-      maxTransferFee: undefined,
-      minPlayerAge: undefined,
-      maxPlayerAge: undefined,
-      minContractDuration: undefined,
-      maxContractDuration: undefined,
-      minROI: undefined,
-      maxROI: undefined,
-      minPerformanceRating: undefined,
-      maxPerformanceRating: undefined,
-      hasTransferFee: false,
-      excludeLoans: false,
-      isLoanToBuy: false,
-      onlySuccessfulTransfers: false
-    });
-  }, []);
+    setFilters(initialFilters);
+  }, [initialFilters]);
 
   const expandAllSections = useCallback(() => {
     setExpandedSections(new Set(['seasons', 'leagues', 'transferTypes', 'geographic', 'performance']));
@@ -430,21 +414,22 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
           </span>
         </div>
         
-        {/* Filter combinations warning */}
-        {(filters.excludeLoans && filters.isLoanToBuy) && (
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-            ⚠️ Warning: "Exclude loans" and "Loan-to-buy only" filters conflict with each other.
-          </div>
-        )}
-        
-        {(filters.leagues.length > 0 && filters.continents.length > 0) && (
-          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-            ℹ️ Note: Both league and continent filters are active. Results will show the intersection of both filters.
+        {/* Enhanced filter warnings */}
+        {filterWarnings.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {filterWarnings.map((warning, index) => (
+              <div key={index} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                ⚠️ {warning}
+              </div>
+            ))}
           </div>
         )}
       </div>
     </div>
   );
-};
+});
+
+// Add display name for better debugging
+FilterPanel.displayName = 'FilterPanel';
 
 export default FilterPanel;

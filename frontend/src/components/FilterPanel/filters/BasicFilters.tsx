@@ -86,6 +86,8 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
         sectionKey="seasons"
         isExpanded={expandedSections.has('seasons')}
         onToggle={toggleSection}
+        helpText="Select the football seasons you want to analyze. Each season typically runs from July to June."
+        tooltip="Filter transfers by specific football seasons"
       >
         <CheckboxFilter
           title=""
@@ -101,6 +103,8 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
         sectionKey="transferTypes"
         isExpanded={expandedSections.has('transferTypes')}
         onToggle={toggleSection}
+        helpText="Choose which types of transfers to include. Loans can be permanent or temporary moves."
+        tooltip="Filter by how players moved between clubs"
       >
         <CheckboxFilter
           title=""
@@ -137,6 +141,8 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
         sectionKey="transferWindows"
         isExpanded={expandedSections.has('transferWindows')}
         onToggle={toggleSection}
+        helpText="Transfer windows are specific periods when clubs can buy and sell players. Summer window typically runs June-August, winter window January-February."
+        tooltip="Filter transfers by when they occurred during the season"
       >
         <CheckboxFilter
           title=""

@@ -3,10 +3,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import TransferNetwork from '../TransferNetwork';
 import { FilterState } from '../../types';
+import { AppProvider } from '../../contexts/AppContext';
 
 // Mock the network data hook
 jest.mock('../../hooks/useNetworkData', () => ({
-  useNetworkData: jest.fn(() => ({
+  useNetworkData: jest.fn().mockReturnValue({
     networkData: {
       nodes: [
         { id: '1', name: 'Test Club 1', league: 'Bundesliga', x: 100, y: 100, stats: { transfersIn: 5, transfersOut: 3 } },
@@ -20,12 +21,17 @@ jest.mock('../../hooks/useNetworkData', () => ({
           transfers: []
         }
       ],
-      metadata: { successRate: 75 }
+      metadata: { 
+        successRate: 75,
+        clubCount: 2,
+        edgeCount: 1
+      }
     },
     loading: false,
     error: null,
-    refetch: jest.fn()
-  }))
+    refetch: jest.fn(),
+    isStale: false
+  })
 }));
 
 // Mock the network interactions hook
@@ -105,7 +111,11 @@ describe('TransferNetwork Zoom Behavior', () => {
   });
 
   test('renders TransferNetwork component', () => {
-    render(<TransferNetwork filters={defaultFilters} />);
+    render(
+      <AppProvider>
+        <TransferNetwork />
+      </AppProvider>
+    );
     
     expect(screen.getByText('Enhanced Transfer Network')).toBeInTheDocument();
     expect(screen.getByText('2 clubs')).toBeInTheDocument();
@@ -113,7 +123,11 @@ describe('TransferNetwork Zoom Behavior', () => {
   });
 
   test('isDraggingRef is properly managed from useNetworkInteractions hook', () => {
-    render(<TransferNetwork filters={defaultFilters} />);
+    render(
+      <AppProvider>
+        <TransferNetwork />
+      </AppProvider>
+    );
     
     // Verify that the hook is called and isDraggingRef is available
     const { useNetworkInteractions } = require('../../hooks/useNetworkInteractions');

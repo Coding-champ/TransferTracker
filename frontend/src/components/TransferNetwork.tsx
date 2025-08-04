@@ -8,7 +8,7 @@ import NodeInfoPanel from './NodeInfoPanel';
 import EdgeInfoPanel from './EdgeInfoPanel';
 import NetworkStatistics from './NetworkStatistics';
 
-const TransferNetwork: React.FC = () => {
+const TransferNetwork: React.FC = React.memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Get filters and selected elements from context
@@ -138,6 +138,9 @@ const TransferNetwork: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
-export default React.memo(TransferNetwork);
+// Add display name for better debugging
+TransferNetwork.displayName = 'TransferNetwork';
+
+export default TransferNetwork;

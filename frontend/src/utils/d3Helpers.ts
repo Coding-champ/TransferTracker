@@ -295,3 +295,84 @@ export const createZoomControls = (
     });
   });
 };
+
+/**
+ * Level of Detail (LOD) utility functions for optimizing visualization rendering
+ */
+export const lodHelpers = {
+  /**
+   * Determines if an element should be shown based on zoom level and size
+   */
+  shouldShowElement: (
+    zoomLevel: number, 
+    elementSize: number, 
+    minZoomThreshold: number, 
+    minSizeThreshold: number
+  ): boolean => {
+    if (zoomLevel < minZoomThreshold) {
+      return elementSize >= minSizeThreshold;
+    }
+    return true;
+  },
+
+  /**
+   * Calculates appropriate level of detail for current zoom
+   */
+  getLODLevel: (zoomLevel: number): 'high' | 'medium' | 'low' => {
+    if (zoomLevel >= 1.5) return 'high';
+    if (zoomLevel >= 0.5) return 'medium';
+    return 'low';
+  },
+
+  /**
+   * Applies LOD-based visibility to nodes
+   */
+  applyNodeLOD: (
+    nodes: d3.Selection<SVGCircleElement, NetworkNode, SVGGElement, unknown>,
+    zoomLevel: number,
+    config: { hideSmallNodesThreshold: number; minNodeSize: number }
+  ) => {
+    nodes.style('display', (d) => {
+      const nodeSize = Math.sqrt(d.stats.transfersIn + d.stats.transfersOut) * 2 + 8;
+      return lodHelpers.shouldShowElement(
+        zoomLevel, 
+        nodeSize, 
+        config.hideSmallNodesThreshold, 
+        config.minNodeSize
+      ) ? 'block' : 'none';
+    });
+  },
+
+  /**
+   * Applies LOD-based visibility to labels
+   */
+  applyLabelLOD: (
+    labels: d3.Selection<SVGTextElement, NetworkNode, SVGGElement, unknown>,
+    zoomLevel: number,
+    hideLabelsThreshold: number
+  ) => {
+    const showLabels = zoomLevel >= hideLabelsThreshold;
+    labels.style('display', showLabels ? 'block' : 'none');
+  },
+
+  /**
+   * Applies LOD-based styling to edges
+   */
+  applyEdgeLOD: (
+    edges: d3.Selection<SVGLineElement, NetworkEdge, SVGGElement, unknown>,
+    zoomLevel: number,
+    config: { simplificationThreshold: number; minEdgeValue: number }
+  ) => {
+    edges
+      .style('display', (d) => {
+        if (zoomLevel < config.simplificationThreshold) {
+          return d.stats.totalValue >= config.minEdgeValue ? 'block' : 'none';
+        }
+        return 'block';
+      })
+      .style('stroke-width', (d) => {
+        const baseWidth = Math.max(1, Math.log(d.stats.totalValue / 1000000 + 1) * 2);
+        return zoomLevel < 0.5 ? Math.min(baseWidth, 2) : baseWidth;
+      });
+  }
+};
