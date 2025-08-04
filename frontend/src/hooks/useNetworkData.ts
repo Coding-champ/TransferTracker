@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NetworkData, FilterState } from '../types';
 import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
+import { handleError, isApiTimeoutError, isNetworkError, ApiError } from '../utils/errors';
 
 interface UseNetworkDataReturn {
   networkData: NetworkData | null;
@@ -162,18 +163,25 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           throw new Error(result.error || 'Failed to fetch network data');
         }
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
+        const processedError = handleError(err) as ApiError;
+        
+        if (processedError.name === 'AbortError') {
           console.log('Request was aborted');
           return null;
         }
         
-        console.error('Network request failed:', err);
-        console.log('🔧 Using mock data for development');
+        console.error('Network request failed:', processedError);
         
         if (!signal?.aborted) {
-          // Use mock data when network fails
-          setError(null); // Clear error since we're providing mock data
-          setNetworkData(MOCK_NETWORK_DATA as NetworkData);
+          // Set appropriate error message based on error type
+          const errorMessage = (processedError as any).message || 'An error occurred';
+          if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
+            setError(errorMessage);
+            console.log('🔧 Using mock data due to network/timeout error');
+            setNetworkData(MOCK_NETWORK_DATA as NetworkData);
+          } else {
+            setError(errorMessage);
+          }
         }
         
         return MOCK_NETWORK_DATA as NetworkData;
