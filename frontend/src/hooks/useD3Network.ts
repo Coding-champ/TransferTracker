@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useEffect } from 'react';
 import * as d3 from 'd3';
 import { NetworkNode, NetworkEdge, NetworkData } from '../types';
 import { useNetworkInteractions } from './useNetworkInteractions';
@@ -48,6 +48,10 @@ export const useD3Network = ({
   const isInitializedRef = useRef(false);
   const frameRateLimiterRef = useRef<FrameRateLimiter | null>(null);
   const lastRenderTimeRef = useRef(0);
+  
+  // Add circuit breaker to prevent infinite re-renders
+  const initializationCountRef = useRef(0);
+  const lastNetworkDataRef = useRef<NetworkData | null>(null);
 
   const { setSelectedNode, setHoveredEdge } = useAppContext();
   const {
@@ -56,11 +60,48 @@ export const useD3Network = ({
     handleDragEnd
   } = useNetworkInteractions();
 
-  // Optimize network data based on performance configuration
-  const optimizedData = useMemo(() => {
-    if (!networkData) return networkData;
+  // Check if network data has actually changed (deep comparison for critical properties)
+  const hasNetworkDataChanged = useMemo(() => {
+    if (!lastNetworkDataRef.current && networkData) {
+      lastNetworkDataRef.current = networkData;
+      return true;
+    }
+    if (!lastNetworkDataRef.current || !networkData) {
+      return true;
+    }
     
-    const config = performanceConfig || getOptimalPerformanceConfig(
+    const current = lastNetworkDataRef.current;
+    const hasChanged = 
+      current.nodes.length !== networkData.nodes.length ||
+      current.edges.length !== networkData.edges.length ||
+      JSON.stringify(current.metadata) !== JSON.stringify(networkData.metadata);
+      
+    if (hasChanged) {
+      lastNetworkDataRef.current = networkData;
+    }
+    
+    return hasChanged;
+  }, [networkData]);
+
+  // Stabilize performance config with useMemo  
+  const stablePerformanceConfig = useMemo(() => {
+    if (performanceConfig) return performanceConfig;
+    if (!networkData) return null;
+    
+    return getOptimalPerformanceConfig(
+      networkData.nodes.length,
+      networkData.edges.length
+    );
+  }, [performanceConfig, networkData]);
+
+  // Optimize network data only when data actually changes
+  const optimizedData = useMemo(() => {
+    if (!networkData) return null;
+    if (!hasNetworkDataChanged && lastNetworkDataRef.current) {
+      return lastNetworkDataRef.current;
+    }
+    
+    const config = stablePerformanceConfig || getOptimalPerformanceConfig(
       networkData.nodes.length,
       networkData.edges.length
     );
@@ -68,19 +109,7 @@ export const useD3Network = ({
     console.log(`Optimizing network: ${networkData.nodes.length} nodes, ${networkData.edges.length} edges -> max ${config.maxNodes} nodes, ${config.maxEdges} edges`);
     
     return optimizeNetworkData(networkData, config);
-  }, [networkData, performanceConfig]);
-
-  // Get current performance config
-  const currentConfig = useMemo(() => 
-    performanceConfig || getOptimalPerformanceConfig(
-      networkData?.nodes.length || 0,
-      networkData?.edges.length || 0
-    ), [networkData, performanceConfig]);
-
-  // Initialize frame rate limiter - RE-ENABLED
-  if (!frameRateLimiterRef.current && currentConfig.useRequestAnimationFrame) {
-    frameRateLimiterRef.current = new FrameRateLimiter(currentConfig.targetFrameRate);
-  }
+  }, [networkData, hasNetworkDataChanged, stablePerformanceConfig]);
 
   // Enhanced color scale for leagues - memoized to prevent recreation
   const colorScale = useMemo(() => d3.scaleOrdinal<string>()
@@ -133,14 +162,42 @@ export const useD3Network = ({
     }
   }, [setHoveredEdge, isDraggingRef]);
 
-  // D3 visualization initialization - memoized with stable dependencies
+  // Initialize frame rate limiter - RE-ENABLED with stable config
+  useEffect(() => {
+    if (!frameRateLimiterRef.current && stablePerformanceConfig?.useRequestAnimationFrame) {
+      frameRateLimiterRef.current = new FrameRateLimiter(stablePerformanceConfig.targetFrameRate);
+    }
+  }, [stablePerformanceConfig?.useRequestAnimationFrame, stablePerformanceConfig?.targetFrameRate]);
+
+  // D3 visualization initialization - STABILIZED to prevent infinite re-renders
   const initializeVisualization = useCallback(() => {
-    if (!optimizedData || !svgRef.current || isInitializedRef.current) return;
+    // Circuit breaker: prevent excessive initializations
+    if (initializationCountRef.current > 5) {
+      console.warn('Circuit breaker: Too many initialization attempts, skipping');
+      return;
+    }
+    
+    if (!optimizedData || !svgRef.current) {
+      return;
+    }
+
+    // If already initialized and data hasn't changed, skip re-initialization
+    if (isInitializedRef.current && !hasNetworkDataChanged) {
+      console.log('Skipping re-initialization: already initialized and data unchanged');
+      return;
+    }
 
     console.log('Initializing D3 visualization with optimizations...');
+    initializationCountRef.current++;
     
     // Start performance monitoring
     const endMeasure = measureNetworkRender(optimizedData.nodes.length, optimizedData.edges.length);
+    
+    // Cleanup previous simulation if exists
+    if (simulationRef.current) {
+      simulationRef.current.stop();
+      simulationRef.current = null;
+    }
     
     isInitializedRef.current = true;
 
@@ -172,7 +229,7 @@ export const useD3Network = ({
           zoomGroup.attr('transform', event.transform);
           
           // DISABLED: Aggressive viewport culling to prevent render thrashing
-          // if (currentConfig.enableViewportCulling) {
+          // if (stablePerformanceConfig?.enableViewportCulling) {
           //   updateElementVisibility(event.transform);
           // }
         }
@@ -183,6 +240,7 @@ export const useD3Network = ({
 
     // Enhanced simulation with adaptive forces optimized for performance
     const nodeCount = optimizedData.nodes.length;
+    const config = stablePerformanceConfig || getOptimalPerformanceConfig(nodeCount, optimizedData.edges.length);
     
     // Adaptive force strengths based on dataset size
     const chargeStrength = Math.max(-800, -200 - (nodeCount * 2));
@@ -201,7 +259,7 @@ export const useD3Network = ({
         .radius(collisionRadius));
 
     // Optimize simulation parameters for large datasets
-    if (currentConfig.adaptiveAlpha) {
+    if (config.adaptiveAlpha) {
       const alphaDecay = nodeCount > 100 ? 0.05 : 0.0228;
       simulation.alphaDecay(alphaDecay);
     }
@@ -226,7 +284,7 @@ export const useD3Network = ({
 
     // Optimized simulation tick function with proper throttling
     let tickCount = 0;
-    const maxTicks = currentConfig.maxIterations;
+    const maxTicks = config.maxIterations;
     let isStabilized = false;
 
     const tick = () => {
@@ -277,7 +335,7 @@ export const useD3Network = ({
       };
 
       // Use requestAnimationFrame for smoother rendering with frame limiting
-      if (currentConfig.useRequestAnimationFrame && frameRateLimiterRef.current) {
+      if (config.useRequestAnimationFrame && frameRateLimiterRef.current) {
         frameRateLimiterRef.current.requestFrame(renderUpdate);
       } else {
         renderUpdate();
@@ -293,8 +351,13 @@ export const useD3Network = ({
     const metric = endMeasure();
     console.log(`Network visualization initialized in ${metric.renderTime?.toFixed(2)}ms`);
 
+    // Reset circuit breaker on successful initialization
+    initializationCountRef.current = 0;
+
     // Cleanup function with proper memory management
     return () => {
+      console.log('Cleaning up D3 visualization...');
+      
       if (simulationRef.current) {
         simulationRef.current.stop();
         simulationRef.current = null;
@@ -306,18 +369,22 @@ export const useD3Network = ({
       }
       
       // Clear zoom behavior
-      if (zoomRef.current) {
+      if (zoomRef.current && svgRef.current) {
+        const svg = d3.select(svgRef.current);
         svg.on('.zoom', null);
         zoomRef.current = null;
       }
       
       // Clear all event listeners
-      svg.selectAll('*').on('.drag', null).on('.click', null).on('.mouseover', null).on('.mouseout', null);
+      if (svgRef.current) {
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').on('.drag', null).on('.click', null).on('.mouseover', null).on('.mouseout', null);
+      }
       
       isInitializedRef.current = false;
       console.log('D3 visualization cleaned up');
     };
-  }, [optimizedData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, width, height, currentConfig, isDraggingRef]);
+  }, [optimizedData, width, height, stablePerformanceConfig, hasNetworkDataChanged, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, isDraggingRef]);
 
   return {
     svgRef,
