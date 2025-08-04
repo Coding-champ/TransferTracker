@@ -11,7 +11,6 @@ import { NetworkPerformanceConfig, PERFORMANCE_PRESETS } from '../utils/networkO
 const NetworkPerformanceDemo: React.FC = () => {
   const [selectedDataset, setSelectedDataset] = useState<'small' | 'medium' | 'large' | 'xlarge'>('small');
   const [customConfig, setCustomConfig] = useState<NetworkPerformanceConfig | null>(null);
-  const [showOptimizationInfo, setShowOptimizationInfo] = useState(true);
 
   // Dataset configurations
   const datasets = {
@@ -143,22 +142,6 @@ const NetworkPerformanceDemo: React.FC = () => {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Display Options</h2>
-          <div className="flex items-center space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={showOptimizationInfo}
-                onChange={(e) => setShowOptimizationInfo(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm">Show optimization info overlay</span>
-            </label>
-          </div>
-        </div>
-
         {/* Dataset Info */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Dataset Information</h2>
@@ -198,7 +181,6 @@ const NetworkPerformanceDemo: React.FC = () => {
             width={1200}
             height={700}
             performanceConfig={customConfig || undefined}
-            showOptimizationInfo={showOptimizationInfo}
           />
         </div>
 

@@ -146,7 +146,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
       const config = getOptimalPerformanceConfig(1000, 2000);
       expect(config.maxNodes).toBe(200); // Updated based on our new PERFORMANCE_PRESETS.xlarge
       expect(config.maxEdges).toBe(400);
-      expect(config.simplificationZoomThreshold).toBe(0.6);
+      expect(config.simplificationZoomThreshold).toBe(0.9); // Updated to match our new xlarge config
     });
 
     test('returns medium config for medium datasets', () => {

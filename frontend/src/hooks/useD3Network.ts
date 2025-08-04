@@ -16,8 +16,6 @@ import {
   optimizeNetworkData,
   getOptimalPerformanceConfig,
   FrameRateLimiter,
-  isElementInViewport, // RE-ENABLED
-  getViewportBounds,   // RE-ENABLED
   NetworkPerformanceConfig
 } from '../utils/networkOptimizer';
 
@@ -84,19 +82,19 @@ export const useD3Network = ({
     frameRateLimiterRef.current = new FrameRateLimiter(currentConfig.targetFrameRate);
   }
 
-  // Enhanced color scale for leagues
-  const colorScale = d3.scaleOrdinal<string>()
+  // Enhanced color scale for leagues - memoized to prevent recreation
+  const colorScale = useMemo(() => d3.scaleOrdinal<string>()
     .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1', 'Eredivisie', 'Primeira Liga', 'Süper Lig'])
-    .range(['#d70909', '#3d0845', '#ff6b35', '#004225', '#1e3a8a', '#ff8c00', '#228b22', '#dc143c']);
+    .range(['#d70909', '#3d0845', '#ff6b35', '#004225', '#1e3a8a', '#ff8c00', '#228b22', '#dc143c']), []);
 
-  // Node hover handler
+  // Node hover handler - stable callback to prevent re-renders
   const handleNodeHover = useCallback((node: NetworkNode | null) => {
     if (!isDraggingRef.current && node) {
       setSelectedNode({ ...node, stats: { ...node.stats } });
     }
-  }, [isDraggingRef, setSelectedNode]);
+  }, [setSelectedNode, isDraggingRef]);
 
-  // Node click handler  
+  // Node click handler - stable callback to prevent re-renders  
   const handleNodeClick = useCallback((node: NetworkNode, simulation: any) => {
     if (isDraggingRef.current) {
       console.log('Click suppressed - currently dragging');
@@ -122,7 +120,7 @@ export const useD3Network = ({
     }, 50);
   }, [isDraggingRef]);
 
-  // Edge hover handler
+  // Edge hover handler - stable callback to prevent re-renders
   const handleEdgeHover = useCallback((edge: NetworkEdge | null) => {
     if (!isDraggingRef.current && edge) {
       setHoveredEdge({ 
@@ -133,9 +131,9 @@ export const useD3Network = ({
     } else if (!edge) {
       setHoveredEdge(null);
     }
-  }, [isDraggingRef, setHoveredEdge]);
+  }, [setHoveredEdge, isDraggingRef]);
 
-  // D3 visualization initialization
+  // D3 visualization initialization - memoized with stable dependencies
   const initializeVisualization = useCallback(() => {
     if (!optimizedData || !svgRef.current || isInitializedRef.current) return;
 
@@ -173,10 +171,10 @@ export const useD3Network = ({
           currentTransformRef.current = event.transform;
           zoomGroup.attr('transform', event.transform);
           
-          // RE-ENABLED: Update visibility based on zoom level if LOD is enabled
-          if (currentConfig.enableViewportCulling) {
-            updateElementVisibility(event.transform);
-          }
+          // DISABLED: Aggressive viewport culling to prevent render thrashing
+          // if (currentConfig.enableViewportCulling) {
+          //   updateElementVisibility(event.transform);
+          // }
         }
       });
 
@@ -226,60 +224,46 @@ export const useD3Network = ({
     const dragHandler = createDragBehavior(simulation, handleDragStart, handleDragEnd, isDraggingRef);
     nodeCircles.call(dragHandler);
 
-    // Optimized simulation tick function with requestAnimationFrame
+    // Optimized simulation tick function with proper throttling
     let tickCount = 0;
     const maxTicks = currentConfig.maxIterations;
+    let isStabilized = false;
 
     const tick = () => {
-      // Performance optimization: limit tick updates for large datasets
-      if (tickCount++ > maxTicks) {
+      // Performance optimization: limit tick updates and add stabilization check
+      if (tickCount++ > maxTicks || isStabilized) {
         simulation.stop();
+        console.log(`Simulation stopped after ${tickCount} ticks (stabilized: ${isStabilized})`);
+        return;
+      }
+
+      // Check for stabilization (alpha below threshold)
+      if (simulation.alpha() < 0.01) {
+        isStabilized = true;
         return;
       }
 
       const renderUpdate = () => {
         const currentTime = performance.now();
         
-        // Throttle rendering for better performance
-        if (currentTime - lastRenderTimeRef.current < 16) return; // ~60fps
+        // Enhanced throttling for better performance (reduced to 30fps for smoother experience)
+        if (currentTime - lastRenderTimeRef.current < 33) return; // ~30fps
         lastRenderTimeRef.current = currentTime;
 
-        // RE-ENABLED: Get current viewport for culling 
-        const viewport = currentConfig.enableViewportCulling
-          ? getViewportBounds(currentTransformRef.current, width, height)
-          : null;
-
+        // Basic link positioning without aggressive viewport culling
         links
           .attr('x1', (d) => (d.source as NetworkNode).x!)
           .attr('y1', (d) => (d.source as NetworkNode).y!)
           .attr('x2', (d) => (d.target as NetworkNode).x!)
           .attr('y2', (d) => (d.target as NetworkNode).y!);
 
-        // RE-ENABLED: Viewport culling for links
-        if (viewport && currentConfig.enableViewportCulling) {
-          links.style('display', (d) => {
-            const source = d.source as NetworkNode;
-            const target = d.target as NetworkNode;
-            const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
-                           isElementInViewport(target, viewport, currentConfig.viewportBuffer);
-            return visible ? 'block' : 'none';
-          });
-        }
-
+        // Basic node positioning without aggressive viewport culling
         nodes.attr('transform', (d) => `translate(${d.x},${d.y})`);
 
-        // RE-ENABLED: Viewport culling for nodes
-        if (viewport && currentConfig.enableViewportCulling) {
-          nodes.style('display', (d) => {
-            const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
-            return visible ? 'block' : 'none';
-          });
-        }
-
-        // Level-of-detail for labels
+        // Conservative level-of-detail for labels only
         const currentZoom = currentTransformRef.current.k;
-        const showLabels = currentZoom >= currentConfig.hideLabelsZoomThreshold;
-        const showROI = currentZoom >= currentConfig.simplificationZoomThreshold;
+        const showLabels = currentZoom >= 0.5; // More conservative threshold
+        const showROI = currentZoom >= 0.7; // More conservative threshold
 
         labels
           .attr('x', (d) => d.x!)
@@ -292,7 +276,7 @@ export const useD3Network = ({
           .style('display', showROI ? 'block' : 'none');
       };
 
-      // RE-ENABLED: Use requestAnimationFrame for smoother rendering
+      // Use requestAnimationFrame for smoother rendering with frame limiting
       if (currentConfig.useRequestAnimationFrame && frameRateLimiterRef.current) {
         frameRateLimiterRef.current.requestFrame(renderUpdate);
       } else {
@@ -301,37 +285,6 @@ export const useD3Network = ({
     };
 
     simulation.on('tick', tick);
-
-    // RE-ENABLED: Function to update element visibility based on zoom and viewport
-    const updateElementVisibility = (transform: d3.ZoomTransform) => {
-      const currentZoom = transform.k;
-      const viewport = getViewportBounds(transform, width, height);
-
-      // Level-of-detail adjustments
-      const showLabels = currentZoom >= currentConfig.hideLabelsZoomThreshold;
-      const showROI = currentZoom >= currentConfig.simplificationZoomThreshold;
-      const showPerformanceRings = currentZoom >= currentConfig.simplificationZoomThreshold;
-
-      labels.style('display', showLabels ? 'block' : 'none');
-      roiLabels.style('display', showROI ? 'block' : 'none');
-      svg.selectAll('.performance-ring').style('display', showPerformanceRings ? 'block' : 'none');
-
-      // Viewport culling
-      if (currentConfig.enableViewportCulling) {
-        nodes.style('display', (d) => {
-          const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
-          return visible ? 'block' : 'none';
-        });
-
-        links.style('display', (d) => {
-          const source = d.source as NetworkNode;
-          const target = d.target as NetworkNode;
-          const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
-                         isElementInViewport(target, viewport, currentConfig.viewportBuffer);
-          return visible ? 'block' : 'none';
-        });
-      }
-    };
 
     // Add zoom controls
     createZoomControls(svg, zoom);
@@ -364,7 +317,7 @@ export const useD3Network = ({
       isInitializedRef.current = false;
       console.log('D3 visualization cleaned up');
     };
-  }, [optimizedData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, isDraggingRef, width, height, currentConfig]);
+  }, [optimizedData, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, width, height, currentConfig, isDraggingRef]);
 
   return {
     svgRef,
