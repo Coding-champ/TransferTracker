@@ -60,3 +60,18 @@ export class ServerError extends ApiError {
     this.name = 'ServerError';
   }
 }
+
+// Specific error classes as requested in requirements
+export class ApiTimeoutError extends TimeoutError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiTimeoutError';
+  }
+}
+
+export class ApiNotFoundError extends NotFoundError {
+  constructor(message: string, url?: string) {
+    super(message, url);
+    this.name = 'ApiNotFoundError';
+  }
+}
