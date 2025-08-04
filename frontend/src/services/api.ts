@@ -23,6 +23,7 @@ import {
   debugLog, 
   createPerformanceTimer 
 } from '../utils';
+import { BaseApiService } from './BaseApiService';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -36,7 +37,10 @@ const apiClient = axios.create({
 // Request interceptor for logging
 apiClient.interceptors.request.use(
   (config) => {
-    debugLog(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    debugLog(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+      params: config.params,
+      data: config.data
+    });
     return config;
   },
   (error) => {
@@ -51,34 +55,28 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error);
-    
-    if (error.response?.status === 404) {
-      console.error('API endpoint not found:', error.config?.url);
-    } else if (error.response?.status >= 500) {
-      console.error('Server error:', error.response?.data);
-    } else if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
-    }
+    // Log error for debugging
+    console.error('API Response Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     
     return Promise.reject(error);
   }
 );
 
 // ========== API SERVICE CLASS ==========
-class ApiService {
+class ApiService extends BaseApiService {
   
   // ========== HEALTH & STATUS ==========
 
   async checkHealth(): Promise<ApiResponse<{ message: string; timestamp: string; database: string }>> {
-    const timer = createPerformanceTimer('Health Check');
-    try {
-      const response: AxiosResponse<ApiResponse<{ message: string; timestamp: string; database: string }>> = 
-        await apiClient.get('/health');
-      return response.data;
-    } finally {
-      timer();
-    }
+    return this.execute(
+      () => apiClient.get('/health'),
+      'Health Check'
+    );
   }
 
   // ========== MASTER DATA ENDPOINTS ==========
@@ -87,83 +85,100 @@ class ApiService {
    * Get all leagues with enhanced data
    */
   async getLeagues(): Promise<ApiResponse<League[]>> {
-    const timer = createPerformanceTimer('Get Leagues');
-    try {
-      const response: AxiosResponse<ApiResponse<League[]>> = await apiClient.get('/leagues');
-      return response.data;
-    } finally {
-      timer();
-    }
+    return this.execute(
+      () => apiClient.get('/leagues'),
+      'Get Leagues',
+      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey: 'leagues' }
+    );
   }
 
   /**
    * Get all clubs (optionally filtered by league)
    */
   async getClubs(leagueId?: number): Promise<ApiResponse<Club[]>> {
-    const timer = createPerformanceTimer('Get Clubs');
-    try {
-      const params = leagueId ? { leagueId } : {};
-      const response: AxiosResponse<ApiResponse<Club[]>> = await apiClient.get('/clubs', { params });
-      return response.data;
-    } finally {
-      timer();
-    }
+    const cacheKey = `clubs_${leagueId || 'all'}`;
+    return this.execute(
+      () => apiClient.get('/clubs', { params: leagueId ? { leagueId } : {} }),
+      'Get Clubs',
+      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey }
+    );
   }
 
   /**
    * Get available seasons
    */
   async getSeasons(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/seasons');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/seasons'),
+      'Get Seasons',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'seasons' }
+    );
   }
 
   /**
    * Get transfer types
    */
   async getTransferTypes(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/transfer-types');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/transfer-types'),
+      'Get Transfer Types',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-types' }
+    );
   }
 
   /**
    * Get transfer windows (NEW)
    */
   async getTransferWindows(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/transfer-windows');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/transfer-windows'),
+      'Get Transfer Windows',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-windows' }
+    );
   }
 
   /**
    * Get player positions
    */
   async getPositions(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/positions');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/positions'),
+      'Get Positions',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'positions' }
+    );
   }
 
   /**
    * Get player nationalities (NEW)
    */
   async getNationalities(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/nationalities');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/nationalities'),
+      'Get Nationalities',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'nationalities' }
+    );
   }
 
   /**
    * Get continents (NEW)
    */
   async getContinents(): Promise<ApiResponse<string[]>> {
-    const response: AxiosResponse<ApiResponse<string[]>> = await apiClient.get('/continents');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/continents'),
+      'Get Continents',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'continents' }
+    );
   }
 
   /**
    * Get league tiers (NEW)
    */
   async getLeagueTiers(): Promise<ApiResponse<number[]>> {
-    const response: AxiosResponse<ApiResponse<number[]>> = await apiClient.get('/league-tiers');
-    return response.data;
+    return this.execute(
+      () => apiClient.get('/league-tiers'),
+      'Get League Tiers',
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'league-tiers' }
+    );
   }
 
   // ========== CORE DATA ENDPOINTS ==========
@@ -172,55 +187,45 @@ class ApiService {
    * Get network data with enhanced filters
    */
   async getNetworkData(filters: FilterParams = {}): Promise<ApiResponse<NetworkData>> {
-    const timer = createPerformanceTimer('Get Network Data');
-    try {
-      // Convert filter object to query parameters
-      const params: any = {};
-      
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value) && value.length > 0) {
-            params[key] = value.join(',');
-          } else if (typeof value === 'number' || typeof value === 'boolean') {
-            params[key] = value.toString();
-          }
+    // Convert filter object to query parameters
+    const params: any = {};
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value) && value.length > 0) {
+          params[key] = value.join(',');
+        } else if (typeof value === 'number' || typeof value === 'boolean') {
+          params[key] = value.toString();
         }
-      });
+      }
+    });
 
-      debugLog('Network data request params', params);
-      
-      const response: AxiosResponse<ApiResponse<NetworkData>> = 
-        await apiClient.get('/network-data', { params });
-      return response.data;
-    } finally {
-      timer();
-    }
+    debugLog('Network data request params', params);
+    
+    return this.execute(
+      () => apiClient.get('/network-data', { params }),
+      'Get Network Data'
+    );
   }
 
   /**
    * Get transfers with pagination and filters
    */
   async getTransfers(options: TransferQueryParams = {}): Promise<ApiResponse<PaginatedResponse<Transfer[]>>> {
-    const timer = createPerformanceTimer('Get Transfers');
-    try {
-      const response = await apiClient.get('/transfers', { params: options });
-      return response.data;
-    } finally {
-      timer();
-    }
+    return this.execute(
+      () => apiClient.get('/transfers', { params: options }),
+      'Get Transfers'
+    );
   }
 
   /**
    * Get enhanced statistics
    */
   async getStatistics(): Promise<ApiResponse<Statistics>> {
-    const timer = createPerformanceTimer('Get Statistics');
-    try {
-      const response: AxiosResponse<ApiResponse<Statistics>> = await apiClient.get('/statistics');
-      return response.data;
-    } finally {
-      timer();
-    }
+    return this.execute(
+      () => apiClient.get('/statistics'),
+      'Get Statistics'
+    );
   }
 
   // ========== ENHANCED ANALYTICS ENDPOINTS ==========
@@ -229,32 +234,24 @@ class ApiService {
    * Get transfer success statistics (NEW)
    */
   async getTransferSuccessStats(clubId?: number, season?: string): Promise<ApiResponse<TransferSuccessStats>> {
-    const timer = createPerformanceTimer('Get Success Stats');
-    try {
-      const params: any = {};
-      if (clubId) params.clubId = clubId;
-      if (season) params.season = season;
-      
-      const response: AxiosResponse<ApiResponse<TransferSuccessStats>> = 
-        await apiClient.get('/transfer-success-stats', { params });
-      return response.data;
-    } finally {
-      timer();
-    }
+    const params: any = {};
+    if (clubId) params.clubId = clubId;
+    if (season) params.season = season;
+    
+    return this.execute(
+      () => apiClient.get('/transfer-success-stats', { params }),
+      'Get Success Stats'
+    );
   }
 
   /**
    * Get loan-to-buy analytics (NEW)
    */
   async getLoanToBuyAnalytics(): Promise<ApiResponse<LoanToBuyAnalytics>> {
-    const timer = createPerformanceTimer('Get Loan-to-Buy Analytics');
-    try {
-      const response: AxiosResponse<ApiResponse<LoanToBuyAnalytics>> = 
-        await apiClient.get('/loan-to-buy-analytics');
-      return response.data;
-    } finally {
-      timer();
-    }
+    return this.execute(
+      () => apiClient.get('/loan-to-buy-analytics'),
+      'Get Loan-to-Buy Analytics'
+    );
   }
 
   // ========== BATCH DATA LOADING ==========
@@ -313,101 +310,17 @@ class ApiService {
     }
   }
 
-  // ========== ERROR HANDLING UTILITIES ==========
-
-  /**
-   * Generic error handler for API responses
-   */
-  private handleApiError(error: any, context: string): never {
-    console.error(`API Error in ${context}:`, error);
-    
-    if (error.response) {
-      throw new Error(`${context} failed: ${error.response.data?.error || error.response.statusText}`);
-    } else if (error.request) {
-      throw new Error(`${context} failed: Network error`);
-    } else {
-      throw new Error(`${context} failed: ${error.message}`);
-    }
-  }
-
   // ========== CACHING UTILITIES ==========
   
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  // Note: Basic cache implementation moved to BaseApiService.
+  // The cache property and utility methods are inherited.
 
-  /**
-   * Get data from cache or fetch if expired
-   */
-  private async getCachedOrFetch<T>(
-    cacheKey: string, 
-    fetchFn: () => Promise<T>, 
-    ttlMs: number = 5 * 60 * 1000 // 5 minutes default
-  ): Promise<T> {
-    const cached = this.cache.get(cacheKey);
-    const now = Date.now();
-    
-    if (cached && (now - cached.timestamp) < cached.ttl) {
-      debugLog(`Cache hit for ${cacheKey}`);
-      return cached.data;
-    }
-    
-    debugLog(`Cache miss for ${cacheKey}, fetching...`);
-    const data = await fetchFn();
-    
-    this.cache.set(cacheKey, {
-      data,
-      timestamp: now,
-      ttl: ttlMs
-    });
-    
-    return data;
-  }
-
-  /**
-   * Clear cache entry or entire cache
-   */
-  clearCache(key?: string): void {
-    if (key) {
-      this.cache.delete(key);
-      debugLog(`Cleared cache for ${key}`);
-    } else {
-      this.cache.clear();
-      debugLog('Cleared entire cache');
-    }
-  }
+  // Note: Cached fetch functionality is now handled by BaseApiService execute method.
+  // Individual cache methods have been replaced by the centralized execute pattern.
 
   // ========== CACHED METHODS ==========
-
-  /**
-   * Get leagues with caching
-   */
-  async getLeaguesCached(): Promise<ApiResponse<League[]>> {
-    return this.getCachedOrFetch('leagues', () => this.getLeagues());
-  }
-
-  /**
-   * Get clubs with caching
-   */
-  async getClubsCached(leagueId?: number): Promise<ApiResponse<Club[]>> {
-    const cacheKey = `clubs_${leagueId || 'all'}`;
-    return this.getCachedOrFetch(cacheKey, () => this.getClubs(leagueId));
-  }
-
-  /**
-   * Get filter data with caching
-   */
-  async loadAllFilterDataCached(): Promise<{
-    leagues: League[];
-    clubs: Club[];
-    seasons: string[];
-    transferTypes: string[];
-    transferWindows: string[];
-    positions: string[];
-    nationalities: string[];
-    continents: string[];
-    leagueTiers: number[];
-  }> {
-    return this.getCachedOrFetch('all_filter_data', () => this.loadAllFilterData(), 10 * 60 * 1000); // 10 minutes
-  }
+  // Note: Caching is now handled at the individual method level using the execute pattern.
+  // Legacy cached methods have been consolidated into the main methods with cache options.
 }
 
 // ========== EXPORT SINGLETON INSTANCE ==========
