@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { NetworkEdge, NetworkData } from '../types';
+import { measureOptimization } from './performanceMonitor';
 
 /**
  * Performance configuration for network visualization
@@ -35,66 +36,82 @@ export interface NetworkPerformanceConfig {
 
 /**
  * Default performance configuration optimized for different dataset sizes
- * Enhanced with LOD strategies
- * TEMPORARILY DISABLED - Troubleshooting RAM usage and canvas issues
+ * Enhanced with LOD strategies - RE-ENABLED with conservative settings
  */
 export const DEFAULT_PERFORMANCE_CONFIG: NetworkPerformanceConfig = {
-  maxNodes: 1000, // Increased from 200 to reduce aggressive filtering
-  maxEdges: 2000, // Increased from 500 to reduce aggressive filtering
-  simplificationZoomThreshold: 0.1, // Lowered from 0.5 to show more elements
-  hideLabelsZoomThreshold: 0.05, // Lowered from 0.3 to show labels more often
-  hideSmallNodesZoomThreshold: 0.05, // Lowered from 0.4 to show nodes more often
+  maxNodes: 500, // Conservative limit to ensure performance
+  maxEdges: 1000, // Conservative limit to ensure performance
+  simplificationZoomThreshold: 0.3, // Re-enabled with moderate threshold
+  hideLabelsZoomThreshold: 0.2, // Re-enabled with conservative threshold
+  hideSmallNodesZoomThreshold: 0.15, // Re-enabled with conservative threshold
   maxIterations: 300,
-  adaptiveAlpha: false, // Disabled adaptive alpha temporarily
-  useRequestAnimationFrame: false, // Disabled RAF temporarily
+  adaptiveAlpha: true, // Re-enabled adaptive alpha for better performance
+  useRequestAnimationFrame: true, // Re-enabled RAF for smooth rendering
   targetFrameRate: 60,
-  enableViewportCulling: false, // Disabled viewport culling temporarily
+  enableViewportCulling: true, // Re-enabled viewport culling for performance
   viewportBuffer: 200,
-  enableNodeClustering: false, // Disabled node clustering temporarily
+  enableNodeClustering: false, // Keep disabled for now to avoid complexity
   clusterDistance: 100,
-  minNodeSizeToShow: 1, // Lowered from 5 to show more nodes
-  enableEdgeFiltering: false, // Disabled edge filtering temporarily
-  minEdgeValueToShow: 0 // Lowered from 1M to show all edges
+  minNodeSizeToShow: 3, // Re-enabled with conservative threshold
+  enableEdgeFiltering: true, // Re-enabled edge filtering for performance
+  minEdgeValueToShow: 100000 // Re-enabled with reasonable threshold (100K)
 };
 
 /**
  * Performance configurations for different dataset sizes
+ * Re-tuned with conservative limits for stability
  */
 export const PERFORMANCE_PRESETS = {
   small: {
     ...DEFAULT_PERFORMANCE_CONFIG,
-    maxNodes: 50,
-    maxEdges: 100,
-    maxIterations: 500
+    maxNodes: 100,
+    maxEdges: 200,
+    maxIterations: 500,
+    enableViewportCulling: false // Disable for small datasets
   },
   medium: DEFAULT_PERFORMANCE_CONFIG,
   large: {
     ...DEFAULT_PERFORMANCE_CONFIG,
-    maxNodes: 100,
-    maxEdges: 200,
-    simplificationZoomThreshold: 0.7,
-    hideLabelsZoomThreshold: 0.5,
-    maxIterations: 200
+    maxNodes: 300,
+    maxEdges: 600,
+    simplificationZoomThreshold: 0.5,
+    hideLabelsZoomThreshold: 0.3,
+    maxIterations: 200,
+    minNodeSizeToShow: 5
   },
   xlarge: {
     ...DEFAULT_PERFORMANCE_CONFIG,
-    maxNodes: 50,
-    maxEdges: 100,
-    simplificationZoomThreshold: 0.8,
-    hideLabelsZoomThreshold: 0.6,
-    maxIterations: 100
+    maxNodes: 200,
+    maxEdges: 400,
+    simplificationZoomThreshold: 0.6,
+    hideLabelsZoomThreshold: 0.4,
+    maxIterations: 150,
+    minNodeSizeToShow: 8,
+    minEdgeValueToShow: 500000 // Higher threshold for very large datasets
   }
 };
 
 /**
  * Determines appropriate performance configuration based on dataset size
+ * Updated with circuit breaker for very large datasets
  */
 export function getOptimalPerformanceConfig(nodeCount: number, edgeCount: number): NetworkPerformanceConfig {
-  if (nodeCount <= 50 && edgeCount <= 100) {
+  // Circuit breaker for extremely large datasets
+  if (nodeCount > 2000 || edgeCount > 4000) {
+    console.warn(`Dataset too large (${nodeCount} nodes, ${edgeCount} edges). Applying aggressive optimization.`);
+    return {
+      ...PERFORMANCE_PRESETS.xlarge,
+      maxNodes: 150,
+      maxEdges: 300,
+      maxIterations: 100
+    };
+  }
+  
+  if (nodeCount <= 100 && edgeCount <= 200) {
     return PERFORMANCE_PRESETS.small;
-  } else if (nodeCount <= 200 && edgeCount <= 500) {
+  } else if (nodeCount <= 300 && edgeCount <= 600) {
     return PERFORMANCE_PRESETS.medium;
-  } else if (nodeCount <= 500 && edgeCount <= 1000) {
+  } else if (nodeCount <= 800 && edgeCount <= 1500) {
     return PERFORMANCE_PRESETS.large;
   } else {
     return PERFORMANCE_PRESETS.xlarge;
@@ -103,7 +120,7 @@ export function getOptimalPerformanceConfig(nodeCount: number, edgeCount: number
 
 /**
  * Optimizes network data by filtering and aggregating nodes/edges based on performance config
- * TEMPORARILY SIMPLIFIED - Troubleshooting RAM usage and canvas issues
+ * RE-ENABLED with conservative settings for performance
  */
 export function optimizeNetworkData(
   data: NetworkData, 
@@ -111,25 +128,30 @@ export function optimizeNetworkData(
 ): NetworkData {
   const { nodes, edges } = data;
   
-  // TEMPORARILY DISABLED: Skip aggressive optimization to troubleshoot issues
-  console.log(`Network data passed through without optimization: ${nodes.length} nodes, ${edges.length} edges`);
+  // Add performance monitoring
+  const endMeasure = measureOptimization(`data-${nodes.length}n-${edges.length}e`);
+  console.log(`Optimizing network data: ${nodes.length} nodes, ${edges.length} edges`);
   
-  return {
-    nodes: nodes,
-    edges: edges,
-    metadata: {
-      ...data.metadata,
-      clubCount: nodes.length,
-      edgeCount: edges.length,
-      isOptimized: false, // Mark as not optimized
-      originalSize: {
-        nodes: nodes.length,
-        edges: edges.length
-      }
-    } as any
-  };
-
-  /* ORIGINAL OPTIMIZATION CODE COMMENTED OUT:
+  // If dataset is within limits, return as-is for small datasets
+  if (nodes.length <= config.maxNodes && edges.length <= config.maxEdges) {
+    console.log(`Dataset within limits, returning unoptimized data`);
+    return {
+      nodes: nodes,
+      edges: edges,
+      metadata: {
+        ...data.metadata,
+        clubCount: nodes.length,
+        edgeCount: edges.length,
+        isOptimized: false,
+        originalSize: {
+          nodes: nodes.length,
+          edges: edges.length
+        }
+      } as any
+    };
+  }
+  
+  // Apply optimization for large datasets
   // Sort nodes by importance (transfer activity)
   const sortedNodes = [...nodes].sort((a, b) => {
     const activityA = a.stats.transfersIn + a.stats.transfersOut;
@@ -157,8 +179,11 @@ export function optimizeNetworkData(
     })
     .slice(0, config.maxEdges);
   
-  // Aggregate similar edges if needed
-  const aggregatedEdges = aggregateEdges(optimizedEdges);
+  // Aggregate similar edges if needed (keeping it simple for now)
+  const aggregatedEdges = optimizedEdges; // Skip aggregation for stability
+  
+  const metric = endMeasure();
+  console.log(`Optimization completed in ${metric.renderTime?.toFixed(2)}ms: ${optimizedNodes.length} nodes, ${aggregatedEdges.length} edges`);
   
   return {
     nodes: optimizedNodes,
@@ -171,10 +196,10 @@ export function optimizeNetworkData(
       originalSize: {
         nodes: nodes.length,
         edges: edges.length
-      }
+      },
+      optimizationTime: metric.renderTime
     } as any
   };
-  */
 }
 
 /**
@@ -269,7 +294,7 @@ export function getViewportBounds(
 
 /**
  * Enhanced LOD filtering for nodes based on zoom level and viewport
- * TEMPORARILY DISABLED - Troubleshooting canvas interaction issues
+ * RE-ENABLED with conservative settings
  */
 export function filterNodesForLOD(
   nodes: any[],
@@ -277,10 +302,6 @@ export function filterNodesForLOD(
   viewport: { x: number; y: number; width: number; height: number },
   config: NetworkPerformanceConfig
 ): any[] {
-  // TEMPORARILY DISABLED: Always show all nodes to troubleshoot interaction issues
-  return nodes;
-  
-  /* ORIGINAL CODE COMMENTED OUT:
   // Always show all nodes at high zoom levels
   if (zoomLevel >= config.simplificationZoomThreshold) {
     return nodes;
@@ -302,22 +323,17 @@ export function filterNodesForLOD(
 
     return true;
   });
-  */
 }
 
 /**
  * Enhanced LOD filtering for edges based on zoom level and value
- * TEMPORARILY DISABLED - Troubleshooting canvas interaction issues
+ * RE-ENABLED with conservative settings
  */
 export function filterEdgesForLOD(
   edges: NetworkEdge[],
   zoomLevel: number,
   config: NetworkPerformanceConfig
 ): NetworkEdge[] {
-  // TEMPORARILY DISABLED: Always show all edges to troubleshoot interaction issues
-  return edges;
-  
-  /* ORIGINAL CODE COMMENTED OUT:
   // Show all edges at high zoom levels
   if (zoomLevel >= config.simplificationZoomThreshold) {
     return edges;
@@ -331,7 +347,6 @@ export function filterEdgesForLOD(
   }
 
   return edges;
-  */
 }
 
 /**

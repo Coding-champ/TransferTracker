@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FilterState } from '../../types';
 import { formatCurrency, validateFilterCombination } from '../../utils';
 import { useFilterData } from './hooks/useFilterData';
+import { useDebounce } from '../../hooks/useDebounce';
 import BasicFilters from './filters/BasicFilters';
 import GeographicFilters from './filters/GeographicFilters';
 import PlayerFilters from './filters/PlayerFilters';
@@ -52,11 +53,14 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
   }), []);
 
   const [filters, setFilters] = useState<FilterState>(initialFilters);
+  
+  // Debounce filter changes to improve performance (300ms delay)
+  const debouncedFilters = useDebounce(filters, 300);
 
-  // Memoize filter validation warnings
+  // Memoize filter validation warnings with debounced filters
   const filterWarnings = useMemo(() => {
-    return validateFilterCombination(filters);
-  }, [filters]);
+    return validateFilterCombination(debouncedFilters);
+  }, [debouncedFilters]);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['seasons', 'leagues', 'transferTypes'])
@@ -75,10 +79,10 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
     loading
   } = useFilterData();
 
-  // Update parent component when filters change
+  // Update parent component when debounced filters change (instead of on every filter change)
   useEffect(() => {
-    onFiltersChange(filters);
-  }, [filters, onFiltersChange]);
+    onFiltersChange(debouncedFilters);
+  }, [debouncedFilters, onFiltersChange]);
 
   /**
    * Update a specific filter value

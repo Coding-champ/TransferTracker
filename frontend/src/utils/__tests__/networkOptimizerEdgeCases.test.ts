@@ -93,7 +93,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
       
       expect(result.nodes).toHaveLength(0);
       expect(result.edges).toHaveLength(0);
-      expect(result.metadata.isOptimized).toBe(true);
+      expect(result.metadata.isOptimized).toBe(false); // Small datasets aren't optimized now
     });
 
     test('limits nodes correctly based on config', () => {
@@ -127,7 +127,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
       const result = optimizeNetworkData(mockNetworkData, DEFAULT_PERFORMANCE_CONFIG);
       
       expect(result.metadata.totalTransfers).toBe(mockNetworkData.metadata.totalTransfers);
-      expect(result.metadata.isOptimized).toBe(true);
+      expect(result.metadata.isOptimized).toBe(false); // Small dataset, no optimization needed
       expect(result.metadata.originalSize).toEqual({
         nodes: 3,
         edges: 2
@@ -138,21 +138,21 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
   describe('getOptimalPerformanceConfig', () => {
     test('returns small config for small datasets', () => {
       const config = getOptimalPerformanceConfig(30, 50);
-      expect(config.maxNodes).toBe(50);
-      expect(config.maxEdges).toBe(100);
+      expect(config.maxNodes).toBe(100); // Updated based on our new PERFORMANCE_PRESETS.small
+      expect(config.maxEdges).toBe(200);
     });
 
     test('returns xlarge config for very large datasets', () => {
       const config = getOptimalPerformanceConfig(1000, 2000);
-      expect(config.maxNodes).toBe(50);
-      expect(config.maxEdges).toBe(100);
-      expect(config.simplificationZoomThreshold).toBe(0.8);
+      expect(config.maxNodes).toBe(200); // Updated based on our new PERFORMANCE_PRESETS.xlarge
+      expect(config.maxEdges).toBe(400);
+      expect(config.simplificationZoomThreshold).toBe(0.6);
     });
 
     test('returns medium config for medium datasets', () => {
       const config = getOptimalPerformanceConfig(150, 300);
-      expect(config.maxNodes).toBe(200);
-      expect(config.maxEdges).toBe(500);
+      expect(config.maxNodes).toBe(500); // Updated based on our new DEFAULT_PERFORMANCE_CONFIG
+      expect(config.maxEdges).toBe(1000);
     });
   });
 
@@ -177,7 +177,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
         minNodeSizeToShow: 2,
         enableViewportCulling: false 
       };
-      const result = filterNodesForLOD(mockNodes, 0.3, viewport, config);
+      const result = filterNodesForLOD(mockNodes, 0.1, viewport, config); // Use 0.1 zoom level to ensure filtering
       
       // Should filter out node3 which has only 1 total transfer (less than minNodeSizeToShow of 2)
       expect(result).toHaveLength(2);
@@ -189,9 +189,10 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
         ...DEFAULT_PERFORMANCE_CONFIG, 
         enableViewportCulling: true, 
         viewportBuffer: 0,
-        hideSmallNodesZoomThreshold: 0.1 // Disable size filtering for this test
+        hideSmallNodesZoomThreshold: 0.1, // Disable size filtering for this test
+        simplificationZoomThreshold: 0.5 // Set higher so zoom 0.2 will trigger filtering
       };
-      const result = filterNodesForLOD(mockNodes, 0.3, viewport, config);
+      const result = filterNodesForLOD(mockNodes, 0.2, viewport, config); // Use zoom level < simplificationZoomThreshold but above hideSmallNodesZoomThreshold
       
       // node3 is outside viewport (x: 1000, y: 1000 is outside 0,0,500,500)
       expect(result.map(n => n.id)).not.toContain('node3');
@@ -215,8 +216,13 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
     });
 
     test('filters low-value edges at low zoom levels', () => {
-      const config = { ...DEFAULT_PERFORMANCE_CONFIG, enableEdgeFiltering: true, minEdgeValueToShow: 1000000 };
-      const result = filterEdgesForLOD(mockNetworkData.edges, 0.3, config);
+      const config = { 
+        ...DEFAULT_PERFORMANCE_CONFIG, 
+        enableEdgeFiltering: true, 
+        minEdgeValueToShow: 1000000,
+        simplificationZoomThreshold: 0.5 // Set higher so zoom 0.2 will trigger filtering
+      };
+      const result = filterEdgesForLOD(mockNetworkData.edges, 0.2, config); // Use zoom level < simplificationZoomThreshold
       
       // Should filter out edge2 which has only 500000 value
       expect(result).toHaveLength(1);
