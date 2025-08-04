@@ -36,30 +36,30 @@ export interface NetworkPerformanceConfig {
 
 /**
  * Default performance configuration optimized for different dataset sizes
- * Enhanced with LOD strategies - RE-ENABLED with conservative settings
+ * Updated with conservative settings to prevent render thrashing
  */
 export const DEFAULT_PERFORMANCE_CONFIG: NetworkPerformanceConfig = {
   maxNodes: 500, // Conservative limit to ensure performance
   maxEdges: 1000, // Conservative limit to ensure performance
-  simplificationZoomThreshold: 0.3, // Re-enabled with moderate threshold
-  hideLabelsZoomThreshold: 0.2, // Re-enabled with conservative threshold
-  hideSmallNodesZoomThreshold: 0.15, // Re-enabled with conservative threshold
+  simplificationZoomThreshold: 0.7, // More conservative threshold to reduce thrashing
+  hideLabelsZoomThreshold: 0.5, // More conservative threshold to reduce thrashing
+  hideSmallNodesZoomThreshold: 0.3, // More conservative threshold to reduce thrashing
   maxIterations: 300,
-  adaptiveAlpha: true, // Re-enabled adaptive alpha for better performance
-  useRequestAnimationFrame: true, // Re-enabled RAF for smooth rendering
-  targetFrameRate: 60,
-  enableViewportCulling: true, // Re-enabled viewport culling for performance
+  adaptiveAlpha: true, // Keep adaptive alpha for better performance
+  useRequestAnimationFrame: true, // Keep RAF for smooth rendering
+  targetFrameRate: 30, // Reduced to 30fps to reduce CPU load
+  enableViewportCulling: false, // DISABLED by default to prevent render thrashing
   viewportBuffer: 200,
-  enableNodeClustering: false, // Keep disabled for now to avoid complexity
+  enableNodeClustering: false, // Keep disabled for stability
   clusterDistance: 100,
-  minNodeSizeToShow: 3, // Re-enabled with conservative threshold
-  enableEdgeFiltering: true, // Re-enabled edge filtering for performance
-  minEdgeValueToShow: 100000 // Re-enabled with reasonable threshold (100K)
+  minNodeSizeToShow: 3, // Conservative threshold
+  enableEdgeFiltering: false, // DISABLED by default to prevent complexity
+  minEdgeValueToShow: 100000 // Conservative threshold
 };
 
 /**
  * Performance configurations for different dataset sizes
- * Re-tuned with conservative limits for stability
+ * Updated with conservative limits for stability
  */
 export const PERFORMANCE_PRESETS = {
   small: {
@@ -67,26 +67,32 @@ export const PERFORMANCE_PRESETS = {
     maxNodes: 100,
     maxEdges: 200,
     maxIterations: 500,
-    enableViewportCulling: false // Disable for small datasets
+    enableViewportCulling: false, // Disable for small datasets
+    targetFrameRate: 60 // Higher fps for small datasets
   },
-  medium: DEFAULT_PERFORMANCE_CONFIG,
+  medium: {
+    ...DEFAULT_PERFORMANCE_CONFIG,
+    targetFrameRate: 30 // Conservative fps for medium datasets
+  },
   large: {
     ...DEFAULT_PERFORMANCE_CONFIG,
     maxNodes: 300,
     maxEdges: 600,
-    simplificationZoomThreshold: 0.5,
-    hideLabelsZoomThreshold: 0.3,
+    simplificationZoomThreshold: 0.8,
+    hideLabelsZoomThreshold: 0.6,
     maxIterations: 200,
-    minNodeSizeToShow: 5
+    minNodeSizeToShow: 5,
+    targetFrameRate: 30
   },
   xlarge: {
     ...DEFAULT_PERFORMANCE_CONFIG,
     maxNodes: 200,
     maxEdges: 400,
-    simplificationZoomThreshold: 0.6,
-    hideLabelsZoomThreshold: 0.4,
+    simplificationZoomThreshold: 0.9,
+    hideLabelsZoomThreshold: 0.7,
     maxIterations: 150,
     minNodeSizeToShow: 8,
+    targetFrameRate: 20, // Even lower fps for very large datasets
     minEdgeValueToShow: 500000 // Higher threshold for very large datasets
   }
 };

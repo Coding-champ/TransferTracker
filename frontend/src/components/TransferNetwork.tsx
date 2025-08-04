@@ -90,7 +90,6 @@ const TransferNetwork: React.FC = React.memo(() => {
                   networkData={networkData}
                   width={1200}
                   height={600}
-                  showOptimizationInfo={true}
                 />
               </NetworkErrorBoundary>
               
