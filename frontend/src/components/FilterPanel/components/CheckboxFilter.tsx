@@ -22,8 +22,9 @@ interface CheckboxFilterProps<T> {
 /**
  * Reusable checkbox filter component that displays a list of items with checkboxes
  * Supports custom label rendering and scrollable containers for long lists
+ * Wrapped with React.memo to prevent unnecessary re-renders when props haven't changed
  */
-function CheckboxFilter<T extends string | number>({
+const CheckboxFilter = React.memo(function CheckboxFilter<T extends string | number>({
   title,
   items,
   selectedItems,
@@ -51,6 +52,6 @@ function CheckboxFilter<T extends string | number>({
       </div>
     </div>
   );
-}
+});
 
 export default CheckboxFilter;

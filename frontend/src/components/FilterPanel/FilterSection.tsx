@@ -19,8 +19,9 @@ interface FilterSectionProps {
 /**
  * Collapsible filter section wrapper component
  * Provides a consistent expand/collapse interface for filter groups
+ * Wrapped with React.memo to prevent unnecessary re-renders
  */
-const FilterSection: React.FC<FilterSectionProps> = ({
+const FilterSection: React.FC<FilterSectionProps> = React.memo(({
   title,
   sectionKey,
   isExpanded,
@@ -45,6 +46,6 @@ const FilterSection: React.FC<FilterSectionProps> = ({
       )}
     </div>
   );
-};
+});
 
 export default FilterSection;
