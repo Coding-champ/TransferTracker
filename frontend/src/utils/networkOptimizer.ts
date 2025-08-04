@@ -3,6 +3,7 @@ import { NetworkEdge, NetworkData } from '../types';
 
 /**
  * Performance configuration for network visualization
+ * Enhanced with additional LOD strategies
  */
 export interface NetworkPerformanceConfig {
   // Maximum nodes/edges to render
@@ -12,6 +13,7 @@ export interface NetworkPerformanceConfig {
   // Level-of-detail thresholds
   simplificationZoomThreshold: number; // Below this zoom level, simplify rendering
   hideLabelsZoomThreshold: number;     // Below this zoom level, hide labels
+  hideSmallNodesZoomThreshold: number; // Below this zoom level, hide small nodes
   
   // Force simulation optimizations
   maxIterations: number;
@@ -22,22 +24,36 @@ export interface NetworkPerformanceConfig {
   targetFrameRate: number;
   enableViewportCulling: boolean;
   viewportBuffer: number; // Buffer around viewport for pre-rendering
+  
+  // LOD optimizations
+  enableNodeClustering: boolean;     // Cluster distant nodes
+  clusterDistance: number;           // Distance threshold for clustering
+  minNodeSizeToShow: number;         // Minimum node size to render at low zoom
+  enableEdgeFiltering: boolean;      // Filter low-value edges at low zoom
+  minEdgeValueToShow: number;        // Minimum edge value to show at low zoom
 }
 
 /**
  * Default performance configuration optimized for different dataset sizes
+ * Enhanced with LOD strategies
  */
 export const DEFAULT_PERFORMANCE_CONFIG: NetworkPerformanceConfig = {
   maxNodes: 200,
   maxEdges: 500,
   simplificationZoomThreshold: 0.5,
   hideLabelsZoomThreshold: 0.3,
+  hideSmallNodesZoomThreshold: 0.4,
   maxIterations: 300,
   adaptiveAlpha: true,
   useRequestAnimationFrame: true,
   targetFrameRate: 60,
   enableViewportCulling: true,
-  viewportBuffer: 200
+  viewportBuffer: 200,
+  enableNodeClustering: true,
+  clusterDistance: 100,
+  minNodeSizeToShow: 5,
+  enableEdgeFiltering: true,
+  minEdgeValueToShow: 1000000 // 1M euros
 };
 
 /**
@@ -226,4 +242,76 @@ export function getViewportBounds(
     width: width / transform.k,
     height: height / transform.k
   };
+}
+
+/**
+ * Enhanced LOD filtering for nodes based on zoom level and viewport
+ */
+export function filterNodesForLOD(
+  nodes: any[],
+  zoomLevel: number,
+  viewport: { x: number; y: number; width: number; height: number },
+  config: NetworkPerformanceConfig
+): any[] {
+  // Always show all nodes at high zoom levels
+  if (zoomLevel >= config.simplificationZoomThreshold) {
+    return nodes;
+  }
+
+  return nodes.filter(node => {
+    // Hide small nodes at low zoom levels
+    if (zoomLevel < config.hideSmallNodesZoomThreshold) {
+      const nodeSize = node.stats?.transfersIn + node.stats?.transfersOut || 0;
+      if (nodeSize < config.minNodeSizeToShow) {
+        return false;
+      }
+    }
+
+    // Viewport culling if enabled
+    if (config.enableViewportCulling) {
+      return isElementInViewport(node, viewport, config.viewportBuffer);
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Enhanced LOD filtering for edges based on zoom level and value
+ */
+export function filterEdgesForLOD(
+  edges: NetworkEdge[],
+  zoomLevel: number,
+  config: NetworkPerformanceConfig
+): NetworkEdge[] {
+  // Show all edges at high zoom levels
+  if (zoomLevel >= config.simplificationZoomThreshold) {
+    return edges;
+  }
+
+  // Filter low-value edges at low zoom levels
+  if (config.enableEdgeFiltering) {
+    return edges.filter(edge => {
+      return edge.stats.totalValue >= config.minEdgeValueToShow;
+    });
+  }
+
+  return edges;
+}
+
+/**
+ * Adaptive alpha for force simulation based on dataset size
+ */
+export function getAdaptiveAlpha(nodeCount: number, edgeCount: number): number {
+  const totalElements = nodeCount + edgeCount;
+  
+  if (totalElements > 1000) {
+    return 0.1; // Lower alpha for large networks
+  } else if (totalElements > 500) {
+    return 0.2;
+  } else if (totalElements > 100) {
+    return 0.3;
+  } else {
+    return 0.5; // Higher alpha for small networks
+  }
 }

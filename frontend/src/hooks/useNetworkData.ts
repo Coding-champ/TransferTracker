@@ -204,6 +204,7 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
         // Cancel previous request
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
+          abortControllerRef.current = null;
         }
         
         // Create new abort controller
@@ -211,6 +212,9 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
         
         fetchNetworkData(abortControllerRef.current.signal);
       }, delay);
+      
+      // Return cleanup function for timeout
+      return () => clearTimeout(timeoutId);
     };
   }, [fetchNetworkData]);
 
@@ -218,19 +222,41 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
   useEffect(() => {
     debouncedFetch();
     
+    // Capture current refs for cleanup
+    const currentController = abortControllerRef.current;
+    const currentCache = requestCacheRef.current;
+    
     return () => {
-      // Cleanup: abort any pending requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      // Cleanup: abort any pending requests and clear timeouts
+      if (currentController) {
+        currentController.abort();
       }
+      // Clear any pending cache entries
+      currentCache.clear();
     };
   }, [debouncedFetch]);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    // Capture current refs for cleanup
+    const currentController = abortControllerRef.current;
+    const currentCache = requestCacheRef.current;
+    
+    return () => {
+      // Ensure all requests are aborted when component unmounts
+      if (currentController) {
+        currentController.abort();
+      }
+      currentCache.clear();
+    };
+  }, []);
 
   // Manual refetch function
   const refetch = useCallback(() => {
     // Cancel any pending debounced requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     
     // Clear cache

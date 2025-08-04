@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { FilterState } from '../../../types';
 import FilterSection from '../FilterSection';
 import CheckboxFilter from '../components/CheckboxFilter';
@@ -28,8 +28,9 @@ interface BasicFiltersProps {
 /**
  * Basic filters component for seasons, transfer types, and transfer windows
  * Includes common transfer-related checkboxes
+ * Optimized with React.memo for performance
  */
-const BasicFilters: React.FC<BasicFiltersProps> = ({
+const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
   filters,
   updateFilter,
   handleArrayFilter,
@@ -39,6 +40,44 @@ const BasicFilters: React.FC<BasicFiltersProps> = ({
   expandedSections,
   toggleSection
 }) => {
+  // Memoized callbacks for better performance
+  const handleSeasonsChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('seasons', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleTransferTypesChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('transferTypes', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleTransferWindowsChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('transferWindows', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleExcludeLoansChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilter('excludeLoans', e.target.checked);
+  }, [updateFilter]);
+
+  const handleLoanToBuyChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    updateFilter('isLoanToBuy', e.target.checked);
+  }, [updateFilter]);
+
+  const renderTransferTypeLabel = useCallback((item: string | number) => {
+    const labels: { [key: string]: string } = {
+      'sale': 'Sale',
+      'loan': 'Loan',
+      'free': 'Free Transfer',
+      'loan_with_option': 'Loan with Option'
+    };
+    return labels[item as string] || item;
+  }, []);
+
+  const renderTransferWindowLabel = useCallback((item: string | number) => {
+    const labels: { [key: string]: string } = {
+      'summer': 'Summer Window',
+      'winter': 'Winter Window'
+    };
+    return labels[item as string] || item;
+  }, []);
   return (
     <>
       {/* Seasons Filter */}
@@ -52,7 +91,7 @@ const BasicFilters: React.FC<BasicFiltersProps> = ({
           title=""
           items={seasons}
           selectedItems={filters.seasons}
-          onItemChange={(item, checked) => handleArrayFilter('seasons', item, checked)}
+          onItemChange={handleSeasonsChange}
         />
       </FilterSection>
 
@@ -67,23 +106,15 @@ const BasicFilters: React.FC<BasicFiltersProps> = ({
           title=""
           items={transferTypes}
           selectedItems={filters.transferTypes}
-          onItemChange={(item, checked) => handleArrayFilter('transferTypes', item, checked)}
-          renderLabel={(item) => {
-            const labels: { [key: string]: string } = {
-              'sale': 'Sale',
-              'loan': 'Loan',
-              'free': 'Free Transfer',
-              'loan_with_option': 'Loan with Option'
-            };
-            return labels[item as string] || item;
-          }}
+          onItemChange={handleTransferTypesChange}
+          renderLabel={renderTransferTypeLabel}
         />
         <div className="mt-4 pt-3 border-t space-y-2">
           <label className="flex items-center">
             <input
               type="checkbox"
               checked={filters.excludeLoans}
-              onChange={(e) => updateFilter('excludeLoans', e.target.checked)}
+              onChange={handleExcludeLoansChange}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="ml-2 text-sm">Exclude all loans</span>
@@ -92,7 +123,7 @@ const BasicFilters: React.FC<BasicFiltersProps> = ({
             <input
               type="checkbox"
               checked={filters.isLoanToBuy}
-              onChange={(e) => updateFilter('isLoanToBuy', e.target.checked)}
+              onChange={handleLoanToBuyChange}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="ml-2 text-sm">Only loan-to-buy transfers</span>
@@ -111,18 +142,12 @@ const BasicFilters: React.FC<BasicFiltersProps> = ({
           title=""
           items={transferWindows}
           selectedItems={filters.transferWindows}
-          onItemChange={(item, checked) => handleArrayFilter('transferWindows', item, checked)}
-          renderLabel={(item) => {
-            const labels: { [key: string]: string } = {
-              'summer': 'Summer Window',
-              'winter': 'Winter Window'
-            };
-            return labels[item as string] || item;
-          }}
+          onItemChange={handleTransferWindowsChange}
+          renderLabel={renderTransferWindowLabel}
         />
       </FilterSection>
     </>
   );
-};
+});
 
 export default BasicFilters;

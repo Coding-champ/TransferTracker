@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FilterState, League } from '../../../types';
 import FilterSection from '../FilterSection';
 import CheckboxFilter from '../components/CheckboxFilter';
@@ -26,8 +26,9 @@ interface GeographicFiltersProps {
 /**
  * Geographic filters component for continents, countries, leagues, and league tiers
  * Groups all location-based filtering options
+ * Optimized with React.memo for performance
  */
-const GeographicFilters: React.FC<GeographicFiltersProps> = ({
+const GeographicFilters: React.FC<GeographicFiltersProps> = React.memo(({
   filters,
   handleArrayFilter,
   leagues,
@@ -38,12 +39,43 @@ const GeographicFilters: React.FC<GeographicFiltersProps> = ({
 }) => {
   /**
    * Extract unique countries from leagues data
+   * Memoized to avoid recalculation on every render
    */
-  const getUniqueCountries = (): string[] => {
-    const countries = new Set<string>();
-    leagues.forEach(league => countries.add(league.country));
-    return Array.from(countries).sort();
-  };
+  const countries = useMemo(() => {
+    const uniqueCountries = Array.from(new Set(leagues.map(league => league.country).filter(Boolean)));
+    return uniqueCountries.sort();
+  }, [leagues]);
+
+  // Memoized callbacks for better performance
+  const handleContinentsChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('continents', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleCountriesChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('countries', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleLeaguesChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('leagues', item, checked);
+  }, [handleArrayFilter]);
+
+  const handleLeagueTiersChange = useCallback((item: string | number, checked: boolean) => {
+    handleArrayFilter('leagueTiers', item, checked);
+  }, [handleArrayFilter]);
+
+  const renderLeagueLabel = useCallback((item: string | number) => {
+    const league = leagues.find(l => l.name === item);
+    return (
+      <span>
+        {item}
+        {league && (
+          <span className="text-xs text-gray-500 ml-1">
+            ({league.country}, Tier {league.tier})
+          </span>
+        )}
+      </span>
+    );
+  }, [leagues]);
 
   return (
     <FilterSection
@@ -58,16 +90,16 @@ const GeographicFilters: React.FC<GeographicFiltersProps> = ({
           title="Continents"
           items={continents}
           selectedItems={filters.continents}
-          onItemChange={(item, checked) => handleArrayFilter('continents', item, checked)}
+          onItemChange={handleContinentsChange}
           maxHeight="max-h-24"
         />
         
         {/* Countries */}
         <CheckboxFilter
           title="Countries"
-          items={getUniqueCountries()}
+          items={countries}
           selectedItems={filters.countries}
-          onItemChange={(item, checked) => handleArrayFilter('countries', item, checked)}
+          onItemChange={handleCountriesChange}
           maxHeight="max-h-24"
         />
 
@@ -76,21 +108,9 @@ const GeographicFilters: React.FC<GeographicFiltersProps> = ({
           title="Leagues"
           items={leagues.map(l => l.name)}
           selectedItems={filters.leagues}
-          onItemChange={(item, checked) => handleArrayFilter('leagues', item, checked)}
+          onItemChange={handleLeaguesChange}
           maxHeight="max-h-24"
-          renderLabel={(item) => {
-            const league = leagues.find(l => l.name === item);
-            return (
-              <span>
-                {item}
-                {league && (
-                  <span className="text-xs text-gray-500 ml-1">
-                    ({league.country}, Tier {league.tier})
-                  </span>
-                )}
-              </span>
-            );
-          }}
+          renderLabel={renderLeagueLabel}
         />
 
         {/* League Tiers */}
@@ -98,12 +118,12 @@ const GeographicFilters: React.FC<GeographicFiltersProps> = ({
           title="League Tiers"
           items={leagueTiers}
           selectedItems={filters.leagueTiers}
-          onItemChange={(item, checked) => handleArrayFilter('leagueTiers', item, checked)}
+          onItemChange={handleLeagueTiersChange}
           renderLabel={(item) => `Tier ${item}`}
         />
       </div>
     </FilterSection>
   );
-};
+});
 
 export default GeographicFilters;
