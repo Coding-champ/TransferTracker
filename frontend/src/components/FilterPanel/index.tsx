@@ -159,7 +159,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-3 mb-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       {/* Header with controls */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Advanced Filters</h2>

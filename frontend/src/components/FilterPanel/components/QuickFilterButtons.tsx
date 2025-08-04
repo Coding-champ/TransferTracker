@@ -12,8 +12,9 @@ interface QuickFilterButtonsProps {
 /**
  * Quick filter preset buttons for common filter combinations
  * Provides shortcuts for frequently used filter configurations
+ * Wrapped with React.memo since this is a static component
  */
-const QuickFilterButtons: React.FC<QuickFilterButtonsProps> = ({ updateFilter }) => {
+const QuickFilterButtons: React.FC<QuickFilterButtonsProps> = React.memo(({ updateFilter }) => {
   return (
     <div className="mt-6 pt-4 border-t border-gray-200">
       <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Filters</h3>
@@ -65,6 +66,6 @@ const QuickFilterButtons: React.FC<QuickFilterButtonsProps> = ({ updateFilter })
       </div>
     </div>
   );
-};
+});
 
 export default QuickFilterButtons;

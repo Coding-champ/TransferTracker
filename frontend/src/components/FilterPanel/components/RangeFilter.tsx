@@ -31,8 +31,9 @@ interface RangeFilterProps {
 /**
  * Reusable range filter component for numeric min/max value inputs
  * Supports custom formatting, units, and validation
+ * Wrapped with React.memo to prevent unnecessary re-renders
  */
-const RangeFilter: React.FC<RangeFilterProps> = ({
+const RangeFilter: React.FC<RangeFilterProps> = React.memo(({
   title,
   minValue,
   maxValue,
@@ -50,16 +51,17 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
       <h4 className="text-xs font-medium text-gray-600 mb-2">{title}</h4>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">
+          <label htmlFor={`${title}-min`} className="block text-xs text-gray-500 mb-1">
             Min{unit && ` (${unit})`}
           </label>
           <input
+            id={`${title}-min`}
             type="number"
             min={min}
             max={max}
             step={step}
             value={minValue || ''}
-            onChange={(e) => onMinChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+            onChange={(e) => onMinChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder={placeholder.min}
           />
@@ -70,16 +72,17 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
           )}
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">
+          <label htmlFor={`${title}-max`} className="block text-xs text-gray-500 mb-1">
             Max{unit && ` (${unit})`}
           </label>
           <input
+            id={`${title}-max`}
             type="number"
             min={min}
             max={max}
             step={step}
             value={maxValue || ''}
-            onChange={(e) => onMaxChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+            onChange={(e) => onMaxChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder={placeholder.max}
           />
@@ -92,6 +95,6 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default RangeFilter;
