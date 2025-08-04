@@ -177,7 +177,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
         minNodeSizeToShow: 2,
         enableViewportCulling: false 
       };
-      const result = filterNodesForLOD(mockNodes, 0.3, viewport, config);
+      const result = filterNodesForLOD(mockNodes, 0.1, viewport, config); // Use 0.1 zoom level to ensure filtering
       
       // Should filter out node3 which has only 1 total transfer (less than minNodeSizeToShow of 2)
       expect(result).toHaveLength(2);
@@ -189,9 +189,10 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
         ...DEFAULT_PERFORMANCE_CONFIG, 
         enableViewportCulling: true, 
         viewportBuffer: 0,
-        hideSmallNodesZoomThreshold: 0.1 // Disable size filtering for this test
+        hideSmallNodesZoomThreshold: 0.1, // Disable size filtering for this test
+        simplificationZoomThreshold: 0.5 // Set higher so zoom 0.2 will trigger filtering
       };
-      const result = filterNodesForLOD(mockNodes, 0.3, viewport, config);
+      const result = filterNodesForLOD(mockNodes, 0.2, viewport, config); // Use zoom level < simplificationZoomThreshold but above hideSmallNodesZoomThreshold
       
       // node3 is outside viewport (x: 1000, y: 1000 is outside 0,0,500,500)
       expect(result.map(n => n.id)).not.toContain('node3');
@@ -215,8 +216,13 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
     });
 
     test('filters low-value edges at low zoom levels', () => {
-      const config = { ...DEFAULT_PERFORMANCE_CONFIG, enableEdgeFiltering: true, minEdgeValueToShow: 1000000 };
-      const result = filterEdgesForLOD(mockNetworkData.edges, 0.3, config);
+      const config = { 
+        ...DEFAULT_PERFORMANCE_CONFIG, 
+        enableEdgeFiltering: true, 
+        minEdgeValueToShow: 1000000,
+        simplificationZoomThreshold: 0.5 // Set higher so zoom 0.2 will trigger filtering
+      };
+      const result = filterEdgesForLOD(mockNetworkData.edges, 0.2, config); // Use zoom level < simplificationZoomThreshold
       
       // Should filter out edge2 which has only 500000 value
       expect(result).toHaveLength(1);
