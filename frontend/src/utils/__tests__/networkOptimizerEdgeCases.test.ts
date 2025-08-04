@@ -93,7 +93,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
       
       expect(result.nodes).toHaveLength(0);
       expect(result.edges).toHaveLength(0);
-      expect(result.metadata.isOptimized).toBe(true);
+      expect(result.metadata.isOptimized).toBe(false); // Small datasets aren't optimized now
     });
 
     test('limits nodes correctly based on config', () => {
@@ -127,7 +127,7 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
       const result = optimizeNetworkData(mockNetworkData, DEFAULT_PERFORMANCE_CONFIG);
       
       expect(result.metadata.totalTransfers).toBe(mockNetworkData.metadata.totalTransfers);
-      expect(result.metadata.isOptimized).toBe(true);
+      expect(result.metadata.isOptimized).toBe(false); // Small dataset, no optimization needed
       expect(result.metadata.originalSize).toEqual({
         nodes: 3,
         edges: 2
@@ -138,21 +138,21 @@ describe('NetworkOptimizer - Enhanced Edge Cases', () => {
   describe('getOptimalPerformanceConfig', () => {
     test('returns small config for small datasets', () => {
       const config = getOptimalPerformanceConfig(30, 50);
-      expect(config.maxNodes).toBe(50);
-      expect(config.maxEdges).toBe(100);
+      expect(config.maxNodes).toBe(100); // Updated based on our new PERFORMANCE_PRESETS.small
+      expect(config.maxEdges).toBe(200);
     });
 
     test('returns xlarge config for very large datasets', () => {
       const config = getOptimalPerformanceConfig(1000, 2000);
-      expect(config.maxNodes).toBe(50);
-      expect(config.maxEdges).toBe(100);
-      expect(config.simplificationZoomThreshold).toBe(0.8);
+      expect(config.maxNodes).toBe(200); // Updated based on our new PERFORMANCE_PRESETS.xlarge
+      expect(config.maxEdges).toBe(400);
+      expect(config.simplificationZoomThreshold).toBe(0.6);
     });
 
     test('returns medium config for medium datasets', () => {
       const config = getOptimalPerformanceConfig(150, 300);
-      expect(config.maxNodes).toBe(200);
-      expect(config.maxEdges).toBe(500);
+      expect(config.maxNodes).toBe(500); // Updated based on our new DEFAULT_PERFORMANCE_CONFIG
+      expect(config.maxEdges).toBe(1000);
     });
   });
 
