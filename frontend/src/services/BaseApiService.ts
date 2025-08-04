@@ -12,11 +12,14 @@ import {
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,
-  ServerError
+  ServerError,
+  ApiTimeoutError,
+  ApiNotFoundError
 } from './ApiErrors';
 
 export abstract class BaseApiService {
   protected cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  protected pendingRequests = new Map<string, Promise<ApiResponse<any>>>();
 
   protected async execute<T>(
     operation: () => Promise<AxiosResponse<ApiResponse<T>>>,
@@ -37,21 +40,61 @@ export abstract class BaseApiService {
           debugLog(`Cache hit for ${cacheKey}`);
           return cached;
         }
+
+        // Check for pending request with the same cache key to prevent duplicate requests
+        const pendingRequest = this.pendingRequests.get(cacheKey);
+        if (pendingRequest) {
+          debugLog(`Returning pending request for ${cacheKey}`);
+          return pendingRequest as Promise<ApiResponse<T>>;
+        }
       }
 
-      const response = await operation();
-      const result = response.data;
+      // Create the request promise
+      const requestPromise = this.executeRequest(operation, context, { useCache, cacheTTL, cacheKey });
+      
+      // Store pending request if using cache
+      if (useCache && cacheKey) {
+        this.pendingRequests.set(cacheKey, requestPromise);
+      }
 
-      if (useCache && cacheKey && result.success) {
-        this.setCache(cacheKey, result, cacheTTL);
+      const result = await requestPromise;
+
+      // Clean up pending request
+      if (useCache && cacheKey) {
+        this.pendingRequests.delete(cacheKey);
       }
 
       return result;
     } catch (error) {
+      // Clean up pending request on error
+      if (useCache && cacheKey) {
+        this.pendingRequests.delete(cacheKey);
+      }
       throw this.handleApiError(error, context);
     } finally {
       timer();
     }
+  }
+
+  private async executeRequest<T>(
+    operation: () => Promise<AxiosResponse<ApiResponse<T>>>,
+    context: string,
+    options: {
+      useCache?: boolean;
+      cacheTTL?: number;
+      cacheKey?: string;
+    }
+  ): Promise<ApiResponse<T>> {
+    const { useCache = false, cacheTTL = 5 * 60 * 1000, cacheKey } = options;
+    
+    const response = await operation();
+    const result = response.data;
+
+    if (useCache && cacheKey && result.success) {
+      this.setCache(cacheKey, result, cacheTTL);
+    }
+
+    return result;
   }
 
   protected getFromCache<T>(key: string): ApiResponse<T> | null {
@@ -84,7 +127,7 @@ export abstract class BaseApiService {
       
       switch (status) {
         case 404:
-          return new NotFoundError(`${context}: Resource not found`, error.config?.url);
+          return new ApiNotFoundError(`${context}: Resource not found`, error.config?.url);
         case 400:
           return new BadRequestError(`${context}: Bad request`, data?.error);
         case 401:
@@ -100,7 +143,7 @@ export abstract class BaseApiService {
       }
     } else if (error.request) {
       if (error.code === 'ECONNABORTED') {
-        return new TimeoutError(`${context}: Request timeout`);
+        return new ApiTimeoutError(`${context}: Request timeout`);
       }
       return new NetworkError(`${context}: Network error`);
     } else {
@@ -111,9 +154,11 @@ export abstract class BaseApiService {
   clearCache(key?: string): void {
     if (key) {
       this.cache.delete(key);
+      this.pendingRequests.delete(key);
       debugLog(`Cleared cache for ${key}`);
     } else {
       this.cache.clear();
+      this.pendingRequests.clear();
       debugLog('Cleared entire cache');
     }
   }
