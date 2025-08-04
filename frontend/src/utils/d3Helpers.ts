@@ -211,19 +211,26 @@ export const createLabels = (
  * @param onDragStart - Callback for drag start
  * @param onDragEnd - Callback for drag end
  * @param isDraggingRef - Ref to track dragging state
+ * @param restartSimulation - Function to restart simulation with proper alpha
  * @returns D3 drag behavior
  */
 export const createDragBehavior = (
   simulation: d3.Simulation<NetworkNode, NetworkEdge>,
   onDragStart: () => void,
   onDragEnd: () => void,
-  isDraggingRef: React.MutableRefObject<boolean>
+  isDraggingRef: React.MutableRefObject<boolean>,
+  restartSimulation?: () => void
 ) => {
   return d3.drag<SVGCircleElement, NetworkNode>()
     .on('start', function(event, d) {
       isDraggingRef.current = true;
       onDragStart();
-      if (!event.active) simulation.alphaTarget(0.3).restart();
+      // Use restartSimulation if available, otherwise use legacy approach
+      if (restartSimulation) {
+        restartSimulation();
+      } else if (!event.active) {
+        simulation.alphaTarget(0.3).restart();
+      }
       d.fx = d.x;
       d.fy = d.y;
       d3.select(this).attr('stroke-width', 4);
@@ -234,7 +241,10 @@ export const createDragBehavior = (
     })
     .on('end', function(event, d) {
       onDragEnd();
-      if (!event.active) simulation.alphaTarget(0);
+      // Allow simulation to stop naturally when dragging ends
+      if (!event.active && !restartSimulation) {
+        simulation.alphaTarget(0);
+      }
       d3.select(this).attr('stroke-width', 2);
     });
 };
