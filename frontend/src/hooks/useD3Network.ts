@@ -15,8 +15,8 @@ import {
   optimizeNetworkData,
   getOptimalPerformanceConfig,
   FrameRateLimiter,
-  isElementInViewport,
-  getViewportBounds,
+  // isElementInViewport, // TEMPORARILY DISABLED
+  // getViewportBounds,   // TEMPORARILY DISABLED
   NetworkPerformanceConfig
 } from '../utils/networkOptimizer';
 
@@ -168,10 +168,10 @@ export const useD3Network = ({
           currentTransformRef.current = event.transform;
           zoomGroup.attr('transform', event.transform);
           
-          // Update visibility based on zoom level if LOD is enabled
-          if (currentConfig.enableViewportCulling) {
-            updateElementVisibility(event.transform);
-          }
+          // TEMPORARILY DISABLED: Update visibility based on zoom level if LOD is enabled
+          // if (currentConfig.enableViewportCulling) {
+          //   updateElementVisibility(event.transform);
+          // }
         }
       });
 
@@ -239,10 +239,10 @@ export const useD3Network = ({
         if (currentTime - lastRenderTimeRef.current < 16) return; // ~60fps
         lastRenderTimeRef.current = currentTime;
 
-        // Get current viewport for culling
-        const viewport = currentConfig.enableViewportCulling
-          ? getViewportBounds(currentTransformRef.current, width, height)
-          : null;
+        // TEMPORARILY DISABLED: Get current viewport for culling 
+        // const viewport = currentConfig.enableViewportCulling
+        //   ? getViewportBounds(currentTransformRef.current, width, height)
+        //   : null;
 
         links
           .attr('x1', (d) => (d.source as NetworkNode).x!)
@@ -250,24 +250,26 @@ export const useD3Network = ({
           .attr('x2', (d) => (d.target as NetworkNode).x!)
           .attr('y2', (d) => (d.target as NetworkNode).y!);
 
-        if (viewport && currentConfig.enableViewportCulling) {
-          links.style('display', (d) => {
-            const source = d.source as NetworkNode;
-            const target = d.target as NetworkNode;
-            const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
-                           isElementInViewport(target, viewport, currentConfig.viewportBuffer);
-            return visible ? 'block' : 'none';
-          });
-        }
+        // TEMPORARILY DISABLED: Viewport culling for links
+        // if (viewport && currentConfig.enableViewportCulling) {
+        //   links.style('display', (d) => {
+        //     const source = d.source as NetworkNode;
+        //     const target = d.target as NetworkNode;
+        //     const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
+        //                    isElementInViewport(target, viewport, currentConfig.viewportBuffer);
+        //     return visible ? 'block' : 'none';
+        //   });
+        // }
 
         nodes.attr('transform', (d) => `translate(${d.x},${d.y})`);
 
-        if (viewport && currentConfig.enableViewportCulling) {
-          nodes.style('display', (d) => {
-            const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
-            return visible ? 'block' : 'none';
-          });
-        }
+        // TEMPORARILY DISABLED: Viewport culling for nodes
+        // if (viewport && currentConfig.enableViewportCulling) {
+        //   nodes.style('display', (d) => {
+        //     const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
+        //     return visible ? 'block' : 'none';
+        //   });
+        // }
 
         // Level-of-detail for labels
         const currentZoom = currentTransformRef.current.k;
@@ -285,46 +287,46 @@ export const useD3Network = ({
           .style('display', showROI ? 'block' : 'none');
       };
 
-      // Use requestAnimationFrame for smoother rendering
-      if (currentConfig.useRequestAnimationFrame && frameRateLimiterRef.current) {
-        frameRateLimiterRef.current.requestFrame(renderUpdate);
-      } else {
+      // TEMPORARILY DISABLED: Use requestAnimationFrame for smoother rendering
+      // if (currentConfig.useRequestAnimationFrame && frameRateLimiterRef.current) {
+      //   frameRateLimiterRef.current.requestFrame(renderUpdate);
+      // } else {
         renderUpdate();
-      }
+      // }
     };
 
     simulation.on('tick', tick);
 
-    // Function to update element visibility based on zoom and viewport
-    const updateElementVisibility = (transform: d3.ZoomTransform) => {
-      const currentZoom = transform.k;
-      const viewport = getViewportBounds(transform, width, height);
-
-      // Level-of-detail adjustments
-      const showLabels = currentZoom >= currentConfig.hideLabelsZoomThreshold;
-      const showROI = currentZoom >= currentConfig.simplificationZoomThreshold;
-      const showPerformanceRings = currentZoom >= currentConfig.simplificationZoomThreshold;
-
-      labels.style('display', showLabels ? 'block' : 'none');
-      roiLabels.style('display', showROI ? 'block' : 'none');
-      svg.selectAll('.performance-ring').style('display', showPerformanceRings ? 'block' : 'none');
-
-      // Viewport culling
-      if (currentConfig.enableViewportCulling) {
-        nodes.style('display', (d) => {
-          const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
-          return visible ? 'block' : 'none';
-        });
-
-        links.style('display', (d) => {
-          const source = d.source as NetworkNode;
-          const target = d.target as NetworkNode;
-          const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
-                         isElementInViewport(target, viewport, currentConfig.viewportBuffer);
-          return visible ? 'block' : 'none';
-        });
-      }
-    };
+    // TEMPORARILY DISABLED: Function to update element visibility based on zoom and viewport
+    // const updateElementVisibility = (transform: d3.ZoomTransform) => {
+    //   const currentZoom = transform.k;
+    //   const viewport = getViewportBounds(transform, width, height);
+    //
+    //   // Level-of-detail adjustments
+    //   const showLabels = currentZoom >= currentConfig.hideLabelsZoomThreshold;
+    //   const showROI = currentZoom >= currentConfig.simplificationZoomThreshold;
+    //   const showPerformanceRings = currentZoom >= currentConfig.simplificationZoomThreshold;
+    //
+    //   labels.style('display', showLabels ? 'block' : 'none');
+    //   roiLabels.style('display', showROI ? 'block' : 'none');
+    //   svg.selectAll('.performance-ring').style('display', showPerformanceRings ? 'block' : 'none');
+    //
+    //   // Viewport culling
+    //   if (currentConfig.enableViewportCulling) {
+    //     nodes.style('display', (d) => {
+    //       const visible = isElementInViewport(d, viewport, currentConfig.viewportBuffer);
+    //       return visible ? 'block' : 'none';
+    //     });
+    //
+    //     links.style('display', (d) => {
+    //       const source = d.source as NetworkNode;
+    //       const target = d.target as NetworkNode;
+    //       const visible = isElementInViewport(source, viewport, currentConfig.viewportBuffer) ||
+    //                      isElementInViewport(target, viewport, currentConfig.viewportBuffer);
+    //       return visible ? 'block' : 'none';
+    //     });
+    //   }
+    // };
 
     // Add zoom controls
     createZoomControls(svg, zoom);

@@ -36,24 +36,25 @@ export interface NetworkPerformanceConfig {
 /**
  * Default performance configuration optimized for different dataset sizes
  * Enhanced with LOD strategies
+ * TEMPORARILY DISABLED - Troubleshooting RAM usage and canvas issues
  */
 export const DEFAULT_PERFORMANCE_CONFIG: NetworkPerformanceConfig = {
-  maxNodes: 200,
-  maxEdges: 500,
-  simplificationZoomThreshold: 0.5,
-  hideLabelsZoomThreshold: 0.3,
-  hideSmallNodesZoomThreshold: 0.4,
+  maxNodes: 1000, // Increased from 200 to reduce aggressive filtering
+  maxEdges: 2000, // Increased from 500 to reduce aggressive filtering
+  simplificationZoomThreshold: 0.1, // Lowered from 0.5 to show more elements
+  hideLabelsZoomThreshold: 0.05, // Lowered from 0.3 to show labels more often
+  hideSmallNodesZoomThreshold: 0.05, // Lowered from 0.4 to show nodes more often
   maxIterations: 300,
-  adaptiveAlpha: true,
-  useRequestAnimationFrame: true,
+  adaptiveAlpha: false, // Disabled adaptive alpha temporarily
+  useRequestAnimationFrame: false, // Disabled RAF temporarily
   targetFrameRate: 60,
-  enableViewportCulling: true,
+  enableViewportCulling: false, // Disabled viewport culling temporarily
   viewportBuffer: 200,
-  enableNodeClustering: true,
+  enableNodeClustering: false, // Disabled node clustering temporarily
   clusterDistance: 100,
-  minNodeSizeToShow: 5,
-  enableEdgeFiltering: true,
-  minEdgeValueToShow: 1000000 // 1M euros
+  minNodeSizeToShow: 1, // Lowered from 5 to show more nodes
+  enableEdgeFiltering: false, // Disabled edge filtering temporarily
+  minEdgeValueToShow: 0 // Lowered from 1M to show all edges
 };
 
 /**
@@ -102,6 +103,7 @@ export function getOptimalPerformanceConfig(nodeCount: number, edgeCount: number
 
 /**
  * Optimizes network data by filtering and aggregating nodes/edges based on performance config
+ * TEMPORARILY SIMPLIFIED - Troubleshooting RAM usage and canvas issues
  */
 export function optimizeNetworkData(
   data: NetworkData, 
@@ -109,6 +111,25 @@ export function optimizeNetworkData(
 ): NetworkData {
   const { nodes, edges } = data;
   
+  // TEMPORARILY DISABLED: Skip aggressive optimization to troubleshoot issues
+  console.log(`Network data passed through without optimization: ${nodes.length} nodes, ${edges.length} edges`);
+  
+  return {
+    nodes: nodes,
+    edges: edges,
+    metadata: {
+      ...data.metadata,
+      clubCount: nodes.length,
+      edgeCount: edges.length,
+      isOptimized: false, // Mark as not optimized
+      originalSize: {
+        nodes: nodes.length,
+        edges: edges.length
+      }
+    } as any
+  };
+
+  /* ORIGINAL OPTIMIZATION CODE COMMENTED OUT:
   // Sort nodes by importance (transfer activity)
   const sortedNodes = [...nodes].sort((a, b) => {
     const activityA = a.stats.transfersIn + a.stats.transfersOut;
@@ -153,41 +174,43 @@ export function optimizeNetworkData(
       }
     } as any
   };
+  */
 }
 
 /**
  * Aggregates multiple edges between the same nodes into single edges
+ * TEMPORARILY DISABLED - Not used with simplified optimization
  */
-function aggregateEdges(edges: NetworkEdge[]): NetworkEdge[] {
-  const edgeMap = new Map<string, NetworkEdge>();
-  
-  edges.forEach(edge => {
-    const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
-    const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
-    const key = `${sourceId}-${targetId}`;
-    
-    if (edgeMap.has(key)) {
-      const existing = edgeMap.get(key)!;
-      // Aggregate the edges
-      existing.transfers = [...existing.transfers, ...edge.transfers];
-      existing.stats = {
-        totalValue: existing.stats.totalValue + edge.stats.totalValue,
-        transferCount: existing.stats.transferCount + edge.stats.transferCount,
-        avgTransferValue: (existing.stats.totalValue + edge.stats.totalValue) / 
-                         (existing.stats.transferCount + edge.stats.transferCount),
-        types: Array.from(new Set([...existing.stats.types, ...edge.stats.types])),
-        avgROI: ((existing.stats.avgROI || 0) + (edge.stats.avgROI || 0)) / 2,
-        successRate: ((existing.stats.successRate || 0) + (edge.stats.successRate || 0)) / 2,
-        seasons: Array.from(new Set([...existing.stats.seasons, ...edge.stats.seasons])),
-        transferWindows: Array.from(new Set([...existing.stats.transferWindows, ...edge.stats.transferWindows]))
-      };
-    } else {
-      edgeMap.set(key, { ...edge });
-    }
-  });
-  
-  return Array.from(edgeMap.values());
-}
+// function aggregateEdges(edges: NetworkEdge[]): NetworkEdge[] {
+//   const edgeMap = new Map<string, NetworkEdge>();
+//   
+//   edges.forEach(edge => {
+//     const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
+//     const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
+//     const key = `${sourceId}-${targetId}`;
+//     
+//     if (edgeMap.has(key)) {
+//       const existing = edgeMap.get(key)!;
+//       // Aggregate the edges
+//       existing.transfers = [...existing.transfers, ...edge.transfers];
+//       existing.stats = {
+//         totalValue: existing.stats.totalValue + edge.stats.totalValue,
+//         transferCount: existing.stats.transferCount + edge.stats.transferCount,
+//         avgTransferValue: (existing.stats.totalValue + edge.stats.totalValue) / 
+//                          (existing.stats.transferCount + edge.stats.transferCount),
+//         types: Array.from(new Set([...existing.stats.types, ...edge.stats.types])),
+//         avgROI: ((existing.stats.avgROI || 0) + (edge.stats.avgROI || 0)) / 2,
+//         successRate: ((existing.stats.successRate || 0) + (edge.stats.successRate || 0)) / 2,
+//         seasons: Array.from(new Set([...existing.stats.seasons, ...edge.stats.seasons])),
+//         transferWindows: Array.from(new Set([...existing.stats.transferWindows, ...edge.stats.transferWindows]))
+//       };
+//     } else {
+//       edgeMap.set(key, { ...edge });
+//     }
+//   });
+//   
+//   return Array.from(edgeMap.values());
+// }
 
 /**
  * Frame rate limiter using requestAnimationFrame
@@ -246,6 +269,7 @@ export function getViewportBounds(
 
 /**
  * Enhanced LOD filtering for nodes based on zoom level and viewport
+ * TEMPORARILY DISABLED - Troubleshooting canvas interaction issues
  */
 export function filterNodesForLOD(
   nodes: any[],
@@ -253,6 +277,10 @@ export function filterNodesForLOD(
   viewport: { x: number; y: number; width: number; height: number },
   config: NetworkPerformanceConfig
 ): any[] {
+  // TEMPORARILY DISABLED: Always show all nodes to troubleshoot interaction issues
+  return nodes;
+  
+  /* ORIGINAL CODE COMMENTED OUT:
   // Always show all nodes at high zoom levels
   if (zoomLevel >= config.simplificationZoomThreshold) {
     return nodes;
@@ -274,16 +302,22 @@ export function filterNodesForLOD(
 
     return true;
   });
+  */
 }
 
 /**
  * Enhanced LOD filtering for edges based on zoom level and value
+ * TEMPORARILY DISABLED - Troubleshooting canvas interaction issues
  */
 export function filterEdgesForLOD(
   edges: NetworkEdge[],
   zoomLevel: number,
   config: NetworkPerformanceConfig
 ): NetworkEdge[] {
+  // TEMPORARILY DISABLED: Always show all edges to troubleshoot interaction issues
+  return edges;
+  
+  /* ORIGINAL CODE COMMENTED OUT:
   // Show all edges at high zoom levels
   if (zoomLevel >= config.simplificationZoomThreshold) {
     return edges;
@@ -297,6 +331,7 @@ export function filterEdgesForLOD(
   }
 
   return edges;
+  */
 }
 
 /**
