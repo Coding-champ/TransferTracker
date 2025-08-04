@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FilterState } from '../../types';
 import { formatCurrency } from '../../utils';
 import { useFilterData } from './hooks/useFilterData';
@@ -74,7 +74,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
   /**
    * Update a specific filter value
    */
-  const updateFilter = <K extends keyof FilterState>(
+  const updateFilter = useCallback(<K extends keyof FilterState>(
     key: K,
     value: FilterState[K]
   ) => {
@@ -82,12 +82,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
       ...prev,
       [key]: value
     }));
-  };
+  }, []);
 
   /**
    * Handle array-based filter changes (checkboxes)
    */
-  const handleArrayFilter = (
+  const handleArrayFilter = useCallback((
     filterKey: keyof FilterState,
     value: string | number,
     checked: boolean
@@ -98,12 +98,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
     } else {
       updateFilter(filterKey, currentArray.filter(item => item !== value) as any);
     }
-  };
+  }, [filters, updateFilter]);
 
   /**
    * Toggle a section's expanded state
    */
-  const toggleSection = (section: string) => {
+  const toggleSection = useCallback((section: string) => {
     setExpandedSections(prev => {
       const newSet = new Set(prev);
       if (newSet.has(section)) {
@@ -113,12 +113,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
       }
       return newSet;
     });
-  };
+  }, []);
 
   /**
    * Reset all filters to default values
    */
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFilters({
       seasons: ['2023/24'],
       leagues: [],
@@ -145,7 +145,15 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
       isLoanToBuy: false,
       onlySuccessfulTransfers: false
     });
-  };
+  }, []);
+
+  const expandAllSections = useCallback(() => {
+    setExpandedSections(new Set(['seasons', 'leagues', 'transferTypes', 'geographic', 'performance']));
+  }, []);
+
+  const collapseAllSections = useCallback(() => {
+    setExpandedSections(new Set());
+  }, []);
 
   if (loading) {
     return (
@@ -165,13 +173,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ onFiltersChange }) => {
         <h2 className="text-xl font-semibold">Advanced Filters</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => setExpandedSections(new Set(['seasons', 'leagues', 'transferTypes', 'geographic', 'performance']))}
+            onClick={expandAllSections}
             className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
           >
             Expand All
           </button>
           <button
-            onClick={() => setExpandedSections(new Set())}
+            onClick={collapseAllSections}
             className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
           >
             Collapse All
