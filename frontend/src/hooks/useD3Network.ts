@@ -29,6 +29,9 @@ interface UseD3NetworkProps {
 interface UseD3NetworkReturn {
   svgRef: React.RefObject<SVGSVGElement>;
   initializeVisualization: () => (() => void) | undefined;
+  restartSimulation: () => void;
+  isSimulationRunning: () => boolean;
+  zoomRef: React.RefObject<d3.ZoomBehavior<SVGSVGElement, unknown>>;
 }
 
 /**
@@ -111,6 +114,18 @@ export const useD3Network = ({
     return optimizeNetworkData(networkData, config);
   }, [networkData, hasNetworkDataChanged, stablePerformanceConfig]);
 
+  // Simulation control functions
+  const restartSimulation = useCallback(() => {
+    if (simulationRef.current) {
+      console.log('Restarting simulation due to user interaction');
+      simulationRef.current.alpha(0.3).restart();
+    }
+  }, []);
+
+  const isSimulationRunning = useCallback(() => {
+    return simulationRef.current ? simulationRef.current.alpha() > 0.001 : false;
+  }, []);
+
   // Enhanced color scale for leagues - memoized to prevent recreation
   const colorScale = useMemo(() => d3.scaleOrdinal<string>()
     .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1', 'Eredivisie', 'Primeira Liga', 'Süper Lig'])
@@ -144,10 +159,11 @@ export const useD3Network = ({
           console.log(`Node ${node.name} unpinned`);
         }
         
-        simulation.alpha(0.1).restart();
+        // Use restartSimulation instead of manual alpha setting
+        restartSimulation();
       }
     }, 50);
-  }, [isDraggingRef]);
+  }, [isDraggingRef, restartSimulation]);
 
   // Edge hover handler - stable callback to prevent re-renders
   const handleEdgeHover = useCallback((edge: NetworkEdge | null) => {
@@ -228,6 +244,9 @@ export const useD3Network = ({
           currentTransformRef.current = event.transform;
           zoomGroup.attr('transform', event.transform);
           
+          // Restart simulation on zoom interaction
+          restartSimulation();
+          
           // DISABLED: Aggressive viewport culling to prevent render thrashing
           // if (stablePerformanceConfig?.enableViewportCulling) {
           //   updateElementVisibility(event.transform);
@@ -258,11 +277,14 @@ export const useD3Network = ({
       .force('collision', d3.forceCollide()
         .radius(collisionRadius));
 
-    // Optimize simulation parameters for large datasets
+    // Optimize simulation parameters for large datasets with proper alpha management
     if (config.adaptiveAlpha) {
       const alphaDecay = nodeCount > 100 ? 0.05 : 0.0228;
       simulation.alphaDecay(alphaDecay);
     }
+    
+    // Set alpha target to 0 for automatic stopping and threshold for stabilization
+    simulation.alphaTarget(0).alphaMin(0.001);
 
     simulationRef.current = simulation;
 
@@ -279,25 +301,30 @@ export const useD3Network = ({
     const { labels, roiLabels } = createLabels(zoomGroup, optimizedData.nodes);
 
     // Setup drag behavior
-    const dragHandler = createDragBehavior(simulation, handleDragStart, handleDragEnd, isDraggingRef);
+    const dragHandler = createDragBehavior(simulation, handleDragStart, handleDragEnd, isDraggingRef, restartSimulation);
     nodeCircles.call(dragHandler);
 
-    // Optimized simulation tick function with proper throttling
+    // Optimized simulation tick function with proper alpha threshold management
     let tickCount = 0;
     const maxTicks = config.maxIterations;
     let isStabilized = false;
+    const ALPHA_THRESHOLD = 0.005; // Threshold for considering simulation stabilized
 
     const tick = () => {
-      // Performance optimization: limit tick updates and add stabilization check
-      if (tickCount++ > maxTicks || isStabilized) {
+      const currentAlpha = simulation.alpha();
+      
+      // Stop simulation if alpha drops below threshold or max ticks reached
+      if (currentAlpha < ALPHA_THRESHOLD || tickCount++ > maxTicks || isStabilized) {
         simulation.stop();
-        console.log(`Simulation stopped after ${tickCount} ticks (stabilized: ${isStabilized})`);
+        console.log(`Simulation stopped after ${tickCount} ticks (alpha: ${currentAlpha.toFixed(4)}, stabilized: ${isStabilized})`);
         return;
       }
 
       // Check for stabilization (alpha below threshold)
-      if (simulation.alpha() < 0.01) {
+      if (currentAlpha < ALPHA_THRESHOLD) {
         isStabilized = true;
+        simulation.stop();
+        console.log(`Simulation stabilized with alpha: ${currentAlpha.toFixed(4)}`);
         return;
       }
 
@@ -384,10 +411,13 @@ export const useD3Network = ({
       isInitializedRef.current = false;
       console.log('D3 visualization cleaned up');
     };
-  }, [optimizedData, width, height, stablePerformanceConfig, hasNetworkDataChanged, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, isDraggingRef]);
+  }, [optimizedData, width, height, stablePerformanceConfig, hasNetworkDataChanged, colorScale, handleNodeHover, handleNodeClick, handleEdgeHover, handleDragStart, handleDragEnd, isDraggingRef, restartSimulation]);
 
   return {
     svgRef,
-    initializeVisualization
+    initializeVisualization,
+    restartSimulation,
+    isSimulationRunning,
+    zoomRef
   };
 };
