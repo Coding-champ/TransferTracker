@@ -92,26 +92,6 @@ const TransferNetwork: React.FC = React.memo(() => {
                   height={600}
                 />
               </NetworkErrorBoundary>
-              
-              {/* Enhanced instructions overlay */}
-              <div className="absolute top-4 right-4 bg-white bg-opacity-95 rounded-lg p-4 text-xs text-gray-600 max-w-xs shadow-lg">
-                <div className="font-medium mb-2 text-gray-800">🎮 Controls:</div>
-                <div className="space-y-1">
-                  <div>• Mouse wheel to zoom (0.1x - 5x)</div>
-                  <div>• Drag empty space to pan</div>
-                  <div>• Drag nodes to move them</div>
-                  <div>• Click nodes to pin/unpin</div>
-                  <div>• Use zoom buttons (top-left)</div>
-                </div>
-                <div className="mt-3 pt-2 border-t border-gray-200">
-                  <div className="font-medium mb-1 text-gray-800">🎨 Visual Guide:</div>
-                  <div className="space-y-1">
-                    <div>• <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span> High success rate</div>
-                    <div>• <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span> Low success rate</div>
-                    <div>• Dotted rings = Performance indicators</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
