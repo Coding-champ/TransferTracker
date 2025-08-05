@@ -4,6 +4,15 @@ import '@testing-library/jest-dom';
 import { FilterState } from '../../types';
 import { AppProvider } from '../../contexts/AppContext';
 
+// Mock ResizeObserver which is not available in test environment
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+global.ResizeObserver = ResizeObserverMock;
+
 // Mock the network data hook
 jest.mock('../../hooks/useNetworkData', () => ({
   useNetworkData: jest.fn(() => ({
@@ -33,8 +42,8 @@ jest.mock('../../hooks/useNetworkData', () => ({
   }))
 }));
 
-// Mock the network interactions hook
-jest.mock('../../hooks/useNetworkInteractions', () => ({
+// Mock the network interactions hook from new location
+jest.mock('../../components/NetworkVisualization/hooks/useNetworkInteractions', () => ({
   useNetworkInteractions: jest.fn(() => ({
     selectedNodeData: null,
     hoveredEdgeData: null,
@@ -44,14 +53,6 @@ jest.mock('../../hooks/useNetworkInteractions', () => ({
     handleEdgeHover: jest.fn(),
     handleDragStart: jest.fn(),
     handleDragEnd: jest.fn()
-  }))
-}));
-
-// Mock D3 network hook
-jest.mock('../../hooks/useD3Network', () => ({
-  useD3Network: jest.fn(() => ({
-    svgRef: { current: null },
-    initializeVisualization: jest.fn(() => () => {})
   }))
 }));
 
