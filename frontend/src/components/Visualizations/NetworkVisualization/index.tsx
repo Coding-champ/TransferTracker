@@ -1,6 +1,5 @@
 import React from 'react';
 import { VisualizationProps } from '../../../types';
-import VisualizationContainer from '../shared/VisualizationContainer';
 import NetworkCanvas from './NetworkCanvas';
 
 interface NetworkVisualizationProps extends VisualizationProps {
@@ -20,20 +19,13 @@ export const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({
   onEdgeSelect
 }) => {
   return (
-    <VisualizationContainer
+    <NetworkCanvas 
       networkData={networkData}
-      filters={filters}
-      title="Network Visualization"
-      description="Interaktive Transfer-Netzwerk Darstellung"
-    >
-      <NetworkCanvas 
-        networkData={networkData}
-        width={width}
-        height={height}
-        onNodeSelect={onNodeSelect}
-        onEdgeSelect={onEdgeSelect}
-      />
-    </VisualizationContainer>
+      width={width}
+      height={height}
+      onNodeSelect={onNodeSelect}
+      onEdgeSelect={onEdgeSelect}
+    />
   );
 };
 

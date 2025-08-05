@@ -1,8 +1,12 @@
-import React, { Suspense } from 'react';
-import { VisualizationProps } from '../../../types';
+import React from 'react';
+import { NetworkData, FilterState } from '../../../types';
+import VisualizationLoading from './VisualizationLoading';
+import EmptyState from './EmptyState';
 
-interface VisualizationContainerProps extends VisualizationProps {
+interface VisualizationContainerProps {
   children: React.ReactNode;
+  networkData: NetworkData | null;
+  filters: FilterState;
   title: string;
   description?: string;
   isLoading?: boolean;
@@ -17,7 +21,8 @@ export const VisualizationContainer: React.FC<VisualizationContainerProps> = ({
   isLoading = false,
   error,
   onRetry,
-  networkData
+  networkData,
+  filters
 }) => {
   if (isLoading) {
     return <VisualizationLoading title={title} />;
@@ -67,35 +72,10 @@ export const VisualizationContainer: React.FC<VisualizationContainerProps> = ({
         </div>
       </div>
       <div className="relative">
-        <Suspense fallback={<VisualizationLoading title={title} />}>
-          {children}
-        </Suspense>
+        {children}
       </div>
     </div>
   );
 };
-
-export const VisualizationLoading: React.FC<{ title: string }> = ({ title }) => (
-  <div className="flex items-center justify-center h-96 bg-white rounded-lg shadow-lg">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <div className="text-lg text-gray-600">Loading {title}...</div>
-      <div className="text-sm text-gray-500 mt-2">Preparing visualization...</div>
-    </div>
-  </div>
-);
-
-export const EmptyState: React.FC<{ title: string }> = ({ title }) => (
-  <div className="flex items-center justify-center h-96 bg-white rounded-lg shadow-lg">
-    <div className="text-center text-gray-500">
-      <div className="text-6xl mb-4">🔍</div>
-      <div className="text-lg mb-2">No data available for {title}</div>
-      <div className="text-sm">Try adjusting your filters or search criteria</div>
-      <div className="text-xs mt-2 text-gray-400">
-        Current filters may be too restrictive
-      </div>
-    </div>
-  </div>
-);
 
 export default VisualizationContainer;

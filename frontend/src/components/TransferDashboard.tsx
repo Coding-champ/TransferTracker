@@ -1,9 +1,10 @@
-import React, { useRef, lazy, Suspense } from 'react';
+import React, { useRef, lazy, Suspense, useCallback, useMemo } from 'react';
 import { useNetworkData } from '../hooks/useNetworkData';
 import { useAppContext } from '../contexts/AppContext';
 import { 
   TabNavigation, 
   VisualizationLoading,
+  VisualizationContainer,
   DEFAULT_TABS,
   VisualizationType 
 } from './Visualizations';
@@ -31,57 +32,26 @@ const TransferDashboard: React.FC = React.memo(() => {
   // Custom hooks for data fetching
   const { networkData, loading, error, refetch } = useNetworkData(filters);
 
-  // Handle tab changes
-  const handleTabChange = (tab: VisualizationType) => {
+  // Handle tab changes with useCallback to prevent re-renders
+  const handleTabChange = useCallback((tab: VisualizationType) => {
     setActiveVisualization(tab);
-  };
+  }, [setActiveVisualization]);
 
-  // Render appropriate visualization based on active tab
-  const renderVisualization = () => {
-    if (loading) {
-      return <VisualizationLoading title={DEFAULT_TABS.find(t => t.id === activeVisualization)?.label || 'Visualization'} />;
-    }
-
-    if (error) {
-      return (
-        <div className="flex items-center justify-center h-96 bg-white rounded-lg shadow-lg">
-          <div className="text-center text-red-600">
-            <div className="text-6xl mb-4">⚠️</div>
-            <div className="text-lg mb-2">Error loading data</div>
-            <div className="text-sm mb-4">{error}</div>
-            <button 
-              onClick={refetch}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (!networkData || networkData.nodes.length === 0) {
-      return (
-        <div className="flex items-center justify-center h-96 bg-white rounded-lg shadow-lg">
-          <div className="text-center text-gray-500">
-            <div className="text-6xl mb-4">🔍</div>
-            <div className="text-lg mb-2">No data found</div>
-            <div className="text-sm">Try adjusting your filters or search criteria</div>
-            <div className="text-xs mt-2 text-gray-400">
-              Current filters may be too restrictive
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    const commonProps = {
+  // Memoize common props to prevent re-renders
+  const commonProps = useMemo(() => {
+    if (!networkData) return null;
+    return {
       networkData,
       filters,
       width: 1200,
       height: 600
     };
+  }, [networkData, filters]);
 
+  // Render appropriate visualization based on active tab
+  const renderVisualization = useCallback(() => {
+    if (!commonProps) return null;
+    
     switch (activeVisualization) {
       case 'network':
         return <NetworkVisualization {...commonProps} />;
@@ -98,7 +68,12 @@ const TransferDashboard: React.FC = React.memo(() => {
       default:
         return <NetworkVisualization {...commonProps} />;
     }
-  };
+  }, [activeVisualization, commonProps]);
+
+  // Memoize active tab info
+  const activeTabInfo = useMemo(() => 
+    DEFAULT_TABS.find(t => t.id === activeVisualization) || DEFAULT_TABS[0]
+  , [activeVisualization]);
 
   return (
     <div className="w-full" ref={containerRef}>
@@ -114,13 +89,23 @@ const TransferDashboard: React.FC = React.memo(() => {
       <div className="flex flex-col xl:flex-row gap-6">
         {/* Main Visualization Area */}
         <div className="flex-1">
-          <Suspense fallback={
-            <VisualizationLoading 
-              title={DEFAULT_TABS.find(t => t.id === activeVisualization)?.label || 'Visualization'} 
-            />
-          }>
-            {renderVisualization()}
-          </Suspense>
+          <VisualizationContainer
+            networkData={networkData}
+            filters={filters}
+            title={activeTabInfo.label}
+            description={activeTabInfo.description}
+            isLoading={loading}
+            error={error}
+            onRetry={refetch}
+          >
+            <Suspense fallback={
+              <VisualizationLoading 
+                title={activeTabInfo.label} 
+              />
+            }>
+              {renderVisualization()}
+            </Suspense>
+          </VisualizationContainer>
         </div>
 
         {/* Enhanced Info Panel (only show for network visualization or when there's selected data) */}
