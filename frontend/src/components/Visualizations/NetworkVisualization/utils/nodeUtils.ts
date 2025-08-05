@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { NetworkNode } from '../../../types';
+import { NetworkNode } from '../../../../types';
 
 /**
  * Create visual elements for network nodes

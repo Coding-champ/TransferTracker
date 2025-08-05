@@ -1,12 +1,12 @@
 import React, { useRef } from 'react';
 import { useNetworkData } from '../hooks/useNetworkData';
 import { useAppContext } from '../contexts/AppContext';
-import NetworkErrorBoundary from './NetworkErrorBoundary';
-import NetworkVisualization from './NetworkVisualization';
-import NetworkLegend from './NetworkLegend';
-import NodeInfoPanel from './NodeInfoPanel';
-import EdgeInfoPanel from './EdgeInfoPanel';
-import NetworkStatistics from './NetworkStatistics';
+import NetworkErrorBoundary from './ErrorBoundaries/NetworkErrorBoundary';
+import NetworkVisualization from './Visualizations/NetworkVisualization';
+import NetworkLegend from './Visualizations/NetworkVisualization/components/NetworkLegend';
+import NodeInfoPanel from './Visualizations/NetworkVisualization/components/NodeInfoPanel';
+import EdgeInfoPanel from './Visualizations/NetworkVisualization/components/EdgeInfoPanel';
+import NetworkStatistics from './Visualizations/NetworkVisualization/components/NetworkStatistics';
 
 const TransferNetwork: React.FC = React.memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,6 +88,7 @@ const TransferNetwork: React.FC = React.memo(() => {
               <NetworkErrorBoundary>
                 <NetworkVisualization 
                   networkData={networkData}
+                  filters={filters}
                   width={1200}
                   height={600}
                 />

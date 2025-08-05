@@ -8,12 +8,12 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { NetworkData, NetworkNode } from '../../types';
+import { NetworkData } from '../../../types';
 import { useSimulationControl } from './hooks/useSimulationControl';
 import { useZoomControls } from './hooks/useZoomControls';
 import { useNetworkInteractions } from './hooks/useNetworkInteractions';
-import { createArrowMarkers, createLinks, updateLinkPositions } from './utils/edgeUtils';
-import { createNodes, createLabels, updateNodePositions } from './utils/nodeUtils';
+import { createArrowMarkers, createLinks } from './utils/edgeUtils';
+import { createNodes, createLabels } from './utils/nodeUtils';
 import NetworkControls from './components/NetworkControls';
 
 interface NetworkCanvasProps {
@@ -217,8 +217,9 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
     
     // Cleanup function
     return () => {
-      if (simulationRef.current) {
-        simulationRef.current.stop();
+      const currentSimulation = simulationRef.current;
+      if (currentSimulation) {
+        currentSimulation.stop();
       }
       
       // Clean up timeout on unmount
@@ -237,6 +238,7 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
     handleEdgeHover, 
     createDragBehavior, 
     toggleNodePin,
+    simulationRef,
     startSimulation,
     stopSimulation,
     transformRef,

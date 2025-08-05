@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { handleError, isApiTimeoutError, isApiNotFoundError, isNetworkError } from '../utils/errors';
+import { handleError, isApiTimeoutError, isApiNotFoundError, isNetworkError } from '../../utils/errors';
 
 interface Props {
   children: ReactNode;

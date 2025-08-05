@@ -1,6 +1,6 @@
 import React from 'react';
-import { NetworkData, FilterState } from '../types';
-import { formatCurrency, formatPercentage, formatDate } from '../utils';
+import { NetworkData, FilterState } from '../../../../types';
+import { formatCurrency, formatPercentage, formatDate } from '../../../../utils';
 
 interface NetworkStatisticsProps {
   networkData: NetworkData;

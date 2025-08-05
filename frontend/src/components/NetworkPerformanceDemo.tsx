@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import NetworkVisualization from './NetworkVisualization';
+import NetworkVisualization from './Visualizations/NetworkVisualization';
 import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
 import { 
   LARGE_MOCK_NETWORK_DATA, 
@@ -7,6 +7,25 @@ import {
   MEDIUM_MOCK_NETWORK_DATA 
 } from '../data/largeMockNetworkData';
 import { NetworkPerformanceConfig, PERFORMANCE_PRESETS } from '../utils/networkOptimizer';
+import { FilterState } from '../types';
+
+// Mock filters for demo
+const mockFilters: FilterState = {
+  seasons: ['2023/24'],
+  leagues: [],
+  countries: [],
+  continents: [],
+  transferTypes: ['sale', 'loan', 'free', 'loan_with_option'],
+  transferWindows: [],
+  positions: [],
+  nationalities: [],
+  clubs: [],
+  leagueTiers: [],
+  hasTransferFee: false,
+  excludeLoans: false,
+  isLoanToBuy: false,
+  onlySuccessfulTransfers: false
+};
 
 const NetworkPerformanceDemo: React.FC = () => {
   const [selectedDataset, setSelectedDataset] = useState<'small' | 'medium' | 'large' | 'xlarge'>('small');
@@ -178,6 +197,7 @@ const NetworkPerformanceDemo: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">Network Visualization</h2>
           <NetworkVisualization
             networkData={currentDataset.data}
+            filters={mockFilters}
             width={1200}
             height={700}
           />

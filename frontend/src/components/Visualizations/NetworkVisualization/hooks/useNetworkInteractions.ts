@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
-import { NetworkNode, NetworkEdge } from '../../../types';
+import { NetworkNode, NetworkEdge } from '../../../../types';
 
 /**
  * Enhanced hook for managing user interactions with the network visualization

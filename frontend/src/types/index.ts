@@ -351,6 +351,78 @@ export type TransferType = 'sale' | 'loan' | 'free' | 'loan_with_option';
 export type TransferWindow = 'summer' | 'winter';
 export type ContinentType = 'Europe' | 'South America' | 'North America' | 'Africa' | 'Asia' | 'Oceania';
 
+// ========== VISUALIZATION TYPES ==========
+export type VisualizationType = 'network' | 'circular' | 'sankey' | 'heatmap' | 'timeline' | 'statistics';
+
+export interface TabConfig {
+  readonly id: VisualizationType;
+  readonly label: string;
+  readonly description: string;
+  readonly icon: string;
+  readonly disabled?: boolean;
+}
+
+export interface VisualizationProps {
+  readonly networkData: NetworkData;
+  readonly filters: FilterState;
+  readonly width?: number;
+  readonly height?: number;
+}
+
+// ========== CIRCULAR VISUALIZATION TYPES ==========
+export interface CircularNode extends d3.SimulationNodeDatum {
+  id: string;
+  name: string;
+  league: string;
+  tier: number;
+  angle: number;
+  radius: number;
+  transferCount: number;
+  totalValue: number;
+}
+
+export interface CircularData {
+  readonly nodes: CircularNode[];
+  readonly tiers: Array<{
+    tier: number;
+    radius: number;
+    clubs: CircularNode[];
+  }>;
+  readonly transfers: Array<{
+    source: string;
+    target: string;
+    value: number;
+    type: 'inward' | 'outward' | 'circular';
+  }>;
+}
+
+// ========== SANKEY VISUALIZATION TYPES ==========
+export interface SankeyNode {
+  id: string;
+  name: string;
+  category: string;
+  value: number;
+  x0?: number;
+  x1?: number;
+  y0?: number;
+  y1?: number;
+}
+
+export interface SankeyLink {
+  source: string | SankeyNode;
+  target: string | SankeyNode;
+  value: number;
+  y0?: number;
+  y1?: number;
+  width?: number;
+}
+
+export interface SankeyData {
+  readonly nodes: SankeyNode[];
+  readonly links: SankeyLink[];
+  readonly groupBy: 'league' | 'continent' | 'position';
+}
+
 // ========== API PARAMETER TYPES ==========
 export interface FilterParams {
   seasons?: string[];

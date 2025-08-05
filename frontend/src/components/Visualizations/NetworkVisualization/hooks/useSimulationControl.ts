@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import * as d3 from 'd3';
-import { NetworkNode, NetworkEdge } from '../../../types';
+import { NetworkNode, NetworkEdge } from '../../../../types';
 
 /**
  * Hook for controlling the D3 force simulation

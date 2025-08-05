@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { NetworkEdge } from '../../../types';
+import { NetworkEdge } from '../../../../types';
 
 /**
  * Create arrow markers for directed edges
