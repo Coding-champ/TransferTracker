@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useNetworkData } from '../hooks/useNetworkData';
 import { useAppContext } from '../contexts/AppContext';
 import NetworkErrorBoundary from './NetworkErrorBoundary';
-import NetworkCanvas from './NetworkCanvas';
+import NetworkVisualization from './NetworkVisualization';
 import NetworkLegend from './NetworkLegend';
 import NodeInfoPanel from './NodeInfoPanel';
 import EdgeInfoPanel from './EdgeInfoPanel';
@@ -86,7 +86,7 @@ const TransferNetwork: React.FC = React.memo(() => {
             </div>
             <div className="relative network-panel">
               <NetworkErrorBoundary>
-                <NetworkCanvas 
+                <NetworkVisualization 
                   networkData={networkData}
                   width={1200}
                   height={600}

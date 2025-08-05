@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import NetworkCanvas from './NetworkCanvas';
+import NetworkVisualization from './NetworkVisualization';
 import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
 import { 
   LARGE_MOCK_NETWORK_DATA, 
@@ -176,11 +176,10 @@ const NetworkPerformanceDemo: React.FC = () => {
         {/* Network Visualization */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Network Visualization</h2>
-          <NetworkCanvas
+          <NetworkVisualization
             networkData={currentDataset.data}
             width={1200}
             height={700}
-            performanceConfig={customConfig || undefined}
           />
         </div>
 
