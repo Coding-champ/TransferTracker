@@ -152,6 +152,17 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     const colorScale = d3.scaleSequential(d3.interpolateBlues)
       .domain(valueExtent);
     
+    // Club color scale - use a categorical color scheme for clubs
+    const clubColors = [
+      '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+      '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78',
+      '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d3', '#c7c7c7',
+      '#dbdb8d', '#9edae5'
+    ];
+    const clubColorScale = d3.scaleOrdinal()
+      .domain(circularNodes.map(d => d.id))
+      .range(clubColors);
+    
     // Draw transfer arcs
     g.selectAll('.transfer-arc')
       .data(arcs.filter(d => d.value > 0))
@@ -224,9 +235,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('cy', d => d.y)
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => {
-        // Color by tier
-        const tierColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
-        return tierColors[(d.tier - 1) % tierColors.length];
+        // Use club-specific colors with tier-based fallback for better distinction
+        return clubColorScale(d.id) as string;
       })
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
@@ -279,34 +289,159 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         svg.select('.node-tooltip').remove();
       });
     
-    // Add legend
+    // Add comprehensive legend
     const legend = svg.append('g')
       .attr('class', 'legend')
       .attr('transform', `translate(20, 20)`);
+
+    // Legend background
+    const legendBg = legend.append('rect')
+      .attr('fill', 'white')
+      .attr('stroke', '#e5e7eb')
+      .attr('stroke-width', 1)
+      .attr('rx', 6)
+      .attr('opacity', 0.95);
+
+    // Legend content
+    const legendContent = legend.append('g')
+      .attr('transform', 'translate(12, 12)');
     
-    legend.append('text')
+    legendContent.append('text')
       .attr('font-size', '14px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
       .text('Liga Hierarchy (Circular View)');
     
-    legend.append('text')
-      .attr('y', 20)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('• Node size: Transfer activity');
+    // Visual explanations
+    let yOffset = 25;
     
-    legend.append('text')
-      .attr('y', 35)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('• Arc thickness: Transfer value');
+    // Node size explanation with example
+    const sizeGroup = legendContent.append('g')
+      .attr('transform', `translate(0, ${yOffset})`);
     
-    legend.append('text')
-      .attr('y', 50)
+    sizeGroup.append('circle')
+      .attr('cx', 6)
+      .attr('cy', 0)
+      .attr('r', 4)
+      .attr('fill', '#94a3b8')
+      .attr('stroke', 'white')
+      .attr('stroke-width', 1);
+    
+    sizeGroup.append('circle')
+      .attr('cx', 18)
+      .attr('cy', 0)
+      .attr('r', 7)
+      .attr('fill', '#64748b')
+      .attr('stroke', 'white')
+      .attr('stroke-width', 1);
+    
+    sizeGroup.append('text')
+      .attr('x', 30)
+      .attr('y', 4)
       .attr('font-size', '11px')
       .attr('fill', '#6b7280')
-      .text('• Ring position: League tier');
+      .text('Node size = Transfer activity');
+    
+    yOffset += 20;
+    
+    // Color explanation
+    const colorGroup = legendContent.append('g')
+      .attr('transform', `translate(0, ${yOffset})`);
+    
+    // Show sample club colors
+    const sampleColors = clubColors.slice(0, 5);
+    sampleColors.forEach((color, i) => {
+      colorGroup.append('circle')
+        .attr('cx', i * 12 + 6)
+        .attr('cy', 0)
+        .attr('r', 5)
+        .attr('fill', color)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 1);
+    });
+    
+    colorGroup.append('text')
+      .attr('x', 70)
+      .attr('y', 4)
+      .attr('font-size', '11px')
+      .attr('fill', '#6b7280')
+      .text('Different colors = Individual clubs');
+    
+    yOffset += 20;
+    
+    // Ring explanation
+    const ringGroup = legendContent.append('g')
+      .attr('transform', `translate(0, ${yOffset})`);
+    
+    ringGroup.append('circle')
+      .attr('cx', 10)
+      .attr('cy', 0)
+      .attr('r', 8)
+      .attr('fill', 'none')
+      .attr('stroke', '#e5e7eb')
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '2,2');
+    
+    ringGroup.append('text')
+      .attr('x', 25)
+      .attr('y', 4)
+      .attr('font-size', '11px')
+      .attr('fill', '#6b7280')
+      .text('Ring position = League tier (1=inner, higher=outer)');
+    
+    yOffset += 20;
+    
+    // Arc explanation
+    const arcGroup = legendContent.append('g')
+      .attr('transform', `translate(0, ${yOffset})`);
+    
+    arcGroup.append('path')
+      .attr('d', 'M5,0 Q15,10 25,0')
+      .attr('fill', 'none')
+      .attr('stroke', '#3b82f6')
+      .attr('stroke-width', 3)
+      .attr('opacity', 0.7);
+    
+    arcGroup.append('text')
+      .attr('x', 35)
+      .attr('y', 4)
+      .attr('font-size', '11px')
+      .attr('fill', '#6b7280')
+      .text('Arc thickness = Transfer value');
+    
+    yOffset += 20;
+    
+    // Tier breakdown
+    if (tiers.length > 0) {
+      const tierGroup = legendContent.append('g')
+        .attr('transform', `translate(0, ${yOffset})`);
+      
+      tierGroup.append('text')
+        .attr('font-size', '11px')
+        .attr('font-weight', 'bold')
+        .attr('fill', '#374151')
+        .text('League Tiers:');
+      
+      yOffset += 15;
+      
+      tiers.slice(0, 4).forEach((tier, i) => {  // Show max 4 tiers to avoid overcrowding
+        const tierItem = legendContent.append('g')
+          .attr('transform', `translate(10, ${yOffset + i * 12})`);
+        
+        tierItem.append('text')
+          .attr('font-size', '10px')
+          .attr('fill', '#6b7280')
+          .text(`Tier ${tier.tier} (${tier.radius.toFixed(0)}px from center)`);
+      });
+      
+      yOffset += Math.min(tiers.length, 4) * 12;
+    }
+    
+    // Set legend background size
+    const legendBounds = legendContent.node()!.getBBox();
+    legendBg
+      .attr('width', legendBounds.width + 24)
+      .attr('height', legendBounds.height + 24);
       
   }, [circularNodes, arcs, tiers, width, height]);
 

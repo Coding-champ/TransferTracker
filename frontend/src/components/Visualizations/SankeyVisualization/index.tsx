@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
+import * as d3Sankey from 'd3-sankey';
 import { VisualizationProps } from '../../../types';
 
 interface SankeyVisualizationProps extends VisualizationProps {}
@@ -17,99 +17,108 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
   const [groupingMode, setGroupingMode] = useState<GroupingMode>('continent');
   
   // Process data for Sankey layout
-  const { nodes, links } = useMemo(() => {
-    if (!networkData?.edges || !networkData?.nodes) {
-      return { nodes: [], links: [] };
+  const { nodes, links, hasValidData } = useMemo(() => {
+    if (!networkData?.edges || !networkData?.nodes || networkData.edges.length === 0) {
+      return { nodes: [], links: [], hasValidData: false };
     }
     
-    const nodeMap = new Map(networkData.nodes.map(n => [n.id, n]));
-    const flowData = new Map<string, number>();
-    
-    // Process transfers based on grouping mode
-    networkData.edges.forEach(edge => {
-      const sourceNode = nodeMap.get(typeof edge.source === 'string' ? edge.source : edge.source.id);
-      const targetNode = nodeMap.get(typeof edge.target === 'string' ? edge.target : edge.target.id);
+    try {
+      const nodeMap = new Map(networkData.nodes.map(n => [n.id, n]));
+      const flowData = new Map<string, number>();
       
-      if (!sourceNode || !targetNode) return;
+      // Process transfers based on grouping mode
+      networkData.edges.forEach(edge => {
+        const sourceNode = nodeMap.get(typeof edge.source === 'string' ? edge.source : edge.source.id);
+        const targetNode = nodeMap.get(typeof edge.target === 'string' ? edge.target : edge.target.id);
+        
+        if (!sourceNode || !targetNode || !edge.stats?.totalValue) return;
+        
+        let sourceCategory: string;
+        let targetCategory: string;
+        
+        switch (groupingMode) {
+          case 'continent':
+            sourceCategory = sourceNode.continent || 'Unknown';
+            targetCategory = targetNode.continent || 'Unknown';
+            break;
+          case 'league':
+            sourceCategory = sourceNode.league || 'Unknown';
+            targetCategory = targetNode.league || 'Unknown';
+            break;
+          case 'position':
+            // For position, we'll use transfer types as a proxy
+            sourceCategory = 'Outgoing';
+            targetCategory = 'Incoming';
+            break;
+          default:
+            sourceCategory = sourceNode.continent || 'Unknown';
+            targetCategory = targetNode.continent || 'Unknown';
+        }
+        
+        if (sourceCategory !== targetCategory) {
+          const flowKey = `${sourceCategory}→${targetCategory}`;
+          flowData.set(flowKey, (flowData.get(flowKey) || 0) + edge.stats.totalValue);
+        }
+      });
       
-      let sourceCategory: string;
-      let targetCategory: string;
-      
-      switch (groupingMode) {
-        case 'continent':
-          sourceCategory = sourceNode.continent || 'Unknown';
-          targetCategory = targetNode.continent || 'Unknown';
-          break;
-        case 'league':
-          sourceCategory = sourceNode.league;
-          targetCategory = targetNode.league;
-          break;
-        case 'position':
-          // For position, we'll use transfer types as a proxy
-          sourceCategory = 'Outgoing';
-          targetCategory = 'Incoming';
-          break;
-        default:
-          sourceCategory = sourceNode.continent || 'Unknown';
-          targetCategory = targetNode.continent || 'Unknown';
+      if (flowData.size === 0) {
+        return { nodes: [], links: [], hasValidData: false };
       }
       
-      if (sourceCategory !== targetCategory) {
-        const flowKey = `${sourceCategory}→${targetCategory}`;
-        flowData.set(flowKey, (flowData.get(flowKey) || 0) + edge.stats.totalValue);
-      }
-    });
-    
-    // Create unique nodes
-    const nodeSet = new Set<string>();
-    flowData.forEach((value, key) => {
-      const [source, target] = key.split('→');
-      nodeSet.add(source);
-      nodeSet.add(target);
-    });
-    
-    const nodes = Array.from(nodeSet).map(name => ({
-      id: name,
-      name,
-      category: groupingMode,
-      value: 0
-    }));
-    
-    // Calculate node values
-    const nodeValueMap = new Map<string, number>();
-    flowData.forEach((value, key) => {
-      const [source, target] = key.split('→');
-      nodeValueMap.set(source, (nodeValueMap.get(source) || 0) + value);
-      nodeValueMap.set(target, (nodeValueMap.get(target) || 0) + value);
-    });
-    
-    nodes.forEach(node => {
-      node.value = nodeValueMap.get(node.name) || 0;
-    });
-    
-    // Create links
-    const links: any[] = [];
-    flowData.forEach((value, key) => {
-      const [sourceName, targetName] = key.split('→');
-      const sourceIndex = nodes.findIndex(n => n.name === sourceName);
-      const targetIndex = nodes.findIndex(n => n.name === targetName);
+      // Create unique nodes
+      const nodeSet = new Set<string>();
+      flowData.forEach((value, key) => {
+        const [source, target] = key.split('→');
+        nodeSet.add(source);
+        nodeSet.add(target);
+      });
       
-      if (sourceIndex !== -1 && targetIndex !== -1) {
-        links.push({
-          source: sourceIndex,
-          target: targetIndex,
-          value,
-          sourceCategory: sourceName,
-          targetCategory: targetName
-        });
-      }
-    });
-    
-    return { nodes, links };
+      const nodes = Array.from(nodeSet).map(name => ({
+        id: name,
+        name,
+        category: groupingMode,
+        value: 0
+      }));
+      
+      // Calculate node values
+      const nodeValueMap = new Map<string, number>();
+      flowData.forEach((value, key) => {
+        const [source, target] = key.split('→');
+        nodeValueMap.set(source, (nodeValueMap.get(source) || 0) + value);
+        nodeValueMap.set(target, (nodeValueMap.get(target) || 0) + value);
+      });
+      
+      nodes.forEach(node => {
+        node.value = nodeValueMap.get(node.name) || 0;
+      });
+      
+      // Create links
+      const links: any[] = [];
+      flowData.forEach((value, key) => {
+        const [sourceName, targetName] = key.split('→');
+        const sourceIndex = nodes.findIndex(n => n.name === sourceName);
+        const targetIndex = nodes.findIndex(n => n.name === targetName);
+        
+        if (sourceIndex !== -1 && targetIndex !== -1 && value > 0) {
+          links.push({
+            source: sourceIndex,
+            target: targetIndex,
+            value,
+            sourceCategory: sourceName,
+            targetCategory: targetName
+          });
+        }
+      });
+      
+      return { nodes, links, hasValidData: nodes.length > 0 && links.length > 0 };
+    } catch (error) {
+      console.error('Error processing Sankey data:', error);
+      return { nodes: [], links: [], hasValidData: false };
+    }
   }, [networkData, groupingMode]);
 
   useEffect(() => {
-    if (!svgRef.current || nodes.length === 0) return;
+    if (!svgRef.current || !hasValidData) return;
     
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -122,18 +131,23 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
     
     // Set up Sankey layout
-    const sankeyLayout = sankey()
+    const sankeyLayout = d3Sankey.sankey()
       .nodeWidth(15)
       .nodePadding(10)
       .extent([[1, 1], [innerWidth - 1, innerHeight - 6]]);
     
     // Create a copy of the data for the sankey layout
-    const sankeyData = {
+    const sankeyData: d3Sankey.SankeyGraph<{}, {}> = {
       nodes: nodes.map(d => ({ ...d })),
       links: links.map(d => ({ ...d }))
     };
     
-    sankeyLayout(sankeyData as any);
+    try {
+      sankeyLayout(sankeyData);
+    } catch (error) {
+      console.error('Sankey layout error:', error);
+      return;
+    }
     
     // Color scale
     const colorScale = d3.scaleOrdinal()
@@ -147,7 +161,7 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
       .enter()
       .append('path')
       .attr('class', 'link')
-      .attr('d', sankeyLinkHorizontal())
+      .attr('d', d3Sankey.sankeyLinkHorizontal())
       .attr('stroke', (d: any) => colorScale(d.source.name) as string)
       .attr('stroke-width', (d: any) => Math.max(1, d.width || 0))
       .attr('stroke-opacity', 0.4)
@@ -257,9 +271,9 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
       .attr('fill', '#374151')
       .text(`Transfer Flows by ${groupingMode.charAt(0).toUpperCase() + groupingMode.slice(1)}`);
       
-  }, [nodes, links, width, height, groupingMode]);
+  }, [nodes, links, hasValidData, width, height, groupingMode]);
 
-  if (!networkData?.edges?.length) {
+  if (!networkData?.edges?.length || !hasValidData) {
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
