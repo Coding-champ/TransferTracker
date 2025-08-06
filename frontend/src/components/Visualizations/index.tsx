@@ -44,20 +44,20 @@ export const DEFAULT_TABS: TabConfig[] = [
     label: 'Heatmap',
     description: 'Transfer-Intensität zwischen Regionen',
     icon: '🗺️',
-    disabled: true
+    disabled: false
   },
   {
     id: 'timeline',
     label: 'Timeline',
     description: 'Zeitlicher Verlauf der Transfers',
     icon: '📅',
-    disabled: true
+    disabled: false
   },
   {
     id: 'statistics',
     label: 'Statistics',
     description: 'Erweiterte Transfer-Statistiken',
     icon: '📊',
-    disabled: true
+    disabled: false
   }
 ];
