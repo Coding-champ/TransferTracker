@@ -4,6 +4,6 @@ import App from './App';
 
 test('renders Football Transfer Network', () => {
   render(<App />);
-  const headerElement = screen.getByText(/Football Transfer Network/i);
+  const headerElement = screen.getAllByText(/Football Transfer Network/i)[0]; // Get first instance (header)
   expect(headerElement).toBeInTheDocument();
 });

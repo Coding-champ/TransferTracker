@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FilterState } from '../../types';
 import { formatCurrency, validateFilterCombination } from '../../utils';
 import { useFilterData } from './hooks/useFilterData';
@@ -79,10 +79,18 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
     loading
   } = useFilterData();
 
+  // Store the callback in a ref to avoid stale closure issues
+  const onFiltersChangeRef = useRef(onFiltersChange);
+  
+  // Update the ref when the callback changes
+  useEffect(() => {
+    onFiltersChangeRef.current = onFiltersChange;
+  }, [onFiltersChange]);
+
   // Update parent component when debounced filters change (instead of on every filter change)
   useEffect(() => {
-    onFiltersChange(debouncedFilters);
-  }, [debouncedFilters, onFiltersChange]);
+    onFiltersChangeRef.current(debouncedFilters);
+  }, [debouncedFilters]);
 
   /**
    * Update a specific filter value
