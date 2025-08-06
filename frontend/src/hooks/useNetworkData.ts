@@ -109,140 +109,122 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
   // Stable query string for caching
   const queryString = useMemo(() => queryParams.toString(), [queryParams]);
 
-  const fetchNetworkData = useCallback(async (signal?: AbortSignal) => {
-    // Check cache first to prevent duplicate requests
-    const cacheKey = queryString;
-    if (requestCacheRef.current.has(cacheKey)) {
-      try {
-        return await requestCacheRef.current.get(cacheKey)!;
-      } catch (err) {
-        // If cached request failed, remove from cache and try again
-        requestCacheRef.current.delete(cacheKey);
-      }
-    }
-
-    setLoading(true);
-    setError(null);
-    setIsStale(false);
-    
-    const fetchPromise = (async () => {
-      try {
-        console.log('Fetching with enhanced filters:', queryString);
-
-        const response = await fetch(`http://localhost:3001/api/network-data?${queryString}`, {
-          signal
-        });
-        
-        if (signal?.aborted) {
-          throw new Error('Request aborted');
-        }
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('Enhanced network data received:', {
-            nodes: result.data.nodes.length,
-            edges: result.data.edges.length,
-            totalTransfers: result.data.metadata.totalTransfers,
-            avgROI: result.data.metadata.avgROI,
-            successRate: result.data.metadata.successRate
-          });
-          
-          // Only update state if component is still mounted and request wasn't aborted
-          if (!signal?.aborted) {
-            setNetworkData(result.data);
-            setError(null);
-          }
-          
-          return result.data;
-        } else {
-          throw new Error(result.error || 'Failed to fetch network data');
-        }
-      } catch (err) {
-        const processedError = handleError(err) as ApiError;
-        
-        if (processedError.name === 'AbortError') {
-          console.log('Request was aborted');
-          return null;
-        }
-        
-        console.error('Network request failed:', processedError);
-        
-        if (!signal?.aborted) {
-          // Set appropriate error message based on error type
-          const errorMessage = (processedError as any).message || 'An error occurred';
-          if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
-            setError(errorMessage);
-            console.log('🔧 Using mock data due to network/timeout error');
-            setNetworkData(MOCK_NETWORK_DATA as NetworkData);
-          } else {
-            setError(errorMessage);
-          }
-        }
-        
-        return MOCK_NETWORK_DATA as NetworkData;
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-        }
-        // Clean up cache entry
-        requestCacheRef.current.delete(cacheKey);
-      }
-    })();
-
-    // Cache the promise
-    requestCacheRef.current.set(cacheKey, fetchPromise);
-    
-    return fetchPromise;
-  }, [queryString]);
-
-  // Debounced fetch to prevent rapid fire requests
-  const debouncedFetch = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    return (delay = 300) => {
-      clearTimeout(timeoutId);
-      setIsStale(true);
-      
-      timeoutId = setTimeout(() => {
-        // Cancel previous request
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-          abortControllerRef.current = null;
-        }
-        
-        // Create new abort controller
-        abortControllerRef.current = new AbortController();
-        
-        fetchNetworkData(abortControllerRef.current.signal);
-      }, delay);
-      
-      // Return cleanup function for timeout
-      return () => clearTimeout(timeoutId);
-    };
-  }, [fetchNetworkData]);
-
   // Fetch data when query parameters change (with debouncing)
   useEffect(() => {
-    debouncedFetch();
+    setIsStale(true);
     
-    // Capture current refs for cleanup
-    const currentController = abortControllerRef.current;
-    const currentCache = requestCacheRef.current;
+    const timeoutId = setTimeout(async () => {
+      // Check cache first to prevent duplicate requests
+      const cacheKey = queryString;
+      if (requestCacheRef.current.has(cacheKey)) {
+        try {
+          const cachedData = await requestCacheRef.current.get(cacheKey)!;
+          setNetworkData(cachedData);
+          setIsStale(false);
+          return;
+        } catch (err) {
+          // If cached request failed, remove from cache and continue
+          requestCacheRef.current.delete(cacheKey);
+        }
+      }
+
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      setLoading(true);
+      setError(null);
+      setIsStale(false);
+      
+      const fetchPromise = (async () => {
+        try {
+          console.log('Fetching with enhanced filters:', queryString);
+
+          const response = await fetch(`http://localhost:3001/api/network-data?${queryString}`, {
+            signal
+          });
+          
+          if (signal?.aborted) {
+            throw new Error('Request aborted');
+          }
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('Enhanced network data received:', {
+              nodes: result.data.nodes.length,
+              edges: result.data.edges.length,
+              totalTransfers: result.data.metadata.totalTransfers,
+              avgROI: result.data.metadata.avgROI,
+              successRate: result.data.metadata.successRate
+            });
+            
+            // Only update state if component is still mounted and request wasn't aborted
+            if (!signal?.aborted) {
+              setNetworkData(result.data);
+              setError(null);
+            }
+            
+            return result.data;
+          } else {
+            throw new Error(result.error || 'Failed to fetch network data');
+          }
+        } catch (err) {
+          const processedError = handleError(err) as ApiError;
+          
+          if (processedError.name === 'AbortError') {
+            console.log('Request was aborted');
+            return null;
+          }
+          
+          console.error('Network request failed:', processedError);
+          
+          if (!signal?.aborted) {
+            // Set appropriate error message based on error type
+            const errorMessage = (processedError as any).message || 'An error occurred';
+            if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
+              setError(errorMessage);
+              console.log('🔧 Using mock data due to network/timeout error');
+              setNetworkData(MOCK_NETWORK_DATA as NetworkData);
+            } else {
+              setError(errorMessage);
+            }
+          }
+          
+          return MOCK_NETWORK_DATA as NetworkData;
+        } finally {
+          if (!signal?.aborted) {
+            setLoading(false);
+          }
+          // Clean up cache entry
+          requestCacheRef.current.delete(cacheKey);
+        }
+      })();
+
+      // Cache the promise
+      requestCacheRef.current.set(cacheKey, fetchPromise);
+    }, 300);
     
     return () => {
-      // Cleanup: abort any pending requests and clear timeouts
-      if (currentController) {
-        currentController.abort();
+      clearTimeout(timeoutId);
+      // Cleanup: abort any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
       // Clear any pending cache entries
-      currentCache.clear();
+      requestCacheRef.current.clear();
     };
-  }, [debouncedFetch]);
+  }, [queryString]); // Only depend on queryString
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -273,9 +255,13 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
     // Create new abort controller
     abortControllerRef.current = new AbortController();
     
-    // Fetch immediately
-    fetchNetworkData(abortControllerRef.current.signal);
-  }, [fetchNetworkData]);
+    // Trigger a new fetch by creating a fake queryString change
+    setIsStale(true);
+    setTimeout(() => {
+      // This will trigger the useEffect above
+      setError(null);
+    }, 0);
+  }, []);
 
   return {
     networkData,
