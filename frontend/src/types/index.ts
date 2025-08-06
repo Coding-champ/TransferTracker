@@ -342,10 +342,6 @@ export interface FilterPanelProps {
   onFiltersChange: (filters: FilterState) => void;
 }
 
-export interface TransferNetworkProps {
-  filters: FilterState;
-}
-
 // ========== UTILITY TYPES ==========
 export type TransferType = 'sale' | 'loan' | 'free' | 'loan_with_option';
 export type TransferWindow = 'summer' | 'winter';
