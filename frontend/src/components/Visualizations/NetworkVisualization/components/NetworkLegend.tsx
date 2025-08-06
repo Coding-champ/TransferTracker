@@ -1,6 +1,6 @@
 import React from 'react';
 import * as d3 from 'd3';
-import { NetworkData } from '../types';
+import { NetworkData } from '../../../../types';
 
 interface NetworkLegendProps {
   networkData: NetworkData;

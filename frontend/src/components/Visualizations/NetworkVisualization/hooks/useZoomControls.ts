@@ -86,8 +86,9 @@ export const useZoomControls = (svgRef: React.RefObject<SVGSVGElement>) => {
    */
   useEffect(() => {
     return () => {
-      if (svgRef.current && zoomRef.current) {
-        const svg = d3.select(svgRef.current);
+      const currentSvg = svgRef.current;
+      if (currentSvg && zoomRef.current) {
+        const svg = d3.select(currentSvg);
         svg.on('.zoom', null);
       }
     };

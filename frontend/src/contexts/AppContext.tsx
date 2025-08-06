@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { FilterState, NetworkNode, NetworkEdge } from '../types';
+import { FilterState, NetworkNode, NetworkEdge, VisualizationType } from '../types';
 
 // Define the shape of our application state
 interface AppState {
   filters: FilterState;
   selectedNode: NetworkNode | null;
   hoveredEdge: NetworkEdge | null;
+  activeVisualization: VisualizationType;
+  visualizationData: Record<VisualizationType, any>;
 }
 
 // Define action types for state updates
@@ -13,6 +15,8 @@ type AppAction =
   | { type: 'SET_FILTERS'; payload: FilterState }
   | { type: 'SET_SELECTED_NODE'; payload: NetworkNode | null }
   | { type: 'SET_HOVERED_EDGE'; payload: NetworkEdge | null }
+  | { type: 'SET_ACTIVE_VISUALIZATION'; payload: VisualizationType }
+  | { type: 'SET_VISUALIZATION_DATA'; payload: { type: VisualizationType; data: any } }
   | { type: 'CLEAR_SELECTIONS' };
 
 // Define the context interface
@@ -21,6 +25,8 @@ interface AppContextType {
   setFilters: (filters: FilterState) => void;
   setSelectedNode: (node: NetworkNode | null) => void;
   setHoveredEdge: (edge: NetworkEdge | null) => void;
+  setActiveVisualization: (type: VisualizationType) => void;
+  setVisualizationData: (type: VisualizationType, data: any) => void;
   clearSelections: () => void;
 }
 
@@ -53,7 +59,16 @@ const initialState: AppState = {
     onlySuccessfulTransfers: false
   },
   selectedNode: null,
-  hoveredEdge: null
+  hoveredEdge: null,
+  activeVisualization: 'network',
+  visualizationData: {
+    network: null,
+    circular: null,
+    sankey: null,
+    heatmap: null,
+    timeline: null,
+    statistics: null
+  }
 };
 
 // Reducer function to handle state updates
@@ -67,6 +82,18 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     
     case 'SET_HOVERED_EDGE':
       return { ...state, hoveredEdge: action.payload };
+    
+    case 'SET_ACTIVE_VISUALIZATION':
+      return { ...state, activeVisualization: action.payload };
+    
+    case 'SET_VISUALIZATION_DATA':
+      return { 
+        ...state, 
+        visualizationData: {
+          ...state.visualizationData,
+          [action.payload.type]: action.payload.data
+        }
+      };
     
     case 'CLEAR_SELECTIONS':
       return { ...state, selectedNode: null, hoveredEdge: null };
@@ -100,6 +127,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     dispatch({ type: 'SET_HOVERED_EDGE', payload: edge });
   };
 
+  const setActiveVisualization = (type: VisualizationType) => {
+    dispatch({ type: 'SET_ACTIVE_VISUALIZATION', payload: type });
+  };
+
+  const setVisualizationData = (type: VisualizationType, data: any) => {
+    dispatch({ type: 'SET_VISUALIZATION_DATA', payload: { type, data } });
+  };
+
   const clearSelections = () => {
     dispatch({ type: 'CLEAR_SELECTIONS' });
   };
@@ -109,6 +144,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setFilters,
     setSelectedNode,
     setHoveredEdge,
+    setActiveVisualization,
+    setVisualizationData,
     clearSelections
   };
 

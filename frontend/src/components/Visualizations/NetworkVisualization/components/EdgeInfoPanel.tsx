@@ -1,6 +1,6 @@
 import React from 'react';
-import { NetworkEdge } from '../types';
-import { formatCurrency, formatPercentage } from '../utils';
+import { NetworkEdge } from '../../../../types';
+import { formatCurrency, formatPercentage } from '../../../../utils';
 
 interface EdgeInfoPanelProps {
   hoveredEdgeData: NetworkEdge;

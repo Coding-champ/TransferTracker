@@ -1,7 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
-import { NetworkNode } from '../types';
-import { formatCurrency, formatPercentage } from '../utils';
+import { NetworkNode } from '../../../../types';
+import { formatCurrency, formatPercentage } from '../../../../utils';
 
 interface NodeInfoPanelProps {
   selectedNodeData: NetworkNode;

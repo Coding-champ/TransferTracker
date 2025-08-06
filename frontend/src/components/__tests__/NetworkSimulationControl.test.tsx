@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import NetworkVisualization from '../NetworkVisualization';
+import NetworkVisualization from '../Visualizations/NetworkVisualization';
 import { MOCK_NETWORK_DATA } from '../../data/mockNetworkData';
 
 // Mock ResizeObserver which is not available in test environment

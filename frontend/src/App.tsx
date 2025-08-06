@@ -1,9 +1,9 @@
 import './App.css';
-import TransferNetwork from './components/TransferNetwork';
+import TransferDashboard from './components/TransferDashboard';
 import FilterPanel from './components/FilterPanel';
 import { countActiveFilters } from './utils';
 import { AppProvider, useAppContext } from './contexts/AppContext';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
 
 // Main App content component that uses the context
 function AppContent() {
@@ -48,9 +48,9 @@ function AppContent() {
           <FilterPanel onFiltersChange={handleFiltersChange} />
         </ErrorBoundary>
         
-        {/* Network Visualization */}
+        {/* Enhanced Transfer Dashboard with Visualizations */}
         <ErrorBoundary>
-          <TransferNetwork />
+          <TransferDashboard />
         </ErrorBoundary>
         
         {/* Enhanced Footer Info */}
@@ -58,19 +58,19 @@ function AppContent() {
           <h3 className="text-lg font-semibold mb-4">Enhanced Features & Usage Guide</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
             <div>
+              <h4 className="font-medium text-gray-900 mb-2">🎯 Multi-Visual Dashboard</h4>
+              <ul className="space-y-1 text-gray-600">
+                <li>• Network Visualization</li>
+                <li>• Circular Liga-Hierarchie</li>
+                <li>• Sankey Transfer-Flüsse</li>
+              </ul>
+            </div>
+            <div>
               <h4 className="font-medium text-gray-900 mb-2">🎯 Advanced Filtering</h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• Geographic filters</li>
                 <li>• Performance metrics (ROI, success rate)</li>
                 <li>• Player demographics</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">📊 Enhanced Visualization</h4>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Success rate indicators</li>
-                <li>• Transfer window analysis</li>
-                <li>• ROI metrics visualization</li>
               </ul>
             </div>
             <div>
