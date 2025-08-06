@@ -14,7 +14,7 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
   height = 600
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [groupingMode, setGroupingMode] = useState<GroupingMode>('continent');
+  const [groupingMode, setGroupingMode] = useState<GroupingMode>('league');
   
   // Process data for Sankey layout
   const { nodes, links, hasValidData } = useMemo(() => {
@@ -46,19 +46,28 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
             targetCategory = targetNode.league || 'Unknown';
             break;
           case 'position':
-            // For position, we'll use transfer types as a proxy
-            sourceCategory = 'Outgoing';
-            targetCategory = 'Incoming';
+            // For position, we'll show tier-based flows 
+            const sourceTier = sourceNode.leagueTier || 1;
+            const targetTier = targetNode.leagueTier || 1;
+            sourceCategory = `Tier ${sourceTier}`;
+            targetCategory = `Tier ${targetTier}`;
             break;
           default:
-            sourceCategory = sourceNode.continent || 'Unknown';
-            targetCategory = targetNode.continent || 'Unknown';
+            sourceCategory = sourceNode.league || 'Unknown';
+            targetCategory = targetNode.league || 'Unknown';
         }
         
-        if (sourceCategory !== targetCategory) {
-          const flowKey = `${sourceCategory}→${targetCategory}`;
-          flowData.set(flowKey, (flowData.get(flowKey) || 0) + edge.stats.totalValue);
+        // Allow flows within same category for better visualization
+        // but distinguish them by adding direction info for same-category flows
+        let flowKey: string;
+        if (sourceCategory === targetCategory && groupingMode !== 'position') {
+          // For same-category flows, create internal circulation
+          flowKey = `${sourceCategory} (Internal)→${targetCategory} (Internal)`;
+        } else {
+          flowKey = `${sourceCategory}→${targetCategory}`;
         }
+        
+        flowData.set(flowKey, (flowData.get(flowKey) || 0) + edge.stats.totalValue);
       });
       
       if (flowData.size === 0) {

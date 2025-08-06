@@ -152,16 +152,17 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     const colorScale = d3.scaleSequential(d3.interpolateBlues)
       .domain(valueExtent);
     
-    // Club color scale - use a categorical color scheme for clubs
-    const clubColors = [
+    // League color scale - use colors per league instead of per club
+    const leagueColors = [
       '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
       '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78',
       '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d3', '#c7c7c7',
       '#dbdb8d', '#9edae5'
     ];
-    const clubColorScale = d3.scaleOrdinal()
-      .domain(circularNodes.map(d => d.id))
-      .range(clubColors);
+    const uniqueLeagues = Array.from(new Set(circularNodes.map(d => d.league)));  // Get unique leagues
+    const leagueColorScale = d3.scaleOrdinal()
+      .domain(uniqueLeagues)
+      .range(leagueColors);
     
     // Draw transfer arcs
     g.selectAll('.transfer-arc')
@@ -235,8 +236,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('cy', d => d.y)
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => {
-        // Use club-specific colors with tier-based fallback for better distinction
-        return clubColorScale(d.id) as string;
+        // Use league-specific colors 
+        return leagueColorScale(d.league) as string;
       })
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
@@ -348,14 +349,14 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     const colorGroup = legendContent.append('g')
       .attr('transform', `translate(0, ${yOffset})`);
     
-    // Show sample club colors
-    const sampleColors = clubColors.slice(0, 5);
-    sampleColors.forEach((color, i) => {
+    // Show sample league colors
+    const sampleLeagues = uniqueLeagues.slice(0, 5);
+    sampleLeagues.forEach((league, i) => {
       colorGroup.append('circle')
         .attr('cx', i * 12 + 6)
         .attr('cy', 0)
         .attr('r', 5)
-        .attr('fill', color)
+        .attr('fill', leagueColorScale(league) as string)
         .attr('stroke', 'white')
         .attr('stroke-width', 1);
     });
@@ -365,7 +366,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('y', 4)
       .attr('font-size', '11px')
       .attr('fill', '#6b7280')
-      .text('Different colors = Individual clubs');
+      .text('Different colors = Different leagues');
     
     yOffset += 20;
     
