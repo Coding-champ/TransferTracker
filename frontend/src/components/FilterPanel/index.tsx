@@ -80,9 +80,10 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
   } = useFilterData();
 
   // Update parent component when debounced filters change (instead of on every filter change)
+  // Use useEffect with a ref to avoid dependency on onFiltersChange callback
   useEffect(() => {
     onFiltersChange(debouncedFilters);
-  }, [debouncedFilters, onFiltersChange]);
+  }, [debouncedFilters]); // Removed onFiltersChange from dependencies
 
   /**
    * Update a specific filter value

@@ -1,17 +1,19 @@
+import React, { useCallback } from 'react';
 import './App.css';
 import TransferDashboard from './components/TransferDashboard';
 import FilterPanel from './components/FilterPanel';
 import { countActiveFilters } from './utils';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
+import { FilterState } from './types';
 
 // Main App content component that uses the context
 function AppContent() {
   const { state, setFilters } = useAppContext();
 
-  const handleFiltersChange = (newFilters: any) => {
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
-  };
+  }, [setFilters]);
 
   return (
     <div className="min-h-screen bg-gray-50">
