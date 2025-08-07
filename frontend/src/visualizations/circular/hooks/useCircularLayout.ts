@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { NetworkNode, NetworkEdge } from '../../../types';
 import { 
   CircularLayout, 
   CircularNode, 
   CircularArc, 
   CircularTier,
-  UseCircularLayoutProps 
+  UseCircularLayoutProps
 } from '../types';
 import { calculateCircularPositions, groupNodesByTier } from '../utils/circularCalculations';
 

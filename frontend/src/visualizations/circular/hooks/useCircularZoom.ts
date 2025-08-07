@@ -4,7 +4,6 @@ import {
   CircularZoomState,
   UseCircularZoomProps 
 } from '../types';
-import { createZoomBehavior } from '../../shared/utils/d3-helpers';
 import { zoomTo } from '../../shared/utils/animation-utils';
 
 export const useCircularZoom = ({
@@ -23,8 +22,48 @@ export const useCircularZoom = ({
     translateY: 0
   });
 
+  // Handle mousewheel zoom
+  const handleZoom = useCallback((event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+    if (!layout || !svgRef.current) return;
+
+    const { transform } = event;
+    
+    // Update zoom state
+    const newZoomState: CircularZoomState = {
+      ...zoomState,
+      scale: transform.k,
+      translateX: transform.x,
+      translateY: transform.y
+    };
+
+    // Determine zoom level based on scale
+    if (transform.k <= 1.5) {
+      newZoomState.level = 1;
+      newZoomState.focusedTier = null;
+      newZoomState.focusedLeague = null;
+    } else if (transform.k <= 2.5) {
+      newZoomState.level = 2;
+      newZoomState.focusedLeague = null;
+    } else {
+      newZoomState.level = 3;
+    }
+
+    setZoomState(newZoomState);
+    
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+
+    // Apply transform to visualization group
+    const svg = d3.select(svgRef.current);
+    svg.select('.visualization-group')
+       .attr('transform', transform.toString());
+  }, [layout, svgRef, zoomState, onZoomChange]);
+
   // Create zoom behavior
-  const zoomBehavior = createZoomBehavior([[0.5, 0.5], [5, 5]]);
+  const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+    .scaleExtent([0.5, 5])
+    .on('zoom', handleZoom);
 
   // Handle zoom level change
   const setZoomLevel = useCallback((level: 1 | 2 | 3, focusedTier?: number, focusedLeague?: string) => {
@@ -117,44 +156,6 @@ export const useCircularZoom = ({
     }
   }, [layout, svgRef, config, zoomBehavior, onZoomChange]);
 
-  // Handle mousewheel zoom
-  const handleZoom = useCallback((event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-    if (!layout || !svgRef.current) return;
-
-    const { transform } = event;
-    
-    // Update zoom state
-    const newZoomState: CircularZoomState = {
-      ...zoomState,
-      scale: transform.k,
-      translateX: transform.x,
-      translateY: transform.y
-    };
-
-    // Determine zoom level based on scale
-    if (transform.k <= 1.5) {
-      newZoomState.level = 1;
-      newZoomState.focusedTier = null;
-      newZoomState.focusedLeague = null;
-    } else if (transform.k <= 2.5) {
-      newZoomState.level = 2;
-      newZoomState.focusedLeague = null;
-    } else {
-      newZoomState.level = 3;
-    }
-
-    setZoomState(newZoomState);
-    
-    if (onZoomChange) {
-      onZoomChange(newZoomState);
-    }
-
-    // Apply transform to visualization group
-    const svg = d3.select(svgRef.current);
-    svg.select('.visualization-group')
-       .attr('transform', transform.toString());
-  }, [layout, svgRef, zoomState, onZoomChange]);
-
   // Zoom to specific tier
   const zoomToTier = useCallback((tier: number) => {
     setZoomLevel(2, tier);
@@ -176,9 +177,6 @@ export const useCircularZoom = ({
 
     const svg = d3.select(svgRef.current);
     
-    // Configure zoom behavior
-    zoomBehavior.on('zoom', handleZoom);
-    
     // Apply zoom behavior to SVG
     svg.call(zoomBehavior);
 
@@ -188,7 +186,7 @@ export const useCircularZoom = ({
     return () => {
       svg.on('.zoom', null);
     };
-  }, [svgRef, config.enableZoom, zoomBehavior, handleZoom]);
+  }, [svgRef, config.enableZoom, zoomBehavior]);
 
   // Handle keyboard shortcuts for zoom levels
   useEffect(() => {

@@ -17,7 +17,7 @@ export interface D3ContainerConfig {
 export interface D3Container {
   svgRef: React.RefObject<SVGSVGElement>;
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined> | null;
-  g: d3.Selection<SVGGElement, unknown, null, undefined> | null;
+  g: d3.Selection<any, unknown, null, undefined> | null;
   innerWidth: number;
   innerHeight: number;
   clearSvg: () => void;
@@ -62,7 +62,7 @@ export const useD3Container = (config: D3ContainerConfig): D3Container => {
   }, [width, height, backgroundColor, className]);
 
   const svg = svgRef.current ? d3.select(svgRef.current) : null;
-  const g = svg ? svg.select('g') : null;
+  const g = null; // Will be set by appendGroup
 
   return {
     svgRef,

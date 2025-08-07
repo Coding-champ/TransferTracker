@@ -74,14 +74,14 @@ export const createArcPath = (
   endAngle: number,
   innerRadius: number,
   outerRadius: number
-) => {
+): string | null => {
   const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius)
     .startAngle(startAngle * Math.PI / 180)
     .endAngle(endAngle * Math.PI / 180);
   
-  return arc(null);
+  return arc({} as any);
 };
 
 export const createCurvedPath = (

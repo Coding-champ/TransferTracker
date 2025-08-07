@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import React from 'react';
 import * as d3 from 'd3';
 
 export interface TooltipConfig {
@@ -10,7 +11,7 @@ export interface TooltipConfig {
 
 export interface TooltipData {
   title?: string;
-  content: string | JSX.Element;
+  content: string;
   position: { x: number; y: number };
 }
 
@@ -19,7 +20,7 @@ export interface UseTooltipReturn {
   showTooltip: (data: Omit<TooltipData, 'position'>, event: MouseEvent | React.MouseEvent) => void;
   hideTooltip: () => void;
   updateTooltipPosition: (event: MouseEvent | React.MouseEvent) => void;
-  renderTooltip: () => JSX.Element | null;
+  renderTooltip: () => React.ReactElement | null;
 }
 
 const defaultConfig: Required<TooltipConfig> = {
@@ -75,26 +76,26 @@ export const useTooltip = (config: TooltipConfig = {}): UseTooltipReturn => {
     }
   }, [tooltipData, finalConfig.followMouse, getTooltipPosition]);
 
-  const renderTooltip = useCallback(() => {
+  const renderTooltip = useCallback((): React.ReactElement | null => {
     if (!tooltipData) return null;
 
-    return (
-      <div
-        className={`fixed z-50 pointer-events-none bg-black text-white text-sm rounded px-2 py-1 shadow-lg ${finalConfig.className}`}
-        style={{
-          left: tooltipData.position.x,
-          top: tooltipData.position.y,
-          transform: 'translate(-50%, -100%)',
-        }}
-      >
-        {tooltipData.title && (
-          <div className="font-semibold border-b border-gray-600 pb-1 mb-1">
-            {tooltipData.title}
-          </div>
-        )}
-        <div>{tooltipData.content}</div>
-      </div>
-    );
+    return React.createElement('div', {
+      className: `fixed z-50 pointer-events-none bg-black text-white text-sm rounded px-2 py-1 shadow-lg ${finalConfig.className}`,
+      style: {
+        left: tooltipData.position.x,
+        top: tooltipData.position.y,
+        transform: 'translate(-50%, -100%)',
+      },
+    }, [
+      tooltipData.title && React.createElement('div', {
+        key: 'title',
+        className: 'font-semibold border-b border-gray-600 pb-1 mb-1'
+      }, tooltipData.title),
+      React.createElement('div', {
+        key: 'content',
+        style: { whiteSpace: 'pre-line' }
+      }, tooltipData.content)
+    ].filter(Boolean));
   }, [tooltipData, finalConfig.className]);
 
   // Cleanup timeout on unmount

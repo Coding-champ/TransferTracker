@@ -36,15 +36,7 @@ export const useCircularInteraction = ({
   const handleNodeMouseOver = useCallback((node: CircularNode, event: MouseEvent) => {
     setInteractionState(prev => ({ ...prev, hoveredNode: node }));
     
-    const tooltipContent = (
-      <div>
-        <div className="font-semibold">{node.name}</div>
-        <div className="text-sm">League: {node.league}</div>
-        <div className="text-sm">Tier: {node.tier}</div>
-        <div className="text-sm">Transfers: {node.transferCount}</div>
-        <div className="text-sm">Total Value: €{(node.totalValue / 1000000).toFixed(1)}M</div>
-      </div>
-    );
+    const tooltipContent = `${node.name}\nLeague: ${node.league}\nTier: ${node.tier}\nTransfers: ${node.transferCount}\nTotal Value: €${(node.totalValue / 1000000).toFixed(1)}M`;
 
     tooltip.showTooltip({
       title: 'Club Details',
@@ -78,14 +70,7 @@ export const useCircularInteraction = ({
   const handleArcMouseOver = useCallback((arc: CircularArc, event: MouseEvent) => {
     setInteractionState(prev => ({ ...prev, hoveredArc: arc }));
     
-    const tooltipContent = (
-      <div>
-        <div className="font-semibold">{arc.source.name} → {arc.target.name}</div>
-        <div className="text-sm">Transfers: {arc.count}</div>
-        <div className="text-sm">Total Value: €{(arc.value / 1000000).toFixed(1)}M</div>
-        <div className="text-sm">Type: {arc.type}</div>
-      </div>
-    );
+    const tooltipContent = `${arc.source.name} → ${arc.target.name}\nTransfers: ${arc.count}\nTotal Value: €${(arc.value / 1000000).toFixed(1)}M\nType: ${arc.type}`;
 
     tooltip.showTooltip({
       title: 'Transfer Flow',
@@ -174,25 +159,27 @@ export const useCircularInteraction = ({
 
     // Add node event listeners
     svg.selectAll('.club-node')
-       .on('mouseover', function(event, d: CircularNode) {
-         d3.select(this).transition().duration(200).attr('r', d3.select(this).attr('r') * 1.3);
-         handleNodeMouseOver(d, event);
+       .on('mouseover', function(event, d) {
+         const node = d as CircularNode;
+         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) * 1.3);
+         handleNodeMouseOver(node, event);
        })
-       .on('mouseout', function(event, d: CircularNode) {
-         d3.select(this).transition().duration(200).attr('r', d3.select(this).attr('r') / 1.3);
+       .on('mouseout', function() {
+         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) / 1.3);
          handleNodeMouseOut();
        })
-       .on('click', function(event, d: CircularNode) {
-         handleNodeClick(d);
+       .on('click', function(event, d) {
+         const node = d as CircularNode;
+         handleNodeClick(node);
        });
 
     // Add arc event listeners
     svg.selectAll('.transfer-arc')
-       .on('mouseover', function(event, d: CircularArc) {
+       .on('mouseover', function(event, d) {
          d3.select(this).transition().duration(200).attr('opacity', 1);
-         handleArcMouseOver(d, event);
+         handleArcMouseOver(d as any, event);
        })
-       .on('mouseout', function(event, d: CircularArc) {
+       .on('mouseout', function() {
          d3.select(this).transition().duration(200).attr('opacity', 0.6);
          handleArcMouseOut();
        });

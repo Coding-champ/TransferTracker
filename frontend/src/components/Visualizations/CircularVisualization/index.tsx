@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import * as d3 from 'd3';
 import { VisualizationProps } from '../../../types';
 import { useD3Container } from '../../../visualizations/shared/hooks/useD3Container';
@@ -8,10 +8,9 @@ import { useCircularZoom } from '../../../visualizations/circular/hooks/useCircu
 import { 
   CircularVisualizationConfig,
   CircularZoomState,
-  CircularNode,
-  CircularArc
+  CircularNode
 } from '../../../visualizations/circular/types';
-import { createLeagueColorScale, formatCurrency } from '../../../visualizations/shared/utils/d3-helpers';
+import { createLeagueColorScale } from '../../../visualizations/shared/utils/d3-helpers';
 import { 
   animateNodesEnter,
   animateArcsEnter,
@@ -39,7 +38,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   });
 
   // Configuration for the visualization
-  const config: CircularVisualizationConfig = {
+  const config = React.useMemo((): CircularVisualizationConfig => ({
     width,
     height,
     margin: { top: 40, right: 40, bottom: 40, left: 40 },
@@ -49,7 +48,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     enableZoom: true,
     snapAngle: 30,
     animationDuration: 800
-  };
+  }), [width, height]);
 
   // Setup D3 container
   const { svgRef, svg, clearSvg } = useD3Container({
@@ -68,7 +67,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   });
 
   // Setup interactions
-  const { interactionState, tooltip } = useCircularInteraction({
+  const { tooltip } = useCircularInteraction({
     layout,
     svgRef,
     config,
@@ -83,7 +82,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   });
 
   // Setup zoom controls
-  const { zoomState: currentZoom, setZoomLevel, zoomToTier, zoomToLeague, resetZoom } = useCircularZoom({
+  const { zoomState: currentZoom, setZoomLevel, resetZoom } = useCircularZoom({
     layout,
     svgRef,
     config,

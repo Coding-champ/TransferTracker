@@ -1,14 +1,29 @@
 import * as d3 from 'd3';
 import { CircularNode, CircularArc, CircularLayout } from '../types';
 import { 
-  fadeIn, 
-  fadeOut, 
-  animateRadius, 
-  animatePosition,
-  rotate,
   staggeredFadeIn,
   AnimationConfig 
 } from '../../shared/utils/animation-utils';
+
+// Simple rotation function
+const rotate = (
+  selection: d3.Selection<any, any, any, any>,
+  fromAngle: number,
+  toAngle: number,
+  centerX: number = 0,
+  centerY: number = 0,
+  config: AnimationConfig = {}
+) => {
+  const { duration = 500, ease = d3.easeLinear } = config;
+  
+  return selection
+    .style('transform-origin', `${centerX}px ${centerY}px`)
+    .style('transform', `rotate(${fromAngle}deg)`)
+    .transition()
+    .duration(duration)
+    .ease(ease)
+    .style('transform', `rotate(${toAngle}deg)`);
+};
 
 /**
  * Animates the entire circular layout rotation

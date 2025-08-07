@@ -1,4 +1,4 @@
-import { NetworkNode } from '../../../types';
+import { NetworkNode } from '../types';
 
 export interface CircularPosition {
   x: number;
