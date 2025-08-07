@@ -100,6 +100,12 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
 
   const handleCellClickWithModal = (cell: HeatmapCell) => {
     if (drillDownState.level === 'club') {
+      // Hide tooltip when opening modal
+      setTooltipData(null);
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+        setTooltipTimeout(null);
+      }
       // Show transfer details modal instead of drilling down further
       setModalSource(cell.source);
       setModalTarget(cell.target);
@@ -230,8 +236,8 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
         />
       </div>
 
-      {/* Level indicator */}
-      <div className="absolute top-4 right-4 bg-white border rounded-lg p-2 shadow-sm">
+      {/* Level indicator - positioned to avoid button overlap */}
+      <div className="absolute top-16 right-4 bg-white border rounded-lg p-2 shadow-sm">
         <div className="text-xs text-gray-600">Level {levelInfo.level}/{levelInfo.maxLevel}</div>
         <div className="w-16 bg-gray-200 rounded-full h-1 mt-1">
           <div 
@@ -251,17 +257,23 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
         </div>
       </div>
 
-      {/* Tooltip */}
-      <HeatmapTooltip 
-        data={tooltipData} 
-        mode={mode} 
-        onDrillDown={handleCellClickWithModal}
-      />
+      {/* Tooltip - only show when modal is closed */}
+      {!showModal && (
+        <HeatmapTooltip 
+          data={tooltipData} 
+          mode={mode} 
+          onDrillDown={handleCellClickWithModal}
+        />
+      )}
 
       {/* Transfer Details Modal */}
       <TransferDetailsModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          // Clear tooltip data when modal closes to prevent lingering tooltips
+          setTooltipData(null);
+        }}
         sourceClub={modalSource}
         targetClub={modalTarget}
         transfers={modalTransfers}

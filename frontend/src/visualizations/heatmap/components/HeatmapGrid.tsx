@@ -158,9 +158,26 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('transform', d => `rotate(-45, ${xScale(d)! + xScale.bandwidth() / 2}, -10)`)
       .text(d => d.length > 20 ? d.substring(0, 20) + '...' : d);
 
-    // Add interactions
+    // Add a background rect to capture mouse events over the entire heatmap area
+    const backgroundRect = g.append('rect')
+      .attr('class', 'heatmap-background')
+      .attr('x', -margin.left)
+      .attr('y', -margin.top)
+      .attr('width', adjustedWidth + margin.left + margin.right)
+      .attr('height', adjustedHeight + margin.top + margin.bottom)
+      .attr('fill', 'transparent')
+      .attr('pointer-events', 'all')
+      .on('mouseleave', function() {
+        // Only clear hover when leaving the entire heatmap area
+        currentHoveredCellRef.current = null;
+        if (onCellHover) {
+          onCellHover(null);
+        }
+      });
+
+    // Add interactions to cells
     cells
-      .on('mouseover', function(event, d) {
+      .on('mouseenter', function(event, d) {
         const cellId = `${d.source}-${d.target}`;
         if (currentHoveredCellRef.current !== cellId) {
           currentHoveredCellRef.current = cellId;
@@ -171,12 +188,6 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
             const tooltipY = cellRect.top + cellRect.height / 2;
             onCellHover(d, { x: tooltipX, y: tooltipY });
           }
-        }
-      })
-      .on('mouseleave', function() {
-        currentHoveredCellRef.current = null;
-        if (onCellHover) {
-          onCellHover(null);
         }
       })
       .on('click', function(event, d) {
