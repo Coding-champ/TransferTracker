@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { VisualizationProps } from '../../../types';
+import { VisualizationProps } from '../../../types/index';
 import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
 import { TransferDetailsModal } from '../../../visualizations/heatmap/components/TransferDetailsModal';
@@ -54,6 +54,9 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     drillDownState
   });
 
+  console.log('HeatmapVisualization: networkData', networkData);
+  console.log('HeatmapVisualization: heatmapData', heatmapData);
+
   // Handle cell interactions
   const handleCellHover = (cell: HeatmapCell | null, position?: { x: number; y: number }) => {
     if (cell && position) {
@@ -80,6 +83,7 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   const breadcrumbs = getBreadcrumbs();
 
   if (!networkData?.edges?.length) {
+    console.log('HeatmapVisualization: No network data, showing placeholder');
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
@@ -96,6 +100,7 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   }
 
   if (!heatmapData) {
+    console.log('HeatmapVisualization: No heatmap data, showing loading');
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
@@ -109,6 +114,8 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
       </div>
     );
   }
+
+  console.log('HeatmapVisualization: Rendering main heatmap component');
 
   return (
     <div className="relative">

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NetworkData } from '../../../types';
+import { NetworkData } from '../../../types/index';
 import { HeatmapData, UseHeatmapDataProps } from '../types';
 import { calculateHeatmapMatrix } from '../utils/heatmapCalculations';
 
@@ -9,7 +9,12 @@ export const useHeatmapData = ({
   drillDownState
 }: UseHeatmapDataProps): HeatmapData | null => {
   return useMemo(() => {
+    console.log('useHeatmapData: networkData', networkData);
+    console.log('useHeatmapData: filters', filters);
+    console.log('useHeatmapData: drillDownState', drillDownState);
+    
     if (!networkData?.nodes?.length || !networkData?.edges?.length) {
+      console.log('useHeatmapData: No nodes or edges, returning null');
       return null;
     }
 
@@ -94,6 +99,8 @@ export const useHeatmapData = ({
       }
     };
 
-    return calculateHeatmapMatrix(filteredNetworkData, drillDownState);
+    const result = calculateHeatmapMatrix(filteredNetworkData, drillDownState);
+    console.log('useHeatmapData: calculateHeatmapMatrix result', result);
+    return result;
   }, [networkData, filters, drillDownState]);
 };

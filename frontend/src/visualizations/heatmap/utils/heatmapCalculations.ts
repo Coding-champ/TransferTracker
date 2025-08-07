@@ -1,4 +1,4 @@
-import { NetworkData } from '../../../types';
+import { NetworkData } from '../../../types/index';
 import { HeatmapData, HeatmapCell, DrillDownState } from '../types';
 
 export const calculateHeatmapMatrix = (
@@ -7,7 +7,12 @@ export const calculateHeatmapMatrix = (
 ): HeatmapData => {
   const { nodes, edges } = networkData;
   
+  console.log('calculateHeatmapMatrix: nodes length', nodes?.length);
+  console.log('calculateHeatmapMatrix: edges length', edges?.length);
+  console.log('calculateHeatmapMatrix: drillDownState', drillDownState);
+  
   if (!nodes?.length || !edges?.length) {
+    console.log('calculateHeatmapMatrix: No data, returning empty matrix');
     return { matrix: [], labels: [], maxValue: 0, maxCount: 0 };
   }
 
