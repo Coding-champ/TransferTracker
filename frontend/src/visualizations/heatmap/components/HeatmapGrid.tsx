@@ -91,7 +91,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('stroke', 'white')
       .attr('stroke-width', 1)
       .attr('opacity', 0)
-      .style('cursor', 'pointer');
+      .attr('pointer-events', 'none'); // Disable pointer events on actual cells
 
     // Animate cells entrance
     cells.transition()
@@ -125,6 +125,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
           return d3.color(bgColor)!.darker(2).toString();
         })
         .attr('opacity', 0)
+        .attr('pointer-events', 'none') // Disable pointer events on labels
         .text(d => {
           const value = mode === 'value' ? d.value : 
                        mode === 'count' ? d.count : 
@@ -149,6 +150,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('dominant-baseline', 'middle')
       .attr('font-size', '10px')
       .attr('fill', '#374151')
+      .attr('pointer-events', 'none') // Disable pointer events on labels
       .text(d => d.length > 20 ? d.substring(0, 20) + '...' : d);
 
     // Add column labels (target)
@@ -163,11 +165,26 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('dominant-baseline', 'middle')
       .attr('font-size', '10px')
       .attr('fill', '#374151')
+      .attr('pointer-events', 'none') // Disable pointer events on labels
       .attr('transform', d => `rotate(-45, ${xScale(d)! + xScale.bandwidth() / 2}, -10)`)
       .text(d => d.length > 20 ? d.substring(0, 20) + '...' : d);
 
-    // Add interactions to cells
-    cells
+    // Add a transparent overlay for each cell to improve hover detection
+    const cellOverlays = g.selectAll('.cell-overlay')
+      .data(data.matrix)
+      .enter()
+      .append('rect')
+      .attr('class', 'cell-overlay')
+      .attr('x', d => xScale(d.target)!)
+      .attr('y', d => yScale(d.source)!)
+      .attr('width', xScale.bandwidth())
+      .attr('height', yScale.bandwidth())
+      .attr('fill', 'transparent')
+      .attr('pointer-events', 'all')
+      .style('cursor', 'pointer');
+
+    // Add interactions to cell overlays (not the actual cells to avoid conflicts)
+    cellOverlays
       .on('mouseenter', function(event, d) {
         const cellId = `${d.source}-${d.target}`;
         if (currentHoveredCellRef.current !== cellId) {
