@@ -191,12 +191,12 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           
           if (!signal?.aborted) {
             // Set appropriate error message based on error type
-            const errorMessage = (processedError as any).message || 'An error occurred';
             if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
-              setError(errorMessage);
               console.log('🔧 Using mock data due to network/timeout error');
               setNetworkData(MOCK_NETWORK_DATA as NetworkData);
+              setError(null); // Clear error when using mock data
             } else {
+              const errorMessage = (processedError as any).message || 'An error occurred';
               setError(errorMessage);
             }
           }
