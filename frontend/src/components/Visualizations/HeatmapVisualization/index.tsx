@@ -4,7 +4,6 @@ import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapG
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
 import { TransferDetailsModal } from '../../../visualizations/heatmap/components/TransferDetailsModal';
 import { useHeatmapData } from '../../../visualizations/heatmap/hooks/useHeatmapData';
-import { useHeatmapInteraction } from '../../../visualizations/heatmap/hooks/useHeatmapInteraction';
 import { useDrillDown } from '../../../visualizations/heatmap/hooks/useDrillDown';
 import { 
   HeatmapMode, 

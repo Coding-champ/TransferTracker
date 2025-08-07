@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { NetworkData, Filters } from '../../../types';
-import { HeatmapData, DrillDownState, UseHeatmapDataProps } from '../types';
+import { NetworkData } from '../../../types';
+import { HeatmapData, UseHeatmapDataProps } from '../types';
 import { calculateHeatmapMatrix } from '../utils/heatmapCalculations';
 
 export const useHeatmapData = ({
@@ -20,7 +20,7 @@ export const useHeatmapData = ({
     // Apply season filter
     if (filters.seasons?.length) {
       filteredEdges = filteredEdges.filter(edge => 
-        filters.seasons.includes(edge.season)
+        edge.stats.seasons.some(season => filters.seasons.includes(season))
       );
     }
 
@@ -46,29 +46,52 @@ export const useHeatmapData = ({
     // Apply transfer type filter
     if (filters.transferTypes?.length) {
       filteredEdges = filteredEdges.filter(edge => 
-        filters.transferTypes.includes(edge.type)
+        edge.stats.types.some(type => filters.transferTypes.includes(type))
       );
     }
 
     // Apply value range filter
-    if (filters.valueRange) {
-      const [min, max] = filters.valueRange;
+    if (filters.minTransferFee !== undefined || filters.maxTransferFee !== undefined) {
+      const min = filters.minTransferFee ?? 0;
+      const max = filters.maxTransferFee ?? Infinity;
       filteredEdges = filteredEdges.filter(edge => 
         edge.stats.totalValue >= min && edge.stats.totalValue <= max
       );
     }
 
     // Apply age range filter
-    if (filters.ageRange) {
-      const [minAge, maxAge] = filters.ageRange;
+    if (filters.minPlayerAge !== undefined || filters.maxPlayerAge !== undefined) {
+      const minAge = filters.minPlayerAge ?? 0;
+      const maxAge = filters.maxPlayerAge ?? Infinity;
       filteredEdges = filteredEdges.filter(edge => 
-        edge.averageAge >= minAge && edge.averageAge <= maxAge
+        edge.transfers.some(transfer => 
+          transfer.playerAge !== undefined && 
+          transfer.playerAge >= minAge && 
+          transfer.playerAge <= maxAge
+        )
       );
     }
 
     const filteredNetworkData: NetworkData = {
       nodes: filteredNodes,
-      edges: filteredEdges
+      edges: filteredEdges,
+      metadata: {
+        totalTransfers: filteredEdges.reduce((sum, edge) => sum + edge.stats.transferCount, 0),
+        totalValue: filteredEdges.reduce((sum, edge) => sum + edge.stats.totalValue, 0),
+        dateRange: {
+          start: null, // Could be calculated from transfer dates if needed
+          end: null
+        },
+        clubCount: filteredNodes.length,
+        edgeCount: filteredEdges.length,
+        avgROI: filteredEdges.length > 0 
+          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.avgROI || 0), 0) / filteredEdges.length 
+          : 0,
+        successRate: filteredEdges.length > 0
+          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.successRate || 0), 0) / filteredEdges.length
+          : 0,
+        filters
+      }
     };
 
     return calculateHeatmapMatrix(filteredNetworkData, drillDownState);

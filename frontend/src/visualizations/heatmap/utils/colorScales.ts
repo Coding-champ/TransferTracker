@@ -56,7 +56,7 @@ export const createDivergingColorScale = (
   domain: [number, number, number],
   colors: [string, string, string] = ['#d73027', '#f7f7f7', '#1a9850']
 ) => {
-  return d3.scaleDiverging()
+  return d3.scaleDiverging<string>()
     .domain(domain)
     .interpolator(d3.interpolateRdYlGn);
 };

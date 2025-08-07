@@ -1,4 +1,4 @@
-import { NetworkData, Filters } from '../../types';
+import { NetworkData, FilterState } from '../../types';
 
 export interface HeatmapCell {
   source: string;
@@ -53,7 +53,7 @@ export interface HeatmapTooltipData {
 
 export interface UseHeatmapDataProps {
   networkData: NetworkData | null;
-  filters: Filters;
+  filters: FilterState;
   drillDownState: DrillDownState;
 }
 

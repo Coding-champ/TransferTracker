@@ -1,5 +1,4 @@
-import * as d3 from 'd3';
-import { NetworkData, NetworkNode, NetworkEdge } from '../../../types';
+import { NetworkData } from '../../../types';
 import { HeatmapData, HeatmapCell, DrillDownState } from '../types';
 
 export const calculateHeatmapMatrix = (
@@ -73,7 +72,11 @@ export const calculateHeatmapMatrix = (
     if (sourceIndex !== undefined && targetIndex !== undefined) {
       valueMatrix[sourceIndex][targetIndex] += edge.stats.totalValue;
       countMatrix[sourceIndex][targetIndex] += edge.stats.transferCount;
-      successMatrix[sourceIndex][targetIndex] += edge.stats.successfulTransfers || 0;
+      // Calculate successful transfers from success rate and transfer count
+      const successfulCount = edge.stats.successRate 
+        ? Math.round(edge.stats.transferCount * edge.stats.successRate)
+        : 0;
+      successMatrix[sourceIndex][targetIndex] += successfulCount;
 
       // Store transfer details for tooltip
       const key = `${sourceIndex}-${targetIndex}`;

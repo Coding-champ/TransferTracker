@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ArrowLeft, TrendingUp, Users, Euro, Calendar } from 'lucide-react';
-import { TransferDetailsModalProps, TransferDetail } from '../types';
+import { TransferDetailsModalProps } from '../types';
 import { formatColorScaleValue } from '../utils/colorScales';
 
 export const TransferDetailsModal: React.FC<TransferDetailsModalProps> = ({

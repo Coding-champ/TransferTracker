@@ -23,7 +23,8 @@ export const useHeatmapInteraction = ({
 
     // Setup hover interactions
     svg.selectAll('.heatmap-cell')
-      .on('mouseover', function(event, d: HeatmapCell) {
+      .on('mouseover', function(event, d) {
+        const cell = d as HeatmapCell;
         // Highlight current cell
         d3.select(this)
           .transition()
@@ -33,32 +34,34 @@ export const useHeatmapInteraction = ({
 
         // Highlight row and column
         svg.selectAll('.heatmap-cell')
-          .filter((cell: HeatmapCell) => 
-            cell.sourceIndex === d.sourceIndex || cell.targetIndex === d.targetIndex
-          )
+          .filter((cellData) => {
+            const otherCell = cellData as HeatmapCell;
+            return otherCell.sourceIndex === cell.sourceIndex || otherCell.targetIndex === cell.targetIndex;
+          })
           .transition()
           .duration(150)
           .attr('opacity', 1);
 
         // Dim other cells
         svg.selectAll('.heatmap-cell')
-          .filter((cell: HeatmapCell) => 
-            cell.sourceIndex !== d.sourceIndex && cell.targetIndex !== d.targetIndex
-          )
+          .filter((cellData) => {
+            const otherCell = cellData as HeatmapCell;
+            return otherCell.sourceIndex !== cell.sourceIndex && otherCell.targetIndex !== cell.targetIndex;
+          })
           .transition()
           .duration(150)
           .attr('opacity', 0.3);
 
         // Highlight labels
         svg.selectAll('.row-label')
-          .filter((_, i) => i === d.sourceIndex)
+          .filter((_, i) => i === cell.sourceIndex)
           .transition()
           .duration(150)
           .attr('font-weight', 'bold')
           .attr('font-size', '12px');
 
         svg.selectAll('.col-label')
-          .filter((_, i) => i === d.targetIndex)
+          .filter((_, i) => i === cell.targetIndex)
           .transition()
           .duration(150)
           .attr('font-weight', 'bold')
@@ -66,9 +69,10 @@ export const useHeatmapInteraction = ({
 
         // Trigger hover callback with position
         const [mouseX, mouseY] = d3.pointer(event);
-        onCellHover(d, { x: mouseX, y: mouseY });
+        onCellHover(cell, { x: mouseX, y: mouseY });
       })
-      .on('mouseout', function(event, d: HeatmapCell) {
+      .on('mouseout', function(event, d) {
+        const cell = d as HeatmapCell;
         // Reset cell highlighting
         d3.select(this)
           .transition()
@@ -92,7 +96,8 @@ export const useHeatmapInteraction = ({
         // Clear hover
         onCellHover(null);
       })
-      .on('click', function(event, d: HeatmapCell) {
+      .on('click', function(event, d) {
+        const cell = d as HeatmapCell;
         // Add click animation
         d3.select(this)
           .transition()
@@ -104,7 +109,7 @@ export const useHeatmapInteraction = ({
           .attr('stroke-width', 2);
 
         // Trigger click callback
-        onCellClick(d);
+        onCellClick(cell);
       });
 
     // Setup keyboard interactions
@@ -152,9 +157,10 @@ export const useHeatmapInteraction = ({
 
     if (targetCell) {
       svg.selectAll('.heatmap-cell')
-        .filter((d: HeatmapCell) => 
-          d.sourceIndex === sourceIndex && d.targetIndex === targetIndex
-        )
+        .filter((d) => {
+          const cell = d as HeatmapCell;
+          return cell.sourceIndex === sourceIndex && cell.targetIndex === targetIndex;
+        })
         .dispatch('click');
     }
   }, [svgRef, heatmapData]);
@@ -169,7 +175,10 @@ export const useHeatmapInteraction = ({
     const svg = d3.select(svgRef.current);
     
     svg.selectAll('.heatmap-cell')
-      .filter((d: HeatmapCell) => predicate(d))
+      .filter((d) => {
+        const cell = d as HeatmapCell;
+        return predicate(cell);
+      })
       .transition()
       .duration(300)
       .attr('stroke', highlightColor)

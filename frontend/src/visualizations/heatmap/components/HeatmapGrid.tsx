@@ -30,8 +30,6 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
     svg.selectAll('*').remove();
 
     const { width, height, margin } = config;
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
 
     // Calculate optimal cell size
     const cellSize = findOptimalCellSize(width, height, data.labels.length, margin);
