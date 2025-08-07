@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NetworkData, FilterState } from '../../../types/index';
 import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
@@ -77,35 +77,19 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     drillDownState
   });
 
-  // Handle cell interactions
-  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
-  
-  const handleCellHover = (cell: HeatmapCell | null, position?: { x: number; y: number }) => {
-    // Clear any pending timeout
-    if (tooltipTimeout) {
-      clearTimeout(tooltipTimeout);
-      setTooltipTimeout(null);
-    }
-    
+  // Handle cell interactions - use useCallback to prevent recreating functions on every render
+  const handleCellHover = useCallback((cell: HeatmapCell | null, position?: { x: number; y: number }) => {
     if (cell && position) {
       setTooltipData({ cell, position });
     } else {
-      // Add a small delay before hiding tooltip to allow moving to it
-      const timeout = setTimeout(() => {
-        setTooltipData(null);
-      }, 100);
-      setTooltipTimeout(timeout);
+      setTooltipData(null);
     }
-  };
+  }, []);
 
-  const handleCellClickWithModal = (cell: HeatmapCell) => {
+  const handleCellClickWithModal = useCallback((cell: HeatmapCell) => {
     if (drillDownState.level === 'club') {
       // Hide tooltip when opening modal
       setTooltipData(null);
-      if (tooltipTimeout) {
-        clearTimeout(tooltipTimeout);
-        setTooltipTimeout(null);
-      }
       // Show transfer details modal instead of drilling down further
       setModalSource(cell.source);
       setModalTarget(cell.target);
@@ -115,19 +99,18 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
       // Use drill-down navigation
       handleCellClick(cell);
     }
-  };
+  }, [drillDownState.level, handleCellClick]);
 
   const levelInfo = getCurrentLevelInfo();
   const breadcrumbs = getBreadcrumbs();
 
-  // Cleanup timeout on unmount
+  // Cleanup on unmount - simplified since we're no longer using timeout
   useEffect(() => {
     return () => {
-      if (tooltipTimeout) {
-        clearTimeout(tooltipTimeout);
-      }
+      // Cleanup any remaining tooltip data
+      setTooltipData(null);
     };
-  }, [tooltipTimeout]);
+  }, []);
 
   // Show a different message when using mock data
   const usingMockData = !networkData || networkData.nodes.length === 0 || networkData.edges.length === 0;
@@ -273,8 +256,6 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
         isOpen={showModal}
         onClose={() => {
           setShowModal(false);
-          // Clear tooltip data when modal closes to prevent lingering tooltips
-          setTooltipData(null);
         }}
         sourceClub={modalSource}
         targetClub={modalTarget}
