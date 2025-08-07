@@ -85,7 +85,7 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
       switch (mode) {
         case 'value': return d.value;
         case 'count': return d.count;
-        case 'success-rate': return d.successRate || 0;
+        case 'success-rate': return d.transferSuccessRate || 0;
         default: return d.value;
       }
     });

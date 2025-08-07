@@ -87,8 +87,8 @@ export const useHeatmapData = ({
         avgROI: filteredEdges.length > 0 
           ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.avgROI || 0), 0) / filteredEdges.length 
           : 0,
-        successRate: filteredEdges.length > 0
-          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.successRate || 0), 0) / filteredEdges.length
+        transferSuccessRate: filteredEdges.length > 0
+          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.transferSuccessRate || 0), 0) / filteredEdges.length
           : 0,
         filters
       }

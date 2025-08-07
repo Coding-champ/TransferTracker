@@ -67,7 +67,7 @@ export const VisualizationContainer: React.FC<VisualizationContainerProps> = ({
           <span>{networkData.edges.length} connections</span>
           <span>•</span>
           <span className="text-green-600 font-medium">
-            {(networkData.metadata.successRate || 0).toFixed(1)}% success rate
+            {(networkData.metadata.transferSuccessRate || 0).toFixed(1)}% success rate
           </span>
         </div>
       </div>

@@ -38,7 +38,7 @@ export const TransferDetailsModal: React.FC<TransferDetailsModalProps> = ({
   });
 
   const totalValue = transfers.reduce((sum, t) => sum + t.value, 0);
-  const successRate = transfers.length > 0 
+  const transferSuccessRate = transfers.length > 0 
     ? transfers.filter(t => t.success).length / transfers.length 
     : 0;
 
@@ -90,7 +90,7 @@ export const TransferDetailsModal: React.FC<TransferDetailsModalProps> = ({
                 <span className="text-sm text-gray-600">Success Rate</span>
               </div>
               <div className="text-lg font-bold text-gray-900">
-                {formatColorScaleValue(successRate, 'success-rate')}
+                {formatColorScaleValue(transferSuccessRate, 'success-rate')}
               </div>
             </div>
             

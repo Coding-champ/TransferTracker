@@ -55,11 +55,11 @@ export const createLinks = (
   // Process edges with visual properties
   const processedEdges = edges.map(edge => ({
     ...edge,
-    strokeColor: edge.stats.successRate && edge.stats.successRate > 70 ? '#10b981' :
-                edge.stats.successRate && edge.stats.successRate < 30 ? '#ef4444' : '#6b7280',
+    strokeColor: edge.stats.transferSuccessRate && edge.stats.transferSuccessRate > 70 ? '#10b981' :
+                edge.stats.transferSuccessRate && edge.stats.transferSuccessRate < 30 ? '#ef4444' : '#6b7280',
     strokeWidth: widthScale(edge.stats.transferCount),
-    markerEnd: edge.stats.successRate && edge.stats.successRate > 70 ? 'url(#arrowhead-success)' :
-              edge.stats.successRate && edge.stats.successRate < 30 ? 'url(#arrowhead-failure)' : 'url(#arrowhead)'
+    markerEnd: edge.stats.transferSuccessRate && edge.stats.transferSuccessRate > 70 ? 'url(#arrowhead-success)' :
+              edge.stats.transferSuccessRate && edge.stats.transferSuccessRate < 30 ? 'url(#arrowhead-failure)' : 'url(#arrowhead)'
   }));
   
   // Create links

@@ -73,8 +73,8 @@ export const calculateHeatmapMatrix = (
       valueMatrix[sourceIndex][targetIndex] += edge.stats.totalValue;
       countMatrix[sourceIndex][targetIndex] += edge.stats.transferCount;
       // Calculate successful transfers from success rate and transfer count
-      const successfulCount = edge.stats.successRate 
-        ? Math.round(edge.stats.transferCount * edge.stats.successRate)
+      const successfulCount = edge.stats.transferSuccessRate 
+        ? Math.round(edge.stats.transferCount * edge.stats.transferSuccessRate)
         : 0;
       successMatrix[sourceIndex][targetIndex] += successfulCount;
 
@@ -106,7 +106,7 @@ export const calculateHeatmapMatrix = (
           count,
           sourceIndex: i,
           targetIndex: j,
-          successRate: count > 0 ? successCount / count : 0
+          transferSuccessRate: count > 0 ? successCount / count : 0
         };
 
         // Find top transfer for this cell
@@ -151,14 +151,14 @@ export const filterMatrixByCount = (
 export const aggregateMatrixData = (matrix: HeatmapCell[]) => {
   const totalValue = matrix.reduce((sum, cell) => sum + cell.value, 0);
   const totalCount = matrix.reduce((sum, cell) => sum + cell.count, 0);
-  const avgSuccessRate = matrix.length > 0 
-    ? matrix.reduce((sum, cell) => sum + (cell.successRate || 0), 0) / matrix.length 
+  const avgtransferSuccessRate = matrix.length > 0 
+    ? matrix.reduce((sum, cell) => sum + (cell.transferSuccessRate || 0), 0) / matrix.length 
     : 0;
 
   return {
     totalValue,
     totalCount,
-    avgSuccessRate,
+    avgtransferSuccessRate,
     cellCount: matrix.length
   };
 };

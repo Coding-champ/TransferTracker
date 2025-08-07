@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { FilterState } from '../../../types';
 import FilterSection from '../FilterSection';
 import CheckboxFilter from '../components/CheckboxFilter';
+import RangeFilter from '../components/RangeFilter';
 
 /**
  * Props for the BasicFilters component
@@ -90,11 +91,19 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
         tooltip="Filter transfers by specific football seasons"
       >
         <CheckboxFilter
-          title=""
-          items={seasons}
-          selectedItems={filters.seasons}
-          onItemChange={handleSeasonsChange}
+            title=""
+            items={seasons}
+            selectedItems={filters.seasons}
+            onItemChange={handleSeasonsChange}
         />
+        {/* Transfer Window */}
+          <CheckboxFilter
+            title="Transfer Windows"
+            items={transferWindows}
+            selectedItems={filters.transferWindows}
+            onItemChange={handleTransferWindowsChange}
+            renderLabel={renderTransferWindowLabel}
+          />
       </FilterSection>
 
       {/* Transfer Types Filter */}
@@ -112,6 +121,18 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
           selectedItems={filters.transferTypes}
           onItemChange={handleTransferTypesChange}
           renderLabel={renderTransferTypeLabel}
+        />
+
+        {/* Contract Duration Range */}
+        <RangeFilter
+          title="Contract Duration (years)"
+          minValue={filters.minContractDuration}
+          maxValue={filters.maxContractDuration}
+          onMinChange={(value) => updateFilter('minContractDuration', value)}
+          onMaxChange={(value) => updateFilter('maxContractDuration', value)}
+          min="1"
+          max="10"
+          placeholder={{ min: "1", max: "10" }}
         />
         <div className="mt-4 pt-3 border-t space-y-2">
           <label className="flex items-center">
@@ -133,24 +154,6 @@ const BasicFilters: React.FC<BasicFiltersProps> = React.memo(({
             <span className="ml-2 text-sm">Only loan-to-buy transfers</span>
           </label>
         </div>
-      </FilterSection>
-
-      {/* Transfer Windows Filter */}
-      <FilterSection
-        title="Transfer Windows"
-        sectionKey="transferWindows"
-        isExpanded={expandedSections.has('transferWindows')}
-        onToggle={toggleSection}
-        helpText="Transfer windows are specific periods when clubs can buy and sell players. Summer window typically runs June-August, winter window January-February."
-        tooltip="Filter transfers by when they occurred during the season"
-      >
-        <CheckboxFilter
-          title=""
-          items={transferWindows}
-          selectedItems={filters.transferWindows}
-          onItemChange={handleTransferWindowsChange}
-          renderLabel={renderTransferWindowLabel}
-        />
       </FilterSection>
     </>
   );

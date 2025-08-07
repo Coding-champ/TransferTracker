@@ -95,7 +95,7 @@ interface NetworkEdge {
     avgTransferValue: number;
     types: string[];
     avgROI?: number;
-    successRate?: number;
+    transferSuccessRate?: number;
     seasons: string[];
     transferWindows: string[];
   };
@@ -710,7 +710,7 @@ app.get('/api/network-data', async (req, res) => {
               avgTransferValue: 0,
               types: [],
               avgROI: 0,
-              successRate: 0,
+              transferSuccessRate: 0,
               seasons: [],
               transferWindows: []
             }
@@ -803,7 +803,7 @@ app.get('/api/network-data', async (req, res) => {
         const edgeSuccessfulTransfers = edge.transfers.filter(t => 
           t.performanceRating !== undefined && t.performanceRating >= 6
         ).length;
-        edge.stats.successRate = (edgeSuccessfulTransfers / edge.stats.transferCount) * 100;
+        edge.stats.transferSuccessRate = (edgeSuccessfulTransfers / edge.stats.transferCount) * 100;
       }
     });
 
@@ -840,7 +840,7 @@ app.get('/api/network-data', async (req, res) => {
           clubCount: filteredNodes.length,
           edgeCount: edges.length,
           avgROI: transfers.length > 0 ? transfers.reduce((sum, t) => sum + (t.roiPercentage || 0), 0) / transfers.length : 0,
-          successRate: transfers.length > 0 ? (transfers.filter(t => t.wasSuccessful === true).length / transfers.length) * 100 : 0,
+          transferSuccessRate: transfers.length > 0 ? (transfers.filter(t => t.wasSuccessful === true).length / transfers.length) * 100 : 0,
           filters
         }
       }
@@ -1111,7 +1111,7 @@ app.get('/api/transfer-success-stats', async (req, res) => {
       })
     ]);
 
-    const successRate = totalTransfers > 0 ? (successfulTransfers / totalTransfers) * 100 : 0;
+    const transferSuccessRate = totalTransfers > 0 ? (successfulTransfers / totalTransfers) * 100 : 0;
 
     res.json({
       success: true,
@@ -1119,7 +1119,7 @@ app.get('/api/transfer-success-stats', async (req, res) => {
         overview: {
           totalTransfers,
           successfulTransfers,
-          successRate,
+          transferSuccessRate,
           avgROI: avgROI._avg.roiPercentage || 0,
           avgPerformanceRating: avgPerformanceRating._avg.performanceRating || 0
         },
@@ -1322,7 +1322,7 @@ app.get('/api/statistics', async (req, res) => {
       const successfulIncoming = incomingTransfers.filter(t => t.wasSuccessful).length;
       const successfulOutgoing = outgoingTransfers.filter(t => t.wasSuccessful).length;
       const totalTransfers = incomingTransfers.length + outgoingTransfers.length;
-      const successRate = totalTransfers > 0 ? ((successfulIncoming + successfulOutgoing) / totalTransfers) * 100 : 0;
+      const transferSuccessRate = totalTransfers > 0 ? ((successfulIncoming + successfulOutgoing) / totalTransfers) * 100 : 0;
       
       const performanceRatings = [...incomingTransfers, ...outgoingTransfers]
         .map(t => t.success?.performanceRating)
@@ -1340,13 +1340,13 @@ app.get('/api/statistics', async (req, res) => {
         totalSpent,
         totalReceived,
         netSpend,
-        successRate,
+        transferSuccessRate,
         avgPerformanceRating,
         transferCount: totalTransfers
       };
-    }).sort((a, b) => b.successRate - a.successRate);
+    }).sort((a, b) => b.transferSuccessRate - a.transferSuccessRate);
 
-    const successRate = totalTransfers > 0 ? (successfulTransfersCount / totalTransfers) * 100 : 0;
+    const transferSuccessRate = totalTransfers > 0 ? (successfulTransfersCount / totalTransfers) * 100 : 0;
 
     const stats = {
       totals: {
@@ -1357,7 +1357,7 @@ app.get('/api/statistics', async (req, res) => {
       },
       performance: {
         avgROI: avgROI._avg.roiPercentage || 0,
-        successRate
+        transferSuccessRate
       },
       topTransfer: topTransfer ? {
         playerName: topTransfer.playerName,

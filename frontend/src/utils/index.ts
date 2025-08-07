@@ -322,13 +322,13 @@ export const getLeagueColor = (league: string): string => {
 
 /**
  * Generiert Farbcode basierend auf Erfolgsrate
- * @param successRate - Erfolgsrate in Prozent
+ * @param transferSuccessRate - Erfolgsrate in Prozent
  * @returns Hex-Farbcode
  */
-export const getSuccessRateColor = (successRate: number): string => {
-  if (successRate >= 70) return '#10b981'; // Grün
-  if (successRate >= 50) return '#f59e0b'; // Gelb
-  if (successRate >= 30) return '#f97316'; // Orange
+export const gettransferSuccessRateColor = (transferSuccessRate: number): string => {
+  if (transferSuccessRate >= 70) return '#10b981'; // Grün
+  if (transferSuccessRate >= 50) return '#f59e0b'; // Gelb
+  if (transferSuccessRate >= 30) return '#f97316'; // Orange
   return '#ef4444'; // Rot
 };
 

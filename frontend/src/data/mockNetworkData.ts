@@ -129,7 +129,7 @@ export const MOCK_NETWORK_DATA = {
         transferCount: 2,
         avgTransferValue: 45000000,
         types: ['sale'],
-        successRate: 80,
+        transferSuccessRate: 80,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -155,7 +155,7 @@ export const MOCK_NETWORK_DATA = {
         transferCount: 1,
         avgTransferValue: 100000000,
         types: ['sale'],
-        successRate: 90,
+        transferSuccessRate: 90,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -181,7 +181,7 @@ export const MOCK_NETWORK_DATA = {
         transferCount: 1,
         avgTransferValue: 40000000,
         types: ['sale'],
-        successRate: 75,
+        transferSuccessRate: 75,
         seasons: ['2023/24'],
         transferWindows: ['winter']
       }
@@ -207,7 +207,7 @@ export const MOCK_NETWORK_DATA = {
         transferCount: 1,
         avgTransferValue: 30000000,
         types: ['sale'],
-        successRate: 60,
+        transferSuccessRate: 60,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -223,7 +223,7 @@ export const MOCK_NETWORK_DATA = {
     clubCount: 5,
     edgeCount: 4,
     avgROI: 111,
-    successRate: 76,
+    transferSuccessRate: 76,
     filters: {
       seasons: ['2023/24'],
       leagues: [],

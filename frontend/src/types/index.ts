@@ -90,7 +90,7 @@ export interface TransferInfo {
   marketValueAtTransfer?: number;
   isLoanToBuy?: boolean;
   roiPercentage?: number;
-  performanceRating?: number;
+  playerPerformanceScore?: number;
   direction: 'out' | 'in';
 }
 
@@ -129,14 +129,14 @@ export interface Transfer {
     tier?: number;
   };
   success?: {
-    performanceRating: number;
+    playerPerformanceScore: number;    // 0-10 (wie gut spielt der Spieler)
     marketValueGrowth: number | null;
     contractExtensions: number;
     trophiesWon: number;
     evaluatedAfterYears: number;
     lastEvaluated: string;
   };
-  playerPerformance?: {
+  playerPerformanceScore?: {
     gamesPlayed: number;
     goalsScored: number;
     marketValueEnd: number | null;
@@ -178,7 +178,7 @@ export interface NetworkNode extends d3.SimulationNodeDatum {
     netSpend: number;
     avgPlayerAge?: number;
     avgROI?: number;
-    successfulTransfersRate?: number;
+    transferSuccessRate?: number;
     avgPerformanceRating?: number;
   };
 }
@@ -194,7 +194,7 @@ export interface NetworkEdge extends d3.SimulationLinkDatum<NetworkNode> {
     avgTransferValue: number;
     types: string[];
     avgROI?: number;
-    successRate?: number;
+    transferSuccessRate: number;       // 0-100% (wie erfolgreich sind Vereins-Transfers)
     seasons: string[];
     transferWindows: string[];
   };
@@ -213,7 +213,7 @@ export interface NetworkData {
     readonly clubCount: number;
     readonly edgeCount: number;
     readonly avgROI: number;
-    readonly successRate: number;
+    readonly transferSuccessRate: number;
     readonly filters: FilterState;
   };
 }
@@ -228,7 +228,7 @@ export interface Statistics {
   };
   performance: {
     avgROI: number;
-    successRate: number;
+    transferSuccessRate: number;
   };
   topTransfer: {
     playerName: string;
@@ -252,7 +252,7 @@ export interface Statistics {
     totalSpent: number;
     totalReceived: number;
     netSpend: number;
-    successRate: number;
+    transferSuccessRate: number;
     avgPerformanceRating: number;
     transferCount: number;
   }>;
@@ -270,7 +270,7 @@ export interface TransferSuccessStats {
   overview: {
     totalTransfers: number;
     successfulTransfers: number;
-    successRate: number;
+    transferSuccessRate: number;
     avgROI: number;
     avgPerformanceRating: number;
   };
@@ -278,7 +278,7 @@ export interface TransferSuccessStats {
     id: number;
     playerName: string;
     transferFee: number | null;
-    performanceRating: number;
+    playerPerformanceScore: number;
     roiPercentage: number | null;
     from: string;
     to: string;
@@ -288,7 +288,7 @@ export interface TransferSuccessStats {
     id: number;
     playerName: string;
     transferFee: number | null;
-    performanceRating: number;
+    playerPerformanceScore: number;
     roiPercentage: number | null;
     from: string;
     to: string;

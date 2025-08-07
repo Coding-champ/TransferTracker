@@ -74,8 +74,8 @@ export const createNodes = (
     })
     .attr('fill', 'none')
     .attr('stroke', d => {
-      if (d.stats.successfulTransfersRate && d.stats.successfulTransfersRate > 70) return '#10b981';
-      if (d.stats.successfulTransfersRate && d.stats.successfulTransfersRate < 30) return '#ef4444';
+      if (d.stats.transferSuccessRate && d.stats.transferSuccessRate > 70) return '#10b981';
+      if (d.stats.transferSuccessRate && d.stats.transferSuccessRate < 30) return '#ef4444';
       return 'transparent';
     })
     .attr('stroke-width', 2)

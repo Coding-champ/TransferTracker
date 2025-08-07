@@ -19,7 +19,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         totalSpent: 150000000,
         totalReceived: 120000000,
         netSpend: 30000000,
-        successfulTransfersRate: 85,
+        transferSuccessRate: 85,
         avgROI: 120
       }
     },
@@ -39,7 +39,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         totalSpent: 200000000,
         totalReceived: 60000000,
         netSpend: 140000000,
-        successfulTransfersRate: 75,
+        transferSuccessRate: 75,
         avgROI: 95
       }
     },
@@ -59,7 +59,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         totalSpent: 250000000,
         totalReceived: 180000000,
         netSpend: 70000000,
-        successfulTransfersRate: 90,
+        transferSuccessRate: 90,
         avgROI: 140
       }
     },
@@ -79,7 +79,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         totalSpent: 300000000,
         totalReceived: 80000000,
         netSpend: 220000000,
-        successfulTransfersRate: 70,
+        transferSuccessRate: 70,
         avgROI: 85
       }
     },
@@ -99,7 +99,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         totalSpent: 180000000,
         totalReceived: 140000000,
         netSpend: 40000000,
-        successfulTransfersRate: 80,
+        transferSuccessRate: 80,
         avgROI: 110
       }
     }
@@ -116,7 +116,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 40000000,
         types: ['sale'],
         avgROI: 110,
-        successRate: 50,
+        transferSuccessRate: 50,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -132,7 +132,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 40000000,
         types: ['sale'],
         avgROI: 95,
-        successRate: 67,
+        transferSuccessRate: 67,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -148,7 +148,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 50000000,
         types: ['sale'],
         avgROI: 130,
-        successRate: 100,
+        transferSuccessRate: 100,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -164,7 +164,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 45000000,
         types: ['sale'],
         avgROI: 85,
-        successRate: 50,
+        transferSuccessRate: 50,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -180,7 +180,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 60000000,
         types: ['sale'],
         avgROI: 125,
-        successRate: 100,
+        transferSuccessRate: 100,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -196,7 +196,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
         avgTransferValue: 35000000,
         types: ['sale'],
         avgROI: 140,
-        successRate: 100,
+        transferSuccessRate: 100,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -212,7 +212,7 @@ export const SANKEY_MOCK_DATA: NetworkData = {
     clubCount: 5,
     edgeCount: 6,
     avgROI: 115.8,
-    successRate: 80,
+    transferSuccessRate: 80,
     filters: {
       seasons: ['2023/24'],
       leagues: [],

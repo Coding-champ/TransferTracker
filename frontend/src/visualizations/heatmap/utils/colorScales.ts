@@ -11,7 +11,7 @@ export const createCountColorScale = (domain: [number, number]) => {
     .domain(domain);
 };
 
-export const createSuccessRateColorScale = () => {
+export const createtransferSuccessRateColorScale = () => {
   return d3.scaleSequential(d3.interpolateGreens)
     .domain([0, 1]);
 };
@@ -28,7 +28,7 @@ export const createHeatmapColorScale = (
     case 'count':
       return createCountColorScale(domain);
     case 'success-rate':
-      return createSuccessRateColorScale();
+      return createtransferSuccessRateColorScale();
     default:
       return createValueColorScale(domain);
   }

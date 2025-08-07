@@ -125,7 +125,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       switch (mode) {
         case 'value': return d.value;
         case 'count': return d.count;
-        case 'success-rate': return d.successRate || 0;
+        case 'success-rate': return d.transferSuccessRate || 0;
         default: return d.value;
       }
     });
@@ -161,7 +161,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('fill', (d: HeatmapCell) => {
         const value = mode === 'value' ? d.value : 
                      mode === 'count' ? d.count : 
-                     d.successRate || 0;
+                     d.transferSuccessRate || 0;
         return colorScale(value);
       })
       .attr('opacity', 1);
@@ -171,7 +171,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .data(cellSize > 30 ? data.matrix.filter(d => {
         const value = mode === 'value' ? d.value : 
                      mode === 'count' ? d.count : 
-                     d.successRate || 0;
+                     d.transferSuccessRate || 0;
         return value > 0;
       }) : [], (d: HeatmapCell) => `${d.source}-${d.target}`);
 
@@ -195,7 +195,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .attr('fill', (d: HeatmapCell) => {
         const value = mode === 'value' ? d.value : 
                      mode === 'count' ? d.count : 
-                     d.successRate || 0;
+                     d.transferSuccessRate || 0;
         const bgColor = colorScale(value);
         return d3.color(bgColor)!.darker(2).toString();
       })
@@ -203,7 +203,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       .text((d: HeatmapCell) => {
         const value = mode === 'value' ? d.value : 
                      mode === 'count' ? d.count : 
-                     d.successRate || 0;
+                     d.transferSuccessRate || 0;
         return formatColorScaleValue(value, mode);
       });
 

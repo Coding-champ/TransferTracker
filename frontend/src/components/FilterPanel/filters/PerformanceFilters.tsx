@@ -48,7 +48,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           </label>
         </div>
 
-        {/* Performance Rating Range */}
+        {/* Player Quality Range */}
         <RangeFilter
           title="Performance Rating (1-10)"
           minValue={filters.minPerformanceRating}
@@ -56,18 +56,6 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           onMinChange={(value) => updateFilter('minPerformanceRating', value)}
           onMaxChange={(value) => updateFilter('maxPerformanceRating', value)}
           step="0.1"
-          min="1"
-          max="10"
-          placeholder={{ min: "1", max: "10" }}
-        />
-
-        {/* Contract Duration Range */}
-        <RangeFilter
-          title="Contract Duration (years)"
-          minValue={filters.minContractDuration}
-          maxValue={filters.maxContractDuration}
-          onMinChange={(value) => updateFilter('minContractDuration', value)}
-          onMaxChange={(value) => updateFilter('maxContractDuration', value)}
           min="1"
           max="10"
           placeholder={{ min: "1", max: "10" }}

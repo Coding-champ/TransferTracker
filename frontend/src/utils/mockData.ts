@@ -17,7 +17,7 @@ export const createMockNetworkData = (): NetworkData => {
         totalSpent: 80000000,
         totalReceived: 60000000,
         netSpend: 20000000,
-        successfulTransfersRate: 0.75
+        transferSuccessRate: 0.75
       }
     },
     {
@@ -33,7 +33,7 @@ export const createMockNetworkData = (): NetworkData => {
         totalSpent: 120000000,
         totalReceived: 90000000,
         netSpend: 30000000,
-        successfulTransfersRate: 0.8
+        transferSuccessRate: 0.8
       }
     },
     {
@@ -49,7 +49,7 @@ export const createMockNetworkData = (): NetworkData => {
         totalSpent: 150000000,
         totalReceived: 80000000,
         netSpend: 70000000,
-        successfulTransfersRate: 0.85
+        transferSuccessRate: 0.85
       }
     },
     {
@@ -65,7 +65,7 @@ export const createMockNetworkData = (): NetworkData => {
         totalSpent: 200000000,
         totalReceived: 50000000,
         netSpend: 150000000,
-        successfulTransfersRate: 0.7
+        transferSuccessRate: 0.7
       }
     },
     {
@@ -81,7 +81,7 @@ export const createMockNetworkData = (): NetworkData => {
         totalSpent: 70000000,
         totalReceived: 100000000,
         netSpend: -30000000,
-        successfulTransfersRate: 0.65
+        transferSuccessRate: 0.65
       }
     }
   ];
@@ -99,7 +99,7 @@ export const createMockNetworkData = (): NetworkData => {
         avgTransferValue: 15000000,
         types: ['sale', 'loan'],
         avgROI: 1.2,
-        successRate: 0.8,
+        transferSuccessRate: 0.8,
         seasons: ['2023/24', '2022/23'],
         transferWindows: ['summer', 'winter']
       }
@@ -115,7 +115,7 @@ export const createMockNetworkData = (): NetworkData => {
         avgTransferValue: 40000000,
         types: ['sale'],
         avgROI: 0.9,
-        successRate: 0.9,
+        transferSuccessRate: 0.9,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -131,7 +131,7 @@ export const createMockNetworkData = (): NetworkData => {
         avgTransferValue: 7500000,
         types: ['sale', 'loan', 'free'],
         avgROI: 1.5,
-        successRate: 0.75,
+        transferSuccessRate: 0.75,
         seasons: ['2023/24', '2022/23'],
         transferWindows: ['summer', 'winter']
       }
@@ -147,7 +147,7 @@ export const createMockNetworkData = (): NetworkData => {
         avgTransferValue: 12500000,
         types: ['sale'],
         avgROI: 1.1,
-        successRate: 0.6,
+        transferSuccessRate: 0.6,
         seasons: ['2022/23'],
         transferWindows: ['winter']
       }
@@ -163,7 +163,7 @@ export const createMockNetworkData = (): NetworkData => {
         avgTransferValue: 60000000,
         types: ['sale'],
         avgROI: 0.8,
-        successRate: 1.0,
+        transferSuccessRate: 1.0,
         seasons: ['2023/24'],
         transferWindows: ['summer']
       }
@@ -183,7 +183,7 @@ export const createMockNetworkData = (): NetworkData => {
       clubCount: nodes.length,
       edgeCount: edges.length,
       avgROI: edges.reduce((sum, edge) => sum + (edge.stats.avgROI || 0), 0) / edges.length,
-      successRate: edges.reduce((sum, edge) => sum + (edge.stats.successRate || 0), 0) / edges.length,
+      transferSuccessRate: edges.reduce((sum, edge) => sum + (edge.stats.transferSuccessRate || 0), 0) / edges.length,
       filters: {
         seasons: ['2023/24'],
         leagues: [],

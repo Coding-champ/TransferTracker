@@ -166,7 +166,7 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
               edges: result.data.edges.length,
               totalTransfers: result.data.metadata.totalTransfers,
               avgROI: result.data.metadata.avgROI,
-              successRate: result.data.metadata.successRate
+              transferSuccessRate: result.data.metadata.transferSuccessRate
             });
             
             // Only update state if component is still mounted and request wasn't aborted

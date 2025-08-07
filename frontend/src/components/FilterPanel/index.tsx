@@ -63,7 +63,7 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
   }, [debouncedFilters]);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['seasons', 'leagues', 'transferTypes'])
+    new Set([]) // Start with no sections expanded
   );
 
   // Use the custom hook for data fetching
@@ -144,7 +144,7 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
   }, [initialFilters]);
 
   const expandAllSections = useCallback(() => {
-    setExpandedSections(new Set(['seasons', 'leagues', 'transferTypes', 'geographic', 'performance']));
+    setExpandedSections(new Set(['seasons', 'transferTypes', 'geographic', 'player', 'financial', 'performance']));
   }, []);
 
   const collapseAllSections = useCallback(() => {

@@ -89,7 +89,7 @@ export const createLargeMockNetwork = (nodeCount: number = 1000, edgeCount: numb
         avgTransferValue: totalValue / transferCount,
         types: ['sale', 'loan'],
         avgROI: Math.floor(Math.random() * 150),
-        successRate: Math.floor(Math.random() * 100),
+        transferSuccessRate: Math.floor(Math.random() * 100),
         seasons: ['2023/24'],
         transferWindows: ['summer', 'winter']
       }
@@ -109,7 +109,7 @@ export const createLargeMockNetwork = (nodeCount: number = 1000, edgeCount: numb
       clubCount: nodeCount,
       edgeCount: edges.length,
       avgROI: 112,
-      successRate: 73,
+      transferSuccessRate: 73,
       filters: {
         seasons: ['2023/24'],
         leagues: [],

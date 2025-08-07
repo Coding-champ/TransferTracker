@@ -7,7 +7,7 @@ export interface HeatmapCell {
   count: number;
   sourceIndex: number;
   targetIndex: number;
-  successRate?: number;
+  transferSuccessRate?: number;
   topTransfer?: {
     player: string;
     value: number;

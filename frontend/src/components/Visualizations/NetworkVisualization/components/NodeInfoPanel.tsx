@@ -47,11 +47,11 @@ const NodeInfoPanel: React.FC<NodeInfoPanelProps> = ({ selectedNodeData }) => {
               {selectedNodeData.stats.transfersOut}
             </div>
           </div>
-          {selectedNodeData.stats.successfulTransfersRate !== undefined && (
+          {selectedNodeData.stats.transferSuccessRate !== undefined && (
             <div className="bg-green-50 rounded-lg p-3 col-span-2">
               <div className="text-green-600 font-medium">Success Rate</div>
               <div className="text-2xl font-bold text-green-800">
-                {formatPercentage(selectedNodeData.stats.successfulTransfersRate)}
+                {formatPercentage(selectedNodeData.stats.transferSuccessRate)}
               </div>
             </div>
           )}

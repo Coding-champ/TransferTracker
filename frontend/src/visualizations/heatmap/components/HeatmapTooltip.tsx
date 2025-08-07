@@ -68,11 +68,11 @@ export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
           </span>
         </div>
 
-        {cell.successRate !== undefined && (
+        {cell.transferSuccessRate !== undefined && (
           <div className="flex justify-between">
             <span className="text-gray-300">Success Rate:</span>
             <span className="font-medium">
-              {formatColorScaleValue(cell.successRate, 'success-rate')}
+              {formatColorScaleValue(cell.transferSuccessRate, 'success-rate')}
             </span>
           </div>
         )}
@@ -99,7 +99,7 @@ export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
           {formatColorScaleValue(
             mode === 'value' ? cell.value : 
             mode === 'count' ? cell.count : 
-            cell.successRate || 0, 
+            cell.transferSuccessRate || 0, 
             mode
           )}
         </div>

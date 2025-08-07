@@ -30,11 +30,11 @@ const EdgeInfoPanel: React.FC<EdgeInfoPanelProps> = ({ hoveredEdgeData }) => {
             </div>
           )}
           
-          {hoveredEdgeData.stats.successRate !== undefined && hoveredEdgeData.stats.successRate > 0 && (
+          {hoveredEdgeData.stats.transferSuccessRate !== undefined && hoveredEdgeData.stats.transferSuccessRate > 0 && (
             <div className="bg-green-50 rounded-lg p-2 text-center">
               <div className="text-xs text-green-600">Success Rate</div>
               <div className="font-bold text-green-700">
-                {formatPercentage(hoveredEdgeData.stats.successRate)}
+                {formatPercentage(hoveredEdgeData.stats.transferSuccessRate)}
               </div>
             </div>
           )}
@@ -120,9 +120,9 @@ const EdgeInfoPanel: React.FC<EdgeInfoPanelProps> = ({ hoveredEdgeData }) => {
                     </span>
                     <span>{transfer.season}</span>
                   </div>
-                  {transfer.performanceRating && (
+                  {transfer.playerPerformanceScore && (
                     <div className="text-xs text-blue-600 mt-1">
-                      Rating: {transfer.performanceRating.toFixed(1)}/10
+                      Rating: {transfer.playerPerformanceScore.toFixed(1)}/10
                     </div>
                   )}
                 </div>

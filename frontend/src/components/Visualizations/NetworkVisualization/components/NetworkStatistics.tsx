@@ -38,7 +38,7 @@ const NetworkStatistics: React.FC<NetworkStatisticsProps> = ({ networkData, filt
             </div>
             <div className="text-center bg-emerald-50 rounded-lg p-3">
               <div className="text-2xl font-bold text-emerald-800">
-                {formatPercentage(networkData.metadata.successRate)}
+                {formatPercentage(networkData.metadata.transferSuccessRate)}
               </div>
               <div className="text-xs text-emerald-600">Success Rate</div>
             </div>

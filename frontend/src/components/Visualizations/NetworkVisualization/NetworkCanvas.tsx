@@ -328,10 +328,10 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
             <div>Transfers: <span className="font-medium">{hoveredEdge.stats.transferCount}</span></div>
             <div>Value: <span className="font-medium">€{hoveredEdge.stats.totalValue.toLocaleString()}</span></div>
-            {hoveredEdge.stats.successRate !== undefined && (
+            {hoveredEdge.stats.transferSuccessRate !== undefined && (
               <div>
-                Success Rate: <span className={`font-medium ${hoveredEdge.stats.successRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
-                  {hoveredEdge.stats.successRate}%
+                Success Rate: <span className={`font-medium ${hoveredEdge.stats.transferSuccessRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+                  {hoveredEdge.stats.transferSuccessRate}%
                 </span>
               </div>
             )}
