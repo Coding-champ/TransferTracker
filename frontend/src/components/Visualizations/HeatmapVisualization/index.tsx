@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NetworkData, FilterState } from '../../../types/index';
 import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
+import { HeatmapColorScale } from '../../../visualizations/heatmap/components/HeatmapColorScale';
 import { TransferDetailsModal } from '../../../visualizations/heatmap/components/TransferDetailsModal';
 import { useHeatmapData } from '../../../visualizations/heatmap/hooks/useHeatmapData';
 import { useDrillDown } from '../../../visualizations/heatmap/hooks/useDrillDown';
@@ -24,8 +25,8 @@ interface HeatmapVisualizationProps {
 export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   networkData,
   filters,
-  width = 1200,
-  height = 600
+  width = 1400,  // Increased from 1200 for better visibility
+  height = 700   // Increased from 600 for better visibility
 }) => {
   const [mode, setMode] = useState<HeatmapMode>('value');
   const [tooltipData, setTooltipData] = useState<HeatmapTooltipData | null>(null);
@@ -48,7 +49,7 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   const config = useMemo((): HeatmapConfig => ({
     width,
     height,
-    margin: { top: 80, right: 40, bottom: 120, left: 140 },
+    margin: { top: 80, right: 180, bottom: 120, left: 140 }, // Increased right margin for info box
     cellPadding: 0.05,
     animationDuration: 600
   }), [width, height]);
@@ -76,6 +77,19 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     filters: effectiveFilters,
     drillDownState
   });
+
+  // Calculate values for color scale
+  const colorScaleValues = useMemo(() => {
+    if (!heatmapData) return [];
+    return heatmapData.matrix.map(d => {
+      switch (mode) {
+        case 'value': return d.value;
+        case 'count': return d.count;
+        case 'success-rate': return d.successRate || 0;
+        default: return d.value;
+      }
+    });
+  }, [heatmapData, mode]);
 
   // Handle cell interactions - use useCallback to prevent recreating functions on every render
   const handleCellHover = useCallback((cell: HeatmapCell | null, position?: { x: number; y: number }) => {
@@ -232,13 +246,24 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
         />
       </div>
 
-      {/* Stats summary */}
-      <div className="absolute bottom-4 left-4 bg-white border rounded-lg p-3 shadow-sm">
-        <div className="text-xs text-gray-600 mb-1">Matrix Stats</div>
-        <div className="space-y-1 text-xs">
-          <div>{heatmapData.labels.length} entities</div>
-          <div>{heatmapData.matrix.length} connections</div>
-          <div>Max {mode}: {mode === 'value' ? '€' + (heatmapData.maxValue / 1000000).toFixed(1) + 'M' : heatmapData.maxCount}</div>
+      {/* Color Scale and Stats summary - moved to top right */}
+      <div className="absolute top-4 right-4 space-y-3">
+        {/* Color Scale */}
+        {colorScaleValues.length > 0 && (
+          <HeatmapColorScale 
+            mode={mode}
+            values={colorScaleValues}
+          />
+        )}
+        
+        {/* Stats summary */}
+        <div className="bg-white border rounded-lg p-3 shadow-sm">
+          <div className="text-xs text-gray-600 mb-1 font-medium">Matrix Stats</div>
+          <div className="space-y-1 text-xs">
+            <div>{heatmapData.labels.length} entities</div>
+            <div>{heatmapData.matrix.length} connections</div>
+            <div>Max {mode}: {mode === 'value' ? '€' + (heatmapData.maxValue / 1000000).toFixed(1) + 'M' : heatmapData.maxCount}</div>
+          </div>
         </div>
       </div>
 
