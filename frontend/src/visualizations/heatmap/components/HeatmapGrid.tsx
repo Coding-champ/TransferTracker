@@ -28,10 +28,11 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   // Stable event handlers using useCallback to prevent recreation
   const handleCellEnter = useCallback((event: any, d: HeatmapCell) => {
     const cellId = `${d.source}-${d.target}`;
+    // Only update if this is a different cell to prevent rapid re-firing
     if (currentHoveredCellRef.current !== cellId) {
       currentHoveredCellRef.current = cellId;
       if (onCellHover) {
-        // Calculate tooltip position once per cell (centered in cell)
+        // Calculate tooltip position once per cell (centered in cell)  
         const cellRect = event.target.getBoundingClientRect();
         const tooltipX = cellRect.left + cellRect.width / 2;
         const tooltipY = cellRect.top + cellRect.height / 2;
@@ -41,16 +42,14 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   }, [onCellHover]);
 
   const handleCellLeave = useCallback((event: any, d: HeatmapCell) => {
-    // Small delay to allow moving between cells
-    setTimeout(() => {
-      const cellId = `${d.source}-${d.target}`;
-      if (currentHoveredCellRef.current === cellId) {
-        currentHoveredCellRef.current = null;
-        if (onCellHover) {
-          onCellHover(null);
-        }
+    const cellId = `${d.source}-${d.target}`;
+    // Only clear if we're leaving the current hovered cell
+    if (currentHoveredCellRef.current === cellId) {
+      currentHoveredCellRef.current = null;
+      if (onCellHover) {
+        onCellHover(null);
       }
-    }, 50);
+    }
   }, [onCellHover]);
 
   const handleCellClick = useCallback((event: any, d: HeatmapCell) => {
