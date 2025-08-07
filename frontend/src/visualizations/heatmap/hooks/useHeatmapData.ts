@@ -9,12 +9,7 @@ export const useHeatmapData = ({
   drillDownState
 }: UseHeatmapDataProps): HeatmapData | null => {
   return useMemo(() => {
-    console.log('useHeatmapData: networkData', networkData);
-    console.log('useHeatmapData: filters', filters);
-    console.log('useHeatmapData: drillDownState', drillDownState);
-    
     if (!networkData?.nodes?.length || !networkData?.edges?.length) {
-      console.log('useHeatmapData: No nodes or edges, returning null');
       return null;
     }
 
@@ -100,7 +95,6 @@ export const useHeatmapData = ({
     };
 
     const result = calculateHeatmapMatrix(filteredNetworkData, drillDownState);
-    console.log('useHeatmapData: calculateHeatmapMatrix result', result);
     return result;
   }, [networkData, filters, drillDownState]);
 };

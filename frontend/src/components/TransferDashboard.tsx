@@ -8,17 +8,18 @@ import {
   DEFAULT_TABS,
   VisualizationType 
 } from './Visualizations';
+// Direct import for heatmap to debug lazy loading issues
+import HeatmapVisualization from './Visualizations/HeatmapVisualization';
 // Info panel components (moved from old structure)
 import NetworkLegend from './Visualizations/NetworkVisualization/components/NetworkLegend';
 import NodeInfoPanel from './Visualizations/NetworkVisualization/components/NodeInfoPanel';
 import EdgeInfoPanel from './Visualizations/NetworkVisualization/components/EdgeInfoPanel';
 import NetworkStatistics from './Visualizations/NetworkVisualization/components/NetworkStatistics';
 
-// Lazy load visualization components
+// Lazy load visualization components (except heatmap for debugging)
 const NetworkVisualization = lazy(() => import('./Visualizations/NetworkVisualization'));
 const CircularVisualization = lazy(() => import('./Visualizations/CircularVisualization'));
 const SankeyVisualization = lazy(() => import('./Visualizations/SankeyVisualization'));
-const HeatmapVisualization = lazy(() => import('./Visualizations/HeatmapVisualization'));
 const TimelineVisualization = lazy(() => import('./Visualizations/TimelineVisualization'));
 const StatisticsVisualization = lazy(() => import('./Visualizations/StatisticsVisualization'));
 
@@ -60,7 +61,8 @@ const TransferDashboard: React.FC = React.memo(() => {
       case 'sankey':
         return <SankeyVisualization {...commonProps} />;
       case 'heatmap':
-        return <HeatmapVisualization {...commonProps} />;
+        // For heatmap, allow rendering with mock data even when there's an error
+        return <HeatmapVisualization {...(commonProps || { networkData: null, filters, width: 1200, height: 600 })} />;
       case 'timeline':
         return <TimelineVisualization {...commonProps} />;
       case 'statistics':
@@ -89,23 +91,43 @@ const TransferDashboard: React.FC = React.memo(() => {
       <div className="flex flex-col xl:flex-row gap-6">
         {/* Main Visualization Area */}
         <div className="flex-1">
-          <VisualizationContainer
-            networkData={networkData}
-            filters={filters}
-            title={activeTabInfo.label}
-            description={activeTabInfo.description}
-            isLoading={loading}
-            error={error}
-            onRetry={refetch}
-          >
-            <Suspense fallback={
-              <VisualizationLoading 
-                title={activeTabInfo.label} 
-              />
-            }>
-              {renderVisualization()}
-            </Suspense>
-          </VisualizationContainer>
+          {/* Special handling for heatmap - allow it to render with mock data even on error */}
+          {activeVisualization === 'heatmap' ? (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold">{activeTabInfo.label}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{activeTabInfo.description}</p>
+                </div>
+                {error && (
+                  <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded">
+                    Using demo data (backend error)
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                {renderVisualization()}
+              </div>
+            </div>
+          ) : (
+            <VisualizationContainer
+              networkData={networkData}
+              filters={filters}
+              title={activeTabInfo.label}
+              description={activeTabInfo.description}
+              isLoading={loading}
+              error={error}
+              onRetry={refetch}
+            >
+              <Suspense fallback={
+                <VisualizationLoading 
+                  title={activeTabInfo.label} 
+                />
+              }>
+                {renderVisualization()}
+              </Suspense>
+            </VisualizationContainer>
+          )}
         </div>
 
         {/* Enhanced Info Panel (only show for network visualization or when there's selected data) */}

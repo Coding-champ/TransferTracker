@@ -12,6 +12,7 @@ import {
   HeatmapTooltipData,
   TransferDetail
 } from '../../../visualizations/heatmap/types';
+import { createMockNetworkData, createMockFilters } from '../../../utils/mockData';
 
 interface HeatmapVisualizationProps extends VisualizationProps {}
 
@@ -47,15 +48,37 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     animationDuration: 600
   }), [width, height]);
 
+  // Use mock data if real data is not available (for development/testing)
+  const effectiveNetworkData = useMemo(() => {
+    if (networkData && networkData.nodes.length > 0 && networkData.edges.length > 0) {
+      console.log('HeatmapVisualization: Using real network data');
+      return networkData;
+    }
+    // Use mock data for testing when real data is not available
+    console.log('HeatmapVisualization: Using mock data');
+    const mockData = createMockNetworkData();
+    console.log('HeatmapVisualization: Mock data created:', mockData);
+    return mockData;
+  }, [networkData]);
+
+  const effectiveFilters = useMemo(() => {
+    if (networkData && networkData.nodes.length > 0) {
+      return filters;
+    }
+    // Use mock filters when using mock data
+    return createMockFilters();
+  }, [filters, networkData]);
+
   // Process data with modular hook
   const heatmapData = useHeatmapData({
-    networkData,
-    filters,
+    networkData: effectiveNetworkData,
+    filters: effectiveFilters,
     drillDownState
   });
 
-  console.log('HeatmapVisualization: networkData', networkData);
-  console.log('HeatmapVisualization: heatmapData', heatmapData);
+  console.log('HeatmapVisualization: effectiveNetworkData:', effectiveNetworkData);
+  console.log('HeatmapVisualization: effectiveFilters:', effectiveFilters);
+  console.log('HeatmapVisualization: heatmapData:', heatmapData);
 
   // Handle cell interactions
   const handleCellHover = (cell: HeatmapCell | null, position?: { x: number; y: number }) => {
@@ -82,8 +105,10 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   const levelInfo = getCurrentLevelInfo();
   const breadcrumbs = getBreadcrumbs();
 
-  if (!networkData?.edges?.length) {
-    console.log('HeatmapVisualization: No network data, showing placeholder');
+  // Show a different message when using mock data
+  const usingMockData = !networkData || networkData.nodes.length === 0 || networkData.edges.length === 0;
+
+  if (!effectiveNetworkData?.edges?.length) {
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
@@ -100,7 +125,6 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   }
 
   if (!heatmapData) {
-    console.log('HeatmapVisualization: No heatmap data, showing loading');
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
@@ -115,12 +139,17 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     );
   }
 
-  console.log('HeatmapVisualization: Rendering main heatmap component');
-
   return (
     <div className="relative">
       {/* Header with navigation */}
       <div className="mb-4">
+        {usingMockData && (
+          <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-blue-800 text-sm">
+              📊 Demo Mode: Using sample data (backend not connected)
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">{levelInfo.title}</h3>
