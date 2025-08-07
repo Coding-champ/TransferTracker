@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { NetworkData, FilterState } from '../../../types/index';
 import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
@@ -78,11 +78,23 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   });
 
   // Handle cell interactions
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   const handleCellHover = (cell: HeatmapCell | null, position?: { x: number; y: number }) => {
+    // Clear any pending timeout
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    
     if (cell && position) {
       setTooltipData({ cell, position });
     } else {
-      setTooltipData(null);
+      // Add a small delay before hiding tooltip to allow moving to it
+      const timeout = setTimeout(() => {
+        setTooltipData(null);
+      }, 100);
+      setTooltipTimeout(timeout);
     }
   };
 
@@ -101,6 +113,15 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
 
   const levelInfo = getCurrentLevelInfo();
   const breadcrumbs = getBreadcrumbs();
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+      }
+    };
+  }, [tooltipTimeout]);
 
   // Show a different message when using mock data
   const usingMockData = !networkData || networkData.nodes.length === 0 || networkData.edges.length === 0;
@@ -231,7 +252,11 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
       </div>
 
       {/* Tooltip */}
-      <HeatmapTooltip data={tooltipData} mode={mode} />
+      <HeatmapTooltip 
+        data={tooltipData} 
+        mode={mode} 
+        onDrillDown={handleCellClickWithModal}
+      />
 
       {/* Transfer Details Modal */}
       <TransferDetailsModal

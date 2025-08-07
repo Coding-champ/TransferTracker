@@ -22,6 +22,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   className = ''
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const currentHoveredCellRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!svgRef.current || !data.matrix.length) return;
@@ -160,12 +161,20 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
     // Add interactions
     cells
       .on('mouseover', function(event, d) {
-        if (onCellHover) {
-          const [mouseX, mouseY] = d3.pointer(event, svg.node());
-          onCellHover(d, { x: mouseX, y: mouseY });
+        const cellId = `${d.source}-${d.target}`;
+        if (currentHoveredCellRef.current !== cellId) {
+          currentHoveredCellRef.current = cellId;
+          if (onCellHover) {
+            // Calculate tooltip position once per cell (centered in cell)
+            const cellRect = this.getBoundingClientRect();
+            const tooltipX = cellRect.left + cellRect.width / 2;
+            const tooltipY = cellRect.top + cellRect.height / 2;
+            onCellHover(d, { x: tooltipX, y: tooltipY });
+          }
         }
       })
-      .on('mouseout', function() {
+      .on('mouseleave', function() {
+        currentHoveredCellRef.current = null;
         if (onCellHover) {
           onCellHover(null);
         }
@@ -177,6 +186,11 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
       });
 
   }, [data, config, mode, onCellHover, onCellClick]);
+
+  // Reset hovered cell when data changes
+  useEffect(() => {
+    currentHoveredCellRef.current = null;
+  }, [data.matrix]);
 
   return (
     <svg

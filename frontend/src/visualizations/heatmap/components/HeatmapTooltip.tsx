@@ -5,12 +5,14 @@ import { formatColorScaleValue } from '../utils/colorScales';
 interface HeatmapTooltipProps {
   data: HeatmapTooltipData | null;
   mode: HeatmapMode;
+  onDrillDown?: (cell: any) => void;
   className?: string;
 }
 
 export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
   data,
   mode,
+  onDrillDown,
   className = ''
 }) => {
   if (!data) return null;
@@ -23,7 +25,7 @@ export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
     left: position.x + 15,
     top: position.y - 10,
     zIndex: 9999,
-    pointerEvents: 'none',
+    pointerEvents: 'auto', // Enable interactions
   };
 
   // Adjust position if tooltip would overflow
@@ -38,6 +40,12 @@ export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
     <div
       style={tooltipStyle}
       className={`bg-gray-900 text-white rounded-lg shadow-lg p-3 max-w-xs ${className}`}
+      onMouseEnter={() => {
+        // Keep tooltip visible when hovering over it
+      }}
+      onMouseLeave={() => {
+        // Could add logic here if needed
+      }}
     >
       {/* Header */}
       <div className="border-b border-gray-700 pb-2 mb-2">
@@ -99,9 +107,12 @@ export const HeatmapTooltip: React.FC<HeatmapTooltipProps> = ({
 
       {/* Action hint */}
       <div className="border-t border-gray-700 pt-2 mt-2">
-        <div className="text-gray-400 text-xs">
-          Click to drill down
-        </div>
+        <button
+          onClick={() => onDrillDown && onDrillDown(cell)}
+          className="w-full text-left text-gray-400 text-xs hover:text-gray-200 transition-colors cursor-pointer"
+        >
+          Click to drill down →
+        </button>
       </div>
 
       {/* Tooltip arrow */}
