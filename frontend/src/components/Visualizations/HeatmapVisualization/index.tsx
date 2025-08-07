@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { VisualizationProps } from '../../../types/index';
+import { NetworkData, FilterState } from '../../../types/index';
 import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
 import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
 import { TransferDetailsModal } from '../../../visualizations/heatmap/components/TransferDetailsModal';
@@ -14,7 +14,12 @@ import {
 } from '../../../visualizations/heatmap/types';
 import { createMockNetworkData, createMockFilters } from '../../../utils/mockData';
 
-interface HeatmapVisualizationProps extends VisualizationProps {}
+interface HeatmapVisualizationProps {
+  readonly networkData: NetworkData | null;
+  readonly filters: FilterState;
+  readonly width?: number;
+  readonly height?: number;
+}
 
 export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   networkData,
@@ -51,14 +56,10 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   // Use mock data if real data is not available (for development/testing)
   const effectiveNetworkData = useMemo(() => {
     if (networkData && networkData.nodes.length > 0 && networkData.edges.length > 0) {
-      console.log('HeatmapVisualization: Using real network data');
       return networkData;
     }
     // Use mock data for testing when real data is not available
-    console.log('HeatmapVisualization: Using mock data');
-    const mockData = createMockNetworkData();
-    console.log('HeatmapVisualization: Mock data created:', mockData);
-    return mockData;
+    return createMockNetworkData();
   }, [networkData]);
 
   const effectiveFilters = useMemo(() => {
@@ -75,10 +76,6 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
     filters: effectiveFilters,
     drillDownState
   });
-
-  console.log('HeatmapVisualization: effectiveNetworkData:', effectiveNetworkData);
-  console.log('HeatmapVisualization: effectiveFilters:', effectiveFilters);
-  console.log('HeatmapVisualization: heatmapData:', heatmapData);
 
   // Handle cell interactions
   const handleCellHover = (cell: HeatmapCell | null, position?: { x: number; y: number }) => {

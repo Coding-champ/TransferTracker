@@ -51,26 +51,30 @@ const TransferDashboard: React.FC = React.memo(() => {
 
   // Render appropriate visualization based on active tab
   const renderVisualization = useCallback(() => {
-    if (!commonProps) return null;
-    
     switch (activeVisualization) {
       case 'network':
+        if (!commonProps) return null;
         return <NetworkVisualization {...commonProps} />;
       case 'circular':
+        if (!commonProps) return null;
         return <CircularVisualization {...commonProps} />;
       case 'sankey':
+        if (!commonProps) return null;
         return <SankeyVisualization {...commonProps} />;
       case 'heatmap':
         // For heatmap, allow rendering with mock data even when there's an error
         return <HeatmapVisualization {...(commonProps || { networkData: null, filters, width: 1200, height: 600 })} />;
       case 'timeline':
+        if (!commonProps) return null;
         return <TimelineVisualization {...commonProps} />;
       case 'statistics':
+        if (!commonProps) return null;
         return <StatisticsVisualization {...commonProps} />;
       default:
+        if (!commonProps) return null;
         return <NetworkVisualization {...commonProps} />;
     }
-  }, [activeVisualization, commonProps]);
+  }, [activeVisualization, commonProps, filters]);
 
   // Memoize active tab info
   const activeTabInfo = useMemo(() => 
