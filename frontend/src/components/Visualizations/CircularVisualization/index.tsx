@@ -1,28 +1,25 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { VisualizationProps, NetworkNode } from '../../../types';
+import { VisualizationProps } from '../../../types';
+import { useD3Container } from '../../../visualizations/shared/hooks/useD3Container';
+import { useCircularLayout } from '../../../visualizations/circular/hooks/useCircularLayout';
+import { useCircularInteraction } from '../../../visualizations/circular/hooks/useCircularInteraction';
+import { useCircularZoom } from '../../../visualizations/circular/hooks/useCircularZoom';
+import { 
+  CircularVisualizationConfig,
+  CircularZoomState,
+  CircularNode,
+  CircularArc
+} from '../../../visualizations/circular/types';
+import { createLeagueColorScale, formatCurrency } from '../../../visualizations/shared/utils/d3-helpers';
+import { 
+  animateNodesEnter,
+  animateArcsEnter,
+  animateTierCircles,
+  animateFilterTransition 
+} from '../../../visualizations/circular/utils/circularAnimations';
 
 interface CircularVisualizationProps extends VisualizationProps {}
-
-interface CircularNode {
-  id: string;
-  name: string;
-  league: string;
-  tier: number;
-  angle: number;
-  radius: number;
-  transferCount: number;
-  totalValue: number;
-  x: number;
-  y: number;
-}
-
-interface CircularArc {
-  source: CircularNode;
-  target: CircularNode;
-  value: number;
-  type: 'inward' | 'outward' | 'same-tier';
-}
 
 export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   networkData,
@@ -30,143 +27,104 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   width = 800,
   height = 800
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
-  
-  // Process data for circular layout
-  const { circularNodes, arcs, tiers } = useMemo(() => {
-    if (!networkData?.nodes || !networkData?.edges) {
-      return { circularNodes: [], arcs: [], tiers: [] };
-    }
-    
-    // Group nodes by tier
-    const nodesByTier = new Map<number, NetworkNode[]>();
-    networkData.nodes.forEach(node => {
-      const tier = node.leagueTier || 1;
-      if (!nodesByTier.has(tier)) {
-        nodesByTier.set(tier, []);
-      }
-      nodesByTier.get(tier)!.push(node);
-    });
-    
-    // Calculate radial positions
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const maxRadius = Math.min(width, height) / 2 - 40;
-    const minRadius = 60;
-    
-    const tiers = Array.from(nodesByTier.keys()).sort((a, b) => a - b);
-    const radiusStep = (maxRadius - minRadius) / Math.max(tiers.length - 1, 1);
-    
-    const circularNodes: CircularNode[] = [];
-    
-    tiers.forEach((tier, tierIndex) => {
-      const nodes = nodesByTier.get(tier)!;
-      const radius = minRadius + tierIndex * radiusStep;
-      const angleStep = (2 * Math.PI) / nodes.length;
-      
-      nodes.forEach((node, nodeIndex) => {
-        const angle = nodeIndex * angleStep;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
-        
-        circularNodes.push({
-          id: node.id,
-          name: node.name,
-          league: node.league,
-          tier,
-          angle,
-          radius,
-          transferCount: node.stats.transfersIn + node.stats.transfersOut,
-          totalValue: node.stats.totalSpent + node.stats.totalReceived,
-          x,
-          y
-        });
-      });
-    });
-    
-    // Create arcs for transfers
-    const arcs: CircularArc[] = [];
-    const nodeMap = new Map(circularNodes.map(n => [n.id, n]));
-    
-    networkData.edges.forEach(edge => {
-      const sourceNode = nodeMap.get(typeof edge.source === 'string' ? edge.source : edge.source.id);
-      const targetNode = nodeMap.get(typeof edge.target === 'string' ? edge.target : edge.target.id);
-      
-      if (sourceNode && targetNode) {
-        const type = sourceNode.tier < targetNode.tier ? 'outward' : 
-                    sourceNode.tier > targetNode.tier ? 'inward' : 'same-tier';
-        
-        arcs.push({
-          source: sourceNode,
-          target: targetNode,
-          value: edge.stats.totalValue,
-          type
-        });
-      }
-    });
-    
-    return { circularNodes, arcs, tiers: tiers.map(t => ({ tier: t, radius: minRadius + (t - tiers[0]) * radiusStep })) };
-  }, [networkData, width, height]);
+  const [rotation, setRotation] = useState(0);
+  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+  const [zoomState, setZoomState] = useState<CircularZoomState>({
+    level: 1,
+    focusedTier: null,
+    focusedLeague: null,
+    scale: 1,
+    translateX: 0,
+    translateY: 0
+  });
 
-  useEffect(() => {
-    if (!svgRef.current || circularNodes.length === 0) return;
-    
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-    
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Create main group
-    const g = svg.append('g');
-    
-    // Draw tier circles (background)
-    g.selectAll('.tier-circle')
-      .data(tiers)
+  // Configuration for the visualization
+  const config: CircularVisualizationConfig = {
+    width,
+    height,
+    margin: { top: 40, right: 40, bottom: 40, left: 40 },
+    minRadius: 60,
+    maxRadius: Math.min(width, height) / 2 - 80,
+    enableRotation: true,
+    enableZoom: true,
+    snapAngle: 30,
+    animationDuration: 800
+  };
+
+  // Setup D3 container
+  const { svgRef, svg, clearSvg } = useD3Container({
+    width,
+    height,
+    backgroundColor: 'white',
+    className: 'border rounded-lg'
+  });
+
+  // Create circular layout
+  const layout = useCircularLayout({
+    networkData,
+    config,
+    rotation,
+    zoomState
+  });
+
+  // Setup interactions
+  const { interactionState, tooltip } = useCircularInteraction({
+    layout,
+    svgRef,
+    config,
+    onNodeClick: (node: CircularNode) => {
+      setSelectedLeague(node.league);
+    },
+    onLeagueFilter: (league: string) => {
+      // Integrate with global filter state here
+      console.log('Filter by league:', league);
+    },
+    onRotationChange: setRotation
+  });
+
+  // Setup zoom controls
+  const { zoomState: currentZoom, setZoomLevel, zoomToTier, zoomToLeague, resetZoom } = useCircularZoom({
+    layout,
+    svgRef,
+    config,
+    onZoomChange: setZoomState
+  });
+
+  // Render visualization
+  React.useEffect(() => {
+    if (!svg || !layout) return;
+
+    clearSvg();
+
+    // Create main visualization group
+    const g = svg.append('g')
+      .attr('class', 'visualization-group')
+      .attr('transform', `translate(${config.margin.left}, ${config.margin.top})`);
+
+    // Color scales
+    const uniqueLeagues = Array.from(new Set(layout.nodes.map(d => d.league)));
+    const leagueColorScale = createLeagueColorScale(uniqueLeagues);
+    const valueExtent = d3.extent(layout.arcs, d => d.value) as [number, number];
+    const colorScale = d3.scaleSequential(d3.interpolateBlues).domain(valueExtent);
+
+    // Draw tier circles (background guides)
+    const tierCircles = g.selectAll('.tier-circle')
+      .data(layout.tiers)
       .enter()
       .append('circle')
       .attr('class', 'tier-circle')
-      .attr('cx', centerX)
-      .attr('cy', centerY)
-      .attr('r', d => d.radius)
+      .attr('cx', layout.centerX - config.margin.left)
+      .attr('cy', layout.centerY - config.margin.top)
       .attr('fill', 'none')
       .attr('stroke', '#e5e7eb')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '2,2');
-    
-    // Draw tier labels
-    g.selectAll('.tier-label')
-      .data(tiers)
-      .enter()
-      .append('text')
-      .attr('class', 'tier-label')
-      .attr('x', centerX)
-      .attr('y', d => centerY - d.radius - 5)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('fill', '#6b7280')
-      .text(d => `Tier ${d.tier}`);
-    
-    // Color scale for transfer values
-    const valueExtent = d3.extent(arcs, d => d.value) as [number, number];
-    const colorScale = d3.scaleSequential(d3.interpolateBlues)
-      .domain(valueExtent);
-    
-    // League color scale - use colors per league instead of per club
-    const leagueColors = [
-      '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
-      '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78',
-      '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d3', '#c7c7c7',
-      '#dbdb8d', '#9edae5'
-    ];
-    const uniqueLeagues = Array.from(new Set(circularNodes.map(d => d.league)));  // Get unique leagues
-    const leagueColorScale = d3.scaleOrdinal()
-      .domain(uniqueLeagues)
-      .range(leagueColors);
-    
+
+    animateTierCircles(tierCircles);
+
     // Draw transfer arcs
-    g.selectAll('.transfer-arc')
-      .data(arcs.filter(d => d.value > 0))
+    const arcs = g.selectAll('.transfer-arc')
+      .data(layout.arcs.filter(d => d.value > 0))
       .enter()
       .append('path')
       .attr('class', 'transfer-arc')
@@ -174,128 +132,45 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         const dx = d.target.x - d.source.x;
         const dy = d.target.y - d.source.y;
         const dr = Math.sqrt(dx * dx + dy * dy) * 0.7;
-        return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+        return `M${d.source.x - config.margin.left},${d.source.y - config.margin.top}A${dr},${dr} 0 0,1 ${d.target.x - config.margin.left},${d.target.y - config.margin.top}`;
       })
       .attr('fill', 'none')
       .attr('stroke', d => colorScale(d.value))
       .attr('stroke-width', d => Math.max(1, Math.log(d.value / 1000000 + 1) * 2))
-      .attr('opacity', 0.6)
-      .on('mouseover', function(event, d) {
-        d3.select(this).attr('opacity', 1);
-        
-        // Add tooltip
-        const tooltip = svg.append('g')
-          .attr('class', 'tooltip')
-          .attr('transform', `translate(${event.offsetX}, ${event.offsetY})`);
-        
-        const rect = tooltip.append('rect')
-          .attr('fill', 'black')
-          .attr('opacity', 0.8)
-          .attr('rx', 4);
-        
-        const text = tooltip.append('text')
-          .attr('fill', 'white')
-          .attr('font-size', '12px')
-          .attr('text-anchor', 'middle')
-          .attr('y', -5);
-        
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 0)
-          .text(`${d.source.name} → ${d.target.name}`);
-        
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 16)
-          .text(`€${(d.value / 1000000).toFixed(1)}M`);
-        
-        const bbox = text.node()!.getBBox();
-        rect.attr('x', bbox.x - 4)
-          .attr('y', bbox.y - 4)
-          .attr('width', bbox.width + 8)
-          .attr('height', bbox.height + 8);
-      })
-      .on('mouseout', function() {
-        d3.select(this).attr('opacity', 0.6);
-        svg.select('.tooltip').remove();
-      });
-    
+      .attr('opacity', 0.6);
+
+    animateArcsEnter(arcs);
+
     // Node size scale
-    const transferCountExtent = d3.extent(circularNodes, d => d.transferCount) as [number, number];
     const sizeScale = d3.scaleLinear()
-      .domain(transferCountExtent)
+      .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
       .range([4, 12]);
-    
+
     // Draw nodes
-    g.selectAll('.club-node')
-      .data(circularNodes)
+    const nodes = g.selectAll('.club-node')
+      .data(layout.nodes)
       .enter()
       .append('circle')
       .attr('class', 'club-node')
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
+      .attr('cx', d => d.x - config.margin.left)
+      .attr('cy', d => d.y - config.margin.top)
       .attr('r', d => sizeScale(d.transferCount))
-      .attr('fill', d => {
-        // Use league-specific colors 
-        return leagueColorScale(d.league) as string;
-      })
+      .attr('fill', d => leagueColorScale(d.league) as string)
       .attr('stroke', 'white')
-      .attr('stroke-width', 2)
-      .on('mouseover', function(event, d) {
-        d3.select(this)
-          .attr('stroke-width', 3)
-          .attr('r', sizeScale(d.transferCount) + 2);
-        
-        // Show node tooltip
-        const tooltip = svg.append('g')
-          .attr('class', 'node-tooltip')
-          .attr('transform', `translate(${d.x}, ${d.y - 20})`);
-        
-        const rect = tooltip.append('rect')
-          .attr('fill', 'black')
-          .attr('opacity', 0.9)
-          .attr('rx', 4);
-        
-        const text = tooltip.append('text')
-          .attr('fill', 'white')
-          .attr('font-size', '11px')
-          .attr('text-anchor', 'middle')
-          .attr('y', -5);
-        
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 0)
-          .text(d.name);
-        
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 14)
-          .text(`${d.transferCount} transfers`);
-        
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 14)
-          .text(`€${(d.totalValue / 1000000).toFixed(1)}M total`);
-        
-        const bbox = text.node()!.getBBox();
-        rect.attr('x', bbox.x - 4)
-          .attr('y', bbox.y - 4)
-          .attr('width', bbox.width + 8)
-          .attr('height', bbox.height + 8);
-      })
-      .on('mouseout', function(event, d) {
-        d3.select(this)
-          .attr('stroke-width', 2)
-          .attr('r', sizeScale(d.transferCount));
-        svg.select('.node-tooltip').remove();
-      });
-    
-    // Add comprehensive legend
+      .attr('stroke-width', 2);
+
+    animateNodesEnter(nodes);
+
+    // Apply filter animation if league is selected
+    if (selectedLeague) {
+      animateFilterTransition(layout, svg, selectedLeague);
+    }
+
+    // Add legend
     const legend = svg.append('g')
       .attr('class', 'legend')
-      .attr('transform', `translate(20, 20)`);
+      .attr('transform', 'translate(20, 20)');
 
-    // Legend background
     const legendBg = legend.append('rect')
       .attr('fill', 'white')
       .attr('stroke', '#e5e7eb')
@@ -303,148 +178,78 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('rx', 6)
       .attr('opacity', 0.95);
 
-    // Legend content
     const legendContent = legend.append('g')
       .attr('transform', 'translate(12, 12)');
-    
+
     legendContent.append('text')
       .attr('font-size', '14px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text('Liga Hierarchy (Circular View)');
-    
-    // Visual explanations
+      .text('Interactive Circular Visualization');
+
     let yOffset = 25;
-    
-    // Node size explanation with example
-    const sizeGroup = legendContent.append('g')
-      .attr('transform', `translate(0, ${yOffset})`);
-    
-    sizeGroup.append('circle')
-      .attr('cx', 6)
-      .attr('cy', 0)
-      .attr('r', 4)
-      .attr('fill', '#94a3b8')
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1);
-    
-    sizeGroup.append('circle')
-      .attr('cx', 18)
-      .attr('cy', 0)
-      .attr('r', 7)
-      .attr('fill', '#64748b')
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1);
-    
-    sizeGroup.append('text')
-      .attr('x', 30)
-      .attr('y', 4)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('Node size = Transfer activity');
-    
-    yOffset += 20;
-    
-    // Color explanation
-    const colorGroup = legendContent.append('g')
-      .attr('transform', `translate(0, ${yOffset})`);
-    
-    // Show sample league colors
-    const sampleLeagues = uniqueLeagues.slice(0, 5);
-    sampleLeagues.forEach((league, i) => {
-      colorGroup.append('circle')
-        .attr('cx', i * 12 + 6)
-        .attr('cy', 0)
-        .attr('r', 5)
-        .attr('fill', leagueColorScale(league) as string)
-        .attr('stroke', 'white')
-        .attr('stroke-width', 1);
-    });
-    
-    colorGroup.append('text')
-      .attr('x', 70)
-      .attr('y', 4)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('Different colors = Different leagues');
-    
-    yOffset += 20;
-    
-    // Ring explanation
-    const ringGroup = legendContent.append('g')
-      .attr('transform', `translate(0, ${yOffset})`);
-    
-    ringGroup.append('circle')
-      .attr('cx', 10)
-      .attr('cy', 0)
-      .attr('r', 8)
-      .attr('fill', 'none')
-      .attr('stroke', '#e5e7eb')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '2,2');
-    
-    ringGroup.append('text')
-      .attr('x', 25)
-      .attr('y', 4)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('Ring position = League tier (1=inner, higher=outer)');
-    
-    yOffset += 20;
-    
-    // Arc explanation
-    const arcGroup = legendContent.append('g')
-      .attr('transform', `translate(0, ${yOffset})`);
-    
-    arcGroup.append('path')
-      .attr('d', 'M5,0 Q15,10 25,0')
-      .attr('fill', 'none')
-      .attr('stroke', '#3b82f6')
-      .attr('stroke-width', 3)
-      .attr('opacity', 0.7);
-    
-    arcGroup.append('text')
-      .attr('x', 35)
-      .attr('y', 4)
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('Arc thickness = Transfer value');
-    
-    yOffset += 20;
-    
-    // Tier breakdown
-    if (tiers.length > 0) {
-      const tierGroup = legendContent.append('g')
-        .attr('transform', `translate(0, ${yOffset})`);
-      
-      tierGroup.append('text')
+
+    // Add controls explanation
+    const controls = [
+      'Drag to rotate view',
+      'Double-click to reset',
+      'Mousewheel to zoom',
+      'Click node to filter league'
+    ];
+
+    controls.forEach((control, i) => {
+      legendContent.append('text')
+        .attr('y', yOffset + i * 16)
         .attr('font-size', '11px')
-        .attr('font-weight', 'bold')
-        .attr('fill', '#374151')
-        .text('League Tiers:');
-      
-      yOffset += 15;
-      
-      tiers.slice(0, 4).forEach((tier, i) => {  // Show max 4 tiers to avoid overcrowding
-        const tierItem = legendContent.append('g')
-          .attr('transform', `translate(10, ${yOffset + i * 12})`);
-        
-        tierItem.append('text')
-          .attr('font-size', '10px')
-          .attr('fill', '#6b7280')
-          .text(`Tier ${tier.tier} (${tier.radius.toFixed(0)}px from center)`);
-      });
-      
-      yOffset += Math.min(tiers.length, 4) * 12;
-    }
-    
-    // Set legend background size
+        .attr('fill', '#6b7280')
+        .text(control);
+    });
+
+    yOffset += controls.length * 16 + 10;
+
+    // Add zoom level indicator
+    legendContent.append('text')
+      .attr('y', yOffset)
+      .attr('font-size', '11px')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#374151')
+      .text(`Zoom Level: ${currentZoom.level}`);
+
+    // Size legend background
     const legendBounds = legendContent.node()!.getBBox();
     legendBg
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
-      
-  }, [circularNodes, arcs, tiers, width, height]);
+
+  }, [svg, layout, config, selectedLeague, currentZoom.level, clearSvg]);
+
+  // Handle keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'r':
+        case 'R':
+          setRotation(0);
+          break;
+        case '1':
+          setZoomLevel(1);
+          break;
+        case '2':
+          setZoomLevel(2);
+          break;
+        case '3':
+          setZoomLevel(3);
+          break;
+        case 'Escape':
+          setSelectedLeague(null);
+          resetZoom();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setZoomLevel, resetZoom]);
 
   if (!networkData?.nodes?.length) {
     return (
@@ -454,9 +259,9 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       >
         <div className="text-center text-gray-500">
           <div className="text-4xl mb-4">🔄</div>
-          <div className="text-lg font-medium">Circular Visualization</div>
+          <div className="text-lg font-medium">Interactive Circular Visualization</div>
           <div className="text-sm mt-2">No data available</div>
-          <div className="text-xs mt-1">Apply filters to see liga hierarchy</div>
+          <div className="text-xs mt-1">Apply filters to see interactive liga hierarchy</div>
         </div>
       </div>
     );
@@ -464,12 +269,70 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
   return (
     <div className="relative">
-      <svg
-        ref={svgRef}
-        width={width}
-        height={height}
-        className="border rounded-lg bg-white"
-      />
+      {/* Zoom Level Controls */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <div className="bg-white border rounded-lg p-2 shadow-sm">
+          <div className="text-xs font-medium text-gray-700 mb-2">Zoom Level</div>
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => setZoomLevel(1)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentZoom.level === 1 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setZoomLevel(2)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentZoom.level === 2 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              Tier Focus
+            </button>
+            <button
+              onClick={() => setZoomLevel(3)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentZoom.level === 3 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              League Details
+            </button>
+          </div>
+        </div>
+
+        {selectedLeague && (
+          <div className="bg-green-100 border border-green-300 rounded-lg p-2 shadow-sm">
+            <div className="text-xs font-medium text-green-800">Active Filter</div>
+            <div className="text-xs text-green-700">{selectedLeague}</div>
+            <button
+              onClick={() => setSelectedLeague(null)}
+              className="mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded hover:bg-green-300"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Reset Button */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <button
+          onClick={() => {
+            setRotation(0);
+            setSelectedLeague(null);
+            resetZoom();
+          }}
+          className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700"
+        >
+          Reset View
+        </button>
+      </div>
+
+      <svg ref={svgRef} width={width} height={height} />
+      
+      {/* Render tooltip */}
+      {tooltip}
     </div>
   );
 };
