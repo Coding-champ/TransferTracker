@@ -24,13 +24,22 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const currentHoveredCellRef = useRef<string | null>(null);
   const isInitializedRef = useRef<boolean>(false);
+  const lastHoverTimeRef = useRef<number>(0);
 
   // Stable event handlers using useCallback to prevent recreation
   const handleCellEnter = useCallback((event: any, d: HeatmapCell) => {
     const cellId = `${d.source}-${d.target}`;
+    const now = Date.now();
+    
+    // Prevent rapid oscillation by adding a small debounce for the same cell
+    if (currentHoveredCellRef.current === cellId && now - lastHoverTimeRef.current < 100) {
+      return;
+    }
+    
     // Only update if this is a different cell to prevent rapid re-firing
     if (currentHoveredCellRef.current !== cellId) {
       currentHoveredCellRef.current = cellId;
+      lastHoverTimeRef.current = now;
       if (onCellHover) {
         // Calculate tooltip position once per cell (centered in cell)  
         const cellRect = event.target.getBoundingClientRect();
@@ -43,6 +52,13 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
 
   const handleCellLeave = useCallback((event: any, d: HeatmapCell) => {
     const cellId = `${d.source}-${d.target}`;
+    const now = Date.now();
+    
+    // Prevent rapid oscillation by adding a small debounce
+    if (now - lastHoverTimeRef.current < 50) {
+      return;
+    }
+    
     // Only clear if we're leaving the current hovered cell
     if (currentHoveredCellRef.current === cellId) {
       currentHoveredCellRef.current = null;
@@ -262,6 +278,7 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({
   // Reset hovered cell when data changes
   useEffect(() => {
     currentHoveredCellRef.current = null;
+    lastHoverTimeRef.current = 0;
     isInitializedRef.current = false; // Force re-initialization on data change
   }, [data.matrix]);
 
