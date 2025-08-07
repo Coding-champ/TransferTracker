@@ -204,23 +204,36 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
           </div>
         </div>
 
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.level}>
-              {index > 0 && <span className="text-gray-400">→</span>}
-              <button
-                onClick={crumb.onClick}
-                className={`px-2 py-1 rounded ${
-                  crumb.isActive 
-                    ? 'bg-blue-100 text-blue-800 font-medium' 
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                }`}
-              >
-                {crumb.label}
-              </button>
-            </React.Fragment>
-          ))}
+        {/* Breadcrumbs and Level Indicator */}
+        <nav className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            {/* Level indicator - positioned before breadcrumbs */}
+            <div className="flex items-center gap-2 bg-white border rounded-lg px-2 py-1 shadow-sm">
+              <div className="text-xs text-gray-600">Level {levelInfo.level}/{levelInfo.maxLevel}</div>
+              <div className="w-12 bg-gray-200 rounded-full h-1">
+                <div 
+                  className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${(levelInfo.level / levelInfo.maxLevel) * 100}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-gray-400">|</span>
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.level}>
+                {index > 0 && <span className="text-gray-400">→</span>}
+                <button
+                  onClick={crumb.onClick}
+                  className={`px-2 py-1 rounded ${
+                    crumb.isActive 
+                      ? 'bg-blue-100 text-blue-800 font-medium' 
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {crumb.label}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
         </nav>
       </div>
 
@@ -234,17 +247,6 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
           onCellClick={handleCellClickWithModal}
           className="drop-shadow-sm"
         />
-      </div>
-
-      {/* Level indicator - positioned to avoid button overlap */}
-      <div className="absolute top-16 right-4 bg-white border rounded-lg p-2 shadow-sm">
-        <div className="text-xs text-gray-600">Level {levelInfo.level}/{levelInfo.maxLevel}</div>
-        <div className="w-16 bg-gray-200 rounded-full h-1 mt-1">
-          <div 
-            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-            style={{ width: `${(levelInfo.level / levelInfo.maxLevel) * 100}%` }}
-          />
-        </div>
       </div>
 
       {/* Stats summary */}
