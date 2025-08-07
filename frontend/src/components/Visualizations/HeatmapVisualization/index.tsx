@@ -25,8 +25,8 @@ interface HeatmapVisualizationProps {
 export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
   networkData,
   filters,
-  width = 1400,  // Increased from 1200 for better visibility
-  height = 700   // Increased from 600 for better visibility
+  width = 1800,  // Increased from 1200 for better visibility
+  height = 900   // Increased from 600 for better visibility
 }) => {
   const [mode, setMode] = useState<HeatmapMode>('value');
   const [tooltipData, setTooltipData] = useState<HeatmapTooltipData | null>(null);
@@ -247,7 +247,7 @@ export const HeatmapVisualization: React.FC<HeatmapVisualizationProps> = ({
       </div>
 
       {/* Color Scale and Stats summary - moved to top right */}
-      <div className="absolute top-4 right-4 space-y-3">
+      <div className="absolute top-20 right-4 space-y-3">
         {/* Color Scale */}
         {colorScaleValues.length > 0 && (
           <HeatmapColorScale 
