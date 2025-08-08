@@ -113,7 +113,7 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
           currentConfig={strategyConfig}
           onConfigChange={handleConfigChange}
           networkData={networkData}
-          className="absolute top-4 right-4 z-10 w-80"
+          className="absolute top-4 left-4 z-10 w-80"
         />
         <SankeyEmptyState 
           width={width} 
@@ -126,20 +126,20 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
 
   return (
     <div className="relative">
-      {/* Pattern Selector Panel - positioned on the left */}
-      <PatternSelector
-        selectedPattern={selectedPattern}
-        onPatternSelect={handlePatternSelect}
-        patternStats={patternStats}
-        className="absolute top-4 left-4 z-20 w-72"
-      />
-      
-      {/* Strategy Selector Panel - positioned on the right */}
+      {/* Strategy Selector Panel - positioned on the left */}
       <SankeyStrategySelector
         currentConfig={strategyConfig}
         onConfigChange={handleConfigChange}
         networkData={networkData}
-        className="absolute top-4 right-4 z-10 w-80"
+        className="absolute top-4 left-4 z-10 w-80"
+      />
+      
+      {/* Pattern Selector Panel - positioned on the right */}
+      <PatternSelector
+        selectedPattern={selectedPattern}
+        onPatternSelect={handlePatternSelect}
+        patternStats={patternStats}
+        className="absolute top-4 right-4 z-20 w-72"
       />
 
       {/* Focus Controls */}
