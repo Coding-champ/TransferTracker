@@ -42,17 +42,17 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
     if (!sankeyData) return null;
     
     // Add missing properties to links to match SankeyChart expectations
-    const enhancedLinks = sankeyData.links.map((link, index) => {
-      const sourceIndex = sankeyData.nodes.findIndex(node => 
+    const enhancedLinks = sankeyData.links.map((link) => {
+      const sourceNodeIndex = sankeyData.nodes.findIndex(node => 
         node.id === (typeof link.source === 'string' ? link.source : link.source.id)
       );
-      const targetIndex = sankeyData.nodes.findIndex(node => 
+      const targetNodeIndex = sankeyData.nodes.findIndex(node => 
         node.id === (typeof link.target === 'string' ? link.target : link.target.id)
       );
       
       return {
-        source: sourceIndex >= 0 ? sourceIndex : 0,
-        target: targetIndex >= 0 ? targetIndex : 0,
+        source: Math.max(0, sourceNodeIndex),
+        target: Math.max(0, targetNodeIndex),
         value: link.value,
         sourceCategory: typeof link.source === 'string' ? link.source : link.source.name,
         targetCategory: typeof link.target === 'string' ? link.target : link.target.name,
