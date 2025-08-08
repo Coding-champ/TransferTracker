@@ -401,6 +401,249 @@ async function main() {
     }
   }
 
+  // Erstelle spezifische Pattern-Test-Daten
+  console.log('🎯 Creating pattern-specific test data...');
+  
+  // 1. Loan Highways Pattern (3+ loans zwischen gleichen Clubs)
+  console.log('🛣️ Creating Loan Highways pattern...');
+  const loanHubs = [
+    { from: clubs.find(c => c.name === 'Chelsea FC'), to: clubs.find(c => c.name === 'Leeds United') },
+    { from: clubs.find(c => c.name === 'Manchester City'), to: clubs.find(c => c.name === 'Hamburger SV') },
+    { from: clubs.find(c => c.name === 'Bayern München'), to: clubs.find(c => c.name === 'FC Schalke 04') }
+  ];
+
+  for (const hub of loanHubs) {
+    if (hub.from && hub.to) {
+      // Erstelle 4-5 Loans zwischen diesen Clubs
+      for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+        const loanPlayer = players[Math.floor(Math.random() * players.length)];
+        const loanDate = new Date(2023, 6 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 30) + 1);
+        
+        await createTransfer({
+          playerName: `${loanPlayer.name} Loan ${i}`,
+          playerNationality: loanPlayer.nationality,
+          playerPosition: loanPlayer.position,
+          playerAgeAtTransfer: 18 + Math.floor(Math.random() * 8),
+          marketValueAtTransfer: BigInt(2000000 + Math.random() * 8000000),
+          transferFee: null, // Loans don't have transfer fees
+          transferType: 'loan',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: loanDate,
+          season: '2023/24',
+          contractDuration: 1,
+          oldClubId: hub.from.id,
+          newClubId: hub.to.id,
+          source: 'loan_highway_pattern'
+        });
+      }
+    }
+  }
+
+  // 2. Big Money Flows Pattern (>€50M total value)
+  console.log('💰 Creating Big Money Flows pattern...');
+  const bigMoneyRoutes = [
+    { from: clubs.find(c => c.name === 'Real Madrid'), to: clubs.find(c => c.name === 'Paris Saint-Germain') },
+    { from: clubs.find(c => c.name === 'FC Barcelona'), to: clubs.find(c => c.name === 'Manchester City') },
+    { from: clubs.find(c => c.name === 'Liverpool FC'), to: clubs.find(c => c.name === 'Bayern München') }
+  ];
+
+  for (const route of bigMoneyRoutes) {
+    if (route.from && route.to) {
+      // Erstelle 2-3 sehr teure Transfers um >€50M zu erreichen
+      for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
+        const starPlayer = players[Math.floor(Math.random() * players.length)];
+        const transferValue = BigInt(25000000 + Math.random() * 75000000); // €25M - €100M
+        
+        await createTransfer({
+          playerName: `${starPlayer.name} Star ${i}`,
+          playerNationality: starPlayer.nationality,
+          playerPosition: starPlayer.position,
+          playerAgeAtTransfer: 23 + Math.floor(Math.random() * 5),
+          marketValueAtTransfer: transferValue,
+          transferFee: transferValue,
+          transferType: 'sale',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: new Date(2023, 6, Math.floor(Math.random() * 30) + 1),
+          season: '2023/24',
+          contractDuration: 4 + Math.floor(Math.random() * 2),
+          oldClubId: route.from.id,
+          newClubId: route.to.id,
+          source: 'big_money_pattern'
+        });
+      }
+    }
+  }
+
+  // 3. Youth Talent Pipelines Pattern (2+ transfers of players ≤21)
+  console.log('🌱 Creating Youth Talent Pipelines pattern...');
+  const youthPipelines = [
+    { from: clubs.find(c => c.name === 'Flamengo'), to: clubs.find(c => c.name === 'Real Madrid') },
+    { from: clubs.find(c => c.name === 'River Plate'), to: clubs.find(c => c.name === 'AC Milan') },
+    { from: clubs.find(c => c.name === 'Palmeiras'), to: clubs.find(c => c.name === 'Manchester United') }
+  ];
+
+  for (const pipeline of youthPipelines) {
+    if (pipeline.from && pipeline.to) {
+      // Erstelle 3-4 junge Spieler Transfers
+      for (let i = 0; i < 3 + Math.floor(Math.random() * 2); i++) {
+        const youngPlayer = players[Math.floor(Math.random() * players.length)];
+        
+        await createTransfer({
+          playerName: `${youngPlayer.name} Youth ${i}`,
+          playerNationality: youngPlayer.nationality,
+          playerPosition: youngPlayer.position,
+          playerAgeAtTransfer: 16 + Math.floor(Math.random() * 6), // 16-21 Jahre alt
+          marketValueAtTransfer: BigInt(5000000 + Math.random() * 15000000),
+          transferFee: BigInt(3000000 + Math.random() * 12000000),
+          transferType: 'sale',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: new Date(2023, 6, Math.floor(Math.random() * 30) + 1),
+          season: '2023/24',
+          contractDuration: 5,
+          oldClubId: pipeline.from.id,
+          newClubId: pipeline.to.id,
+          source: 'youth_pipeline_pattern'
+        });
+      }
+    }
+  }
+
+  // 4. Circular Trading Pattern (5+ transfers between clubs)
+  console.log('🔄 Creating Circular Trading pattern...');
+  const tradingPairs = [
+    { club1: clubs.find(c => c.name === 'Juventus FC'), club2: clubs.find(c => c.name === 'Inter Milan') },
+    { club1: clubs.find(c => c.name === 'Borussia Dortmund'), club2: clubs.find(c => c.name === 'RB Leipzig') },
+    { club1: clubs.find(c => c.name === 'Arsenal FC'), club2: clubs.find(c => c.name === 'Chelsea FC') }
+  ];
+
+  for (const pair of tradingPairs) {
+    if (pair.club1 && pair.club2) {
+      // Erstelle 6-8 Transfers in beide Richtungen
+      for (let i = 0; i < 6 + Math.floor(Math.random() * 3); i++) {
+        const tradingPlayer = players[Math.floor(Math.random() * players.length)];
+        const direction = Math.random() > 0.5;
+        const fromClub = direction ? pair.club1 : pair.club2;
+        const toClub = direction ? pair.club2 : pair.club1;
+        
+        await createTransfer({
+          playerName: `${tradingPlayer.name} Trade ${i}`,
+          playerNationality: tradingPlayer.nationality,
+          playerPosition: tradingPlayer.position,
+          playerAgeAtTransfer: 20 + Math.floor(Math.random() * 8),
+          marketValueAtTransfer: BigInt(10000000 + Math.random() * 20000000),
+          transferFee: BigInt(8000000 + Math.random() * 18000000),
+          transferType: Math.random() > 0.7 ? 'loan' : 'sale',
+          transferWindow: Math.random() > 0.5 ? TRANSFER_WINDOWS.SUMMER : TRANSFER_WINDOWS.WINTER,
+          date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
+          season: '2023/24',
+          contractDuration: 2 + Math.floor(Math.random() * 4),
+          oldClubId: fromClub.id,
+          newClubId: toClub.id,
+          source: 'circular_trading_pattern'
+        });
+      }
+    }
+  }
+
+  // 5. League Bridges Pattern (3+ transfers between different leagues)
+  console.log('🌉 Creating League Bridges pattern...');
+  const leagueBridges = [
+    { 
+      from: clubs.filter(c => c.country === 'Germany'), 
+      to: clubs.filter(c => c.country === 'England'),
+      name: 'Bundesliga-Premier Bridge'
+    },
+    { 
+      from: clubs.filter(c => c.country === 'Spain'), 
+      to: clubs.filter(c => c.country === 'Italy'),
+      name: 'La Liga-Serie A Bridge'
+    },
+    { 
+      from: clubs.filter(c => c.country === 'Brazil'), 
+      to: clubs.filter(c => c.country === 'France'),
+      name: 'Brazil-Ligue 1 Bridge'
+    }
+  ];
+
+  for (const bridge of leagueBridges) {
+    if (bridge.from.length > 0 && bridge.to.length > 0) {
+      // Wähle spezifische Club-Paare für Bridges
+      const fromClub = bridge.from[Math.floor(Math.random() * bridge.from.length)];
+      const toClub = bridge.to[Math.floor(Math.random() * bridge.to.length)];
+      
+      // Erstelle 4-5 Transfers für diese Bridge
+      for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+        const bridgePlayer = players[Math.floor(Math.random() * players.length)];
+        
+        await createTransfer({
+          playerName: `${bridgePlayer.name} Bridge ${i}`,
+          playerNationality: bridgePlayer.nationality,
+          playerPosition: bridgePlayer.position,
+          playerAgeAtTransfer: 21 + Math.floor(Math.random() * 7),
+          marketValueAtTransfer: BigInt(15000000 + Math.random() * 25000000),
+          transferFee: BigInt(12000000 + Math.random() * 23000000),
+          transferType: 'sale',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: new Date(2023, 6, Math.floor(Math.random() * 30) + 1),
+          season: '2023/24',
+          contractDuration: 3 + Math.floor(Math.random() * 3),
+          oldClubId: fromClub.id,
+          newClubId: toClub.id,
+          source: `league_bridge_${bridge.name.toLowerCase().replace(/ /g, '_')}`
+        });
+      }
+    }
+  }
+
+  // 6. Success Stories Pattern (≥75% success rate transfers)
+  console.log('⭐ Creating Success Stories pattern...');
+  const successfulRoutes = [
+    { from: clubs.find(c => c.name === 'AS Monaco'), to: clubs.find(c => c.name === 'Liverpool FC') },
+    { from: clubs.find(c => c.name === 'Borussia Dortmund'), to: clubs.find(c => c.name === 'Manchester City') },
+    { from: clubs.find(c => c.name === 'Sevilla FC'), to: clubs.find(c => c.name === 'Arsenal FC') }
+  ];
+
+  for (const route of successfulRoutes) {
+    if (route.from && route.to) {
+      // Erstelle 4-5 erfolgreiche Transfers
+      for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
+        const successPlayer = players[Math.floor(Math.random() * players.length)];
+        const transferValue = BigInt(20000000 + Math.random() * 30000000);
+        
+        const successTransfer = await createTransfer({
+          playerName: `${successPlayer.name} Success ${i}`,
+          playerNationality: successPlayer.nationality,
+          playerPosition: successPlayer.position,
+          playerAgeAtTransfer: 22 + Math.floor(Math.random() * 6),
+          marketValueAtTransfer: transferValue,
+          transferFee: transferValue,
+          transferType: 'sale',
+          transferWindow: TRANSFER_WINDOWS.SUMMER,
+          date: new Date(2022, 6, Math.floor(Math.random() * 30) + 1), // Älterer Transfer für Bewertung
+          season: '2022/23',
+          contractDuration: 4,
+          oldClubId: route.from.id,
+          newClubId: route.to.id,
+          wasSuccessful: true, // Explizit als erfolgreich markieren
+          source: 'success_story_pattern'
+        });
+
+        // Erstelle erfolgreiche Transfer-Metriken
+        await prisma.transferSuccess.create({
+          data: {
+            transferId: successTransfer.id,
+            performanceRating: 8.0 + Math.random() * 2.0, // 8.0-10.0 Rating
+            marketValueGrowth: BigInt(Math.round(Number(transferValue) * (0.3 + Math.random() * 0.7))), // +30% bis +100%
+            contractExtensions: 1 + Math.floor(Math.random() * 2),
+            trophiesWon: 1 + Math.floor(Math.random() * 3),
+            evaluatedAfterYears: 2,
+            lastEvaluated: new Date()
+          }
+        });
+      }
+    }
+  }
+
   // FIXED: Erstelle Spieler-Karriere-Ketten (gleicher Spieler, mehrere Transfers)
   console.log('📈 Creating player career chains...');
   for (let i = 0; i < 30; i++) {
