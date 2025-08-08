@@ -39,9 +39,8 @@ export const SANKEY_PATTERNS: Pattern[] = [
     strokeColor: '#059669',
     condition: (edge: NetworkEdge) => {
       const youthTransfers = edge.transfers.filter(t => {
-        // Extract age from transfer if available
-        const transferInfo = t as any;
-        return transferInfo.playerAge && transferInfo.playerAge <= 21;
+        // Access playerAge from the transfer data
+        return t.playerAge && t.playerAge <= 21;
       }).length;
       return youthTransfers >= 2;
     }
