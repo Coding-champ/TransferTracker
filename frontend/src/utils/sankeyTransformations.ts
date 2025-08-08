@@ -78,7 +78,11 @@ export const extractCategory = (node: NetworkNode, level: AggregationLevel): str
 /**
  * Aggregates transfers by the specified level
  */
-export const aggregateByLevel = (networkData: NetworkData, level: AggregationLevel): FlowData[] => {
+export const aggregateByLevel = (
+  networkData: NetworkData, 
+  level: AggregationLevel,
+  valueType: 'sum' | 'count' = 'sum'
+): FlowData[] => {
   const flows = new Map<string, FlowData>();
   const nodeMap = new Map(networkData.nodes.map(n => [n.id, n]));
 
@@ -86,7 +90,7 @@ export const aggregateByLevel = (networkData: NetworkData, level: AggregationLev
     const sourceNode = nodeMap.get(typeof edge.source === 'string' ? edge.source : edge.source.id);
     const targetNode = nodeMap.get(typeof edge.target === 'string' ? edge.target : edge.target.id);
 
-    if (!sourceNode || !targetNode || !edge.stats?.totalValue) return;
+    if (!sourceNode || !targetNode) return;
 
     const sourceCategory = extractCategory(sourceNode, level);
     const targetCategory = extractCategory(targetNode, level);
@@ -106,7 +110,13 @@ export const aggregateByLevel = (networkData: NetworkData, level: AggregationLev
     }
 
     const flow = flows.get(flowKey)!;
-    flow.value += edge.stats.totalValue;
+    
+    // Add value based on type: sum of transfer values or count of transfers
+    if (valueType === 'count') {
+      flow.value += edge.transfers.length;
+    } else {
+      flow.value += edge.stats?.totalValue || 0;
+    }
     
     // Add transfer details
     edge.transfers.forEach(transfer => {
@@ -124,8 +134,12 @@ export const aggregateByLevel = (networkData: NetworkData, level: AggregationLev
 /**
  * Creates bidirectional flows (A→B and B→A as separate flows)
  */
-export const createBidirectionalFlows = (networkData: NetworkData, level: AggregationLevel): SankeyTransformResult => {
-  const flows = aggregateByLevel(networkData, level);
+export const createBidirectionalFlows = (
+  networkData: NetworkData, 
+  level: AggregationLevel,
+  valueType: 'sum' | 'count' = 'sum'
+): SankeyTransformResult => {
+  const flows = aggregateByLevel(networkData, level, valueType);
   
   // For bidirectional, we add direction suffix to avoid cycles
   const nodes = new Map<string, SankeyNode>();
@@ -186,8 +200,12 @@ export const createBidirectionalFlows = (networkData: NetworkData, level: Aggreg
 /**
  * Creates net flows (combines A→B and B→A into single net flow)
  */
-export const createNetFlows = (networkData: NetworkData, level: AggregationLevel): SankeyTransformResult => {
-  const flows = aggregateByLevel(networkData, level);
+export const createNetFlows = (
+  networkData: NetworkData, 
+  level: AggregationLevel,
+  valueType: 'sum' | 'count' = 'sum'
+): SankeyTransformResult => {
+  const flows = aggregateByLevel(networkData, level, valueType);
   
   // Aggregate opposing flows
   const netFlows = new Map<string, { source: string; target: string; value: number; }>();
@@ -202,14 +220,15 @@ export const createNetFlows = (networkData: NetworkData, level: AggregationLevel
       const netValue = flow.value - reverse.value;
       
       if (netValue > 0) {
-        // Forward flow dominates
+        // Current flow dominates - remove reverse and add forward
+        netFlows.delete(reverseKey);
         netFlows.set(forwardKey, {
           source: flow.source,
           target: flow.target,
           value: netValue
         });
       } else if (netValue < 0) {
-        // Reverse flow dominates
+        // Reverse flow dominates - keep reverse, update value
         reverse.value = -netValue;
       } else {
         // Flows cancel out, remove reverse
@@ -283,13 +302,14 @@ export const createNetFlows = (networkData: NetworkData, level: AggregationLevel
 export const transformNetworkDataToSankey = (
   networkData: NetworkData, 
   level: AggregationLevel, 
-  flowType: FlowType
+  flowType: FlowType,
+  valueType: 'sum' | 'count' = 'sum'
 ): SankeyTransformResult => {
   try {
     if (flowType === 'bidirectional') {
-      return createBidirectionalFlows(networkData, level);
+      return createBidirectionalFlows(networkData, level, valueType);
     } else {
-      return createNetFlows(networkData, level);
+      return createNetFlows(networkData, level, valueType);
     }
   } catch (error) {
     console.error('Error transforming network data to Sankey:', error);

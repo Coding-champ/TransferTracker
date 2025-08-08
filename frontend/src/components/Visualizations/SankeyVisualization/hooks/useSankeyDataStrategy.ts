@@ -36,13 +36,14 @@ export const useSankeyData = (
       return transformNetworkDataToSankey(
         networkData,
         currentStrategy.aggregationLevel,
-        currentStrategy.flowType
+        currentStrategy.flowType,
+        strategyConfig.customSettings?.valueType || 'sum'
       );
     } catch (error) {
       console.error('Error transforming Sankey data:', error);
       return null;
     }
-  }, [networkData, currentStrategy]);
+  }, [networkData, currentStrategy, strategyConfig.customSettings?.valueType]);
 
   // Create Sankey data
   const sankeyData = useMemo((): SankeyData | null => {
@@ -113,7 +114,8 @@ export const useSankeyData = (
  */
 export const useStrategyPreview = (
   networkData: NetworkData | null,
-  strategy: SankeyStrategy
+  strategy: SankeyStrategy,
+  valueType: 'sum' | 'count' = 'sum'
 ) => {
   return useMemo(() => {
     if (!networkData?.edges || !networkData?.nodes) {
@@ -129,7 +131,8 @@ export const useStrategyPreview = (
       const result = transformNetworkDataToSankey(
         networkData,
         strategy.aggregationLevel,
-        strategy.flowType
+        strategy.flowType,
+        valueType
       );
 
       return {
@@ -148,5 +151,5 @@ export const useStrategyPreview = (
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }, [networkData, strategy]);
+  }, [networkData, strategy, valueType]);
 };

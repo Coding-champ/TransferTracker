@@ -11,8 +11,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows club-to-club transfers as separate incoming and outgoing flows (A→B and B→A separately)',
     aggregationLevel: 'club',
     flowType: 'bidirectional',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'club', 'bidirectional');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'club', 'bidirectional', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -26,8 +26,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows club-to-club transfers as net flows (A↔B combined, showing only net difference)',
     aggregationLevel: 'club',
     flowType: 'net',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'club', 'net');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'club', 'net', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -41,8 +41,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows league-to-league transfers as separate incoming and outgoing flows',
     aggregationLevel: 'league',
     flowType: 'bidirectional',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'league', 'bidirectional');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'league', 'bidirectional', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -56,8 +56,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows league-to-league transfers as net flows (combined bidirectional flows)',
     aggregationLevel: 'league',
     flowType: 'net',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'league', 'net');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'league', 'net', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -71,8 +71,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows country-to-country transfers as separate incoming and outgoing flows',
     aggregationLevel: 'country',
     flowType: 'bidirectional',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'country', 'bidirectional');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'country', 'bidirectional', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -86,8 +86,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows country-to-country transfers as net flows (combined bidirectional flows)',
     aggregationLevel: 'country',
     flowType: 'net',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'country', 'net');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'country', 'net', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -101,8 +101,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows continent-to-continent transfers as separate incoming and outgoing flows',
     aggregationLevel: 'continent',
     flowType: 'bidirectional',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'continent', 'bidirectional');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'continent', 'bidirectional', valueType);
       return {
         nodes: result.nodes,
         links: result.links,
@@ -116,8 +116,8 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
     description: 'Shows continent-to-continent transfers as net flows (combined bidirectional flows)',
     aggregationLevel: 'continent',
     flowType: 'net',
-    transform: (data: NetworkData): SankeyData => {
-      const result = transformNetworkDataToSankey(data, 'continent', 'net');
+    transform: (data: NetworkData, valueType: 'sum' | 'count' = 'sum'): SankeyData => {
+      const result = transformNetworkDataToSankey(data, 'continent', 'net', valueType);
       return {
         nodes: result.nodes,
         links: result.links,

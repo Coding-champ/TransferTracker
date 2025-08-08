@@ -19,7 +19,8 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
     customSettings: {
       minimumFlowValue: undefined,
       showSelfLoops: false,
-      enableFiltering: true
+      enableFiltering: true,
+      valueType: 'sum'
     }
   });
   
@@ -98,35 +99,7 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
         className="absolute top-4 right-4 z-10 w-80"
       />
       
-      {/* Data Summary Panel */}
-      {transformResult && (
-        <div className="absolute top-4 left-4 z-10 bg-white border rounded-lg shadow-sm p-3">
-          <h4 className="font-medium text-gray-900 mb-2">Data Summary</h4>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div className="flex justify-between">
-              <span>Strategy:</span>
-              <span className="font-medium">{currentStrategy.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Nodes:</span>
-              <span className="font-medium">{transformResult.stats.transformedNodeCount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Flows:</span>
-              <span className="font-medium">{transformResult.stats.transformedLinkCount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total Value:</span>
-              <span className="font-medium">€{(transformResult.stats.totalValue / 1000000).toFixed(1)}M</span>
-            </div>
-            {transformResult.stats.hasCycles && (
-              <div className="text-orange-600 text-xs mt-2">
-                ⚠ Circular references detected
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
       
       {/* Main Sankey Chart */}
       <SankeyChart {...chartProps} />

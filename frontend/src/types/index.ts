@@ -426,7 +426,7 @@ export interface SankeyStrategy {
   readonly description: string;
   readonly aggregationLevel: 'club' | 'league' | 'country' | 'continent';
   readonly flowType: 'bidirectional' | 'net';
-  readonly transform: (data: NetworkData) => SankeyData;
+  readonly transform: (data: NetworkData, valueType?: 'sum' | 'count') => SankeyData;
 }
 
 export interface SankeyTransformResult {
@@ -448,6 +448,7 @@ export interface SankeyStrategyConfig {
     readonly minimumFlowValue?: number;
     readonly showSelfLoops?: boolean;
     readonly enableFiltering?: boolean;
+    readonly valueType?: 'sum' | 'count';
   };
 }
 

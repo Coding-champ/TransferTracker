@@ -14,10 +14,11 @@ interface SankeyStrategySelectorProps {
 interface StrategyPreviewProps {
   strategy: SankeyStrategy;
   networkData: NetworkData | null;
+  valueType?: 'sum' | 'count';
 }
 
-const StrategyPreview: React.FC<StrategyPreviewProps> = ({ strategy, networkData }) => {
-  const preview = useStrategyPreview(networkData, strategy);
+const StrategyPreview: React.FC<StrategyPreviewProps> = ({ strategy, networkData, valueType = 'sum' }) => {
+  const preview = useStrategyPreview(networkData, strategy, valueType);
 
   if (!preview.hasData) {
     return (
@@ -38,8 +39,13 @@ const StrategyPreview: React.FC<StrategyPreviewProps> = ({ strategy, networkData
         <span className="font-medium">{preview.linkCount}</span>
       </div>
       <div className="flex justify-between">
-        <span>Total Value:</span>
-        <span className="font-medium">€{(preview.totalValue / 1000000).toFixed(1)}M</span>
+        <span>{valueType === 'count' ? 'Total Count:' : 'Total Value:'}</span>
+        <span className="font-medium">
+          {valueType === 'count' ? 
+            preview.totalValue.toString() : 
+            `€${(preview.totalValue / 1000000).toFixed(1)}M`
+          }
+        </span>
       </div>
       {preview.hasCycles && (
         <div className="text-orange-600 text-xs">
@@ -160,7 +166,7 @@ const SankeyStrategySelector: React.FC<SankeyStrategySelectorProps> = ({
                           </div>
                           {showPreview && (
                             <div className="ml-4 w-32 flex-shrink-0">
-                              <StrategyPreview strategy={strategy} networkData={networkData} />
+                              <StrategyPreview strategy={strategy} networkData={networkData} valueType={currentConfig.customSettings?.valueType} />
                             </div>
                           )}
                         </div>
@@ -177,21 +183,45 @@ const SankeyStrategySelector: React.FC<SankeyStrategySelectorProps> = ({
         <div className="p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700">Settings</h4>
           
+          {/* Value Type Selection */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Display Type
+            </label>
+            <select
+              value={currentConfig.customSettings?.valueType || 'sum'}
+              onChange={(e) => handleCustomSettingChange('valueType', e.target.value as 'sum' | 'count')}
+              className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="sum">Transfer Sum</option>
+              <option value="count">Transfer Count</option>
+            </select>
+          </div>
+          
           {/* Minimum Flow Value */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Minimum Flow Value (€M)
+              {currentConfig.customSettings?.valueType === 'count' ? 'Minimum Transfer Count' : 'Minimum Flow Value (€M)'}
             </label>
             <input
               type="number"
               min="0"
-              step="0.1"
-              value={currentConfig.customSettings?.minimumFlowValue ? (currentConfig.customSettings.minimumFlowValue / 1000000).toFixed(1) : ''}
+              step={currentConfig.customSettings?.valueType === 'count' ? "1" : "0.1"}
+              value={currentConfig.customSettings?.minimumFlowValue ? 
+                (currentConfig.customSettings?.valueType === 'count' ? 
+                  currentConfig.customSettings.minimumFlowValue : 
+                  (currentConfig.customSettings.minimumFlowValue / 1000000).toFixed(1)
+                ) : ''
+              }
               onChange={(e) => {
-                const value = e.target.value ? parseFloat(e.target.value) * 1000000 : undefined;
+                const value = e.target.value ? 
+                  (currentConfig.customSettings?.valueType === 'count' ? 
+                    parseInt(e.target.value) : 
+                    parseFloat(e.target.value) * 1000000
+                  ) : undefined;
                 handleCustomSettingChange('minimumFlowValue', value);
               }}
-              placeholder="No minimum"
+              placeholder={currentConfig.customSettings?.valueType === 'count' ? 'No minimum' : 'No minimum'}
               className="w-full px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -238,7 +268,7 @@ const SankeyStrategySelector: React.FC<SankeyStrategySelectorProps> = ({
             </div>
             {networkData && (
               <div className="mt-2 pt-2 border-t border-gray-200">
-                <StrategyPreview strategy={currentStrategy} networkData={networkData} />
+                <StrategyPreview strategy={currentStrategy} networkData={networkData} valueType={currentConfig.customSettings?.valueType} />
               </div>
             )}
           </div>
