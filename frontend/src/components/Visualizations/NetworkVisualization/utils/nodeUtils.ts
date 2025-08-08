@@ -64,7 +64,7 @@ export const createNodes = (
       }
     });
 
-  // Add performance indicator rings
+  // Add performance indicator rings (dashed borders temporarily commented out)
   nodeGroups.append<SVGCircleElement>('circle')
     .attr('class', 'performance-ring')
     .attr('r', d => {
@@ -79,10 +79,12 @@ export const createNodes = (
       return 'transparent';
     })
     .attr('stroke-width', 2)
-    .attr('stroke-dasharray', '5,3')
+    // .attr('stroke-dasharray', '5,3') // Temporarily commented out dashed borders
     .style('pointer-events', 'none');
 
   // Add pin indicators for fixed nodes
+  // These orange dots indicate which nodes are "pinned" (fixed in position) 
+  // when users click on nodes to prevent them from moving during simulation
   nodeGroups.append('circle')
     .attr('class', 'pin-indicator')
     .attr('r', 3)
@@ -123,7 +125,7 @@ export const createLabels = (
     labelText: node.shortName || node.name.substring(0, 12)
   }));
 
-  // Add main node labels
+  // Add main node labels (temporarily hidden for cleaner visualization)
   const labels = labelGroup.selectAll('.label')
     .data(labelData)
     .enter().append('text')
@@ -135,9 +137,10 @@ export const createLabels = (
     .attr('text-anchor', 'middle')
     .attr('dy', '.35em')
     .style('pointer-events', 'none')
-    .style('font-weight', '500');
+    .style('font-weight', '500')
+    .style('display', 'none'); // Hidden for cleaner visualization
 
-  // Add ROI labels for nodes with ROI data
+  // Add ROI labels for nodes with ROI data (temporarily hidden for cleaner visualization)
   const roiData = showRoi ? 
     nodes.filter(d => d.stats.avgROI !== undefined && d.stats.avgROI !== 0) : [];
   
@@ -152,7 +155,8 @@ export const createLabels = (
     .attr('text-anchor', 'middle')
     .attr('dy', '.35em')
     .style('pointer-events', 'none')
-    .style('font-weight', '600');
+    .style('font-weight', '600')
+    .style('display', 'none'); // Hidden for cleaner visualization
 
   return { labels, roiLabels, labelOffsetY, roiOffsetY };
 };
