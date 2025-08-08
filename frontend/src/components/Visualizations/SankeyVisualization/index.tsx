@@ -1,1 +1,1 @@
-export { default } from './SankeyTest';
+export { default } from './SankeyVisualization';
