@@ -416,7 +416,40 @@ export interface SankeyLink {
 export interface SankeyData {
   readonly nodes: SankeyNode[];
   readonly links: SankeyLink[];
-  readonly groupBy: 'league' | 'continent' | 'position';
+  readonly groupBy: 'club' | 'league' | 'country' | 'continent';
+}
+
+// ========== SANKEY STRATEGY SYSTEM ==========
+export interface SankeyStrategy {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly aggregationLevel: 'club' | 'league' | 'country' | 'continent';
+  readonly flowType: 'bidirectional' | 'net';
+  readonly transform: (data: NetworkData, valueType?: 'sum' | 'count') => SankeyData;
+}
+
+export interface SankeyTransformResult {
+  readonly nodes: SankeyNode[];
+  readonly links: SankeyLink[];
+  readonly stats: {
+    readonly originalNodeCount: number;
+    readonly originalLinkCount: number;
+    readonly transformedNodeCount: number;
+    readonly transformedLinkCount: number;
+    readonly totalValue: number;
+    readonly hasCycles: boolean;
+  };
+}
+
+export interface SankeyStrategyConfig {
+  readonly selectedStrategy: string;
+  readonly customSettings?: {
+    readonly minimumFlowValue?: number;
+    readonly showSelfLoops?: boolean;
+    readonly enableFiltering?: boolean;
+    readonly valueType?: 'sum' | 'count';
+  };
 }
 
 // ========== API PARAMETER TYPES ==========
