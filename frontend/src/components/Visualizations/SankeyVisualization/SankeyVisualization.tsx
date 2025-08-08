@@ -27,10 +27,8 @@ export const SankeyVisualization: React.FC<SankeyVisualizationProps> = ({
   // Get processed Sankey data using the strategy
   const { 
     sankeyData, 
-    transformResult, 
     error, 
-    hasValidData, 
-    currentStrategy 
+    hasValidData
   } = useSankeyData(networkData, strategyConfig);
 
   // Handle strategy configuration changes
