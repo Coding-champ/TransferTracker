@@ -176,24 +176,20 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
           .attr('x2', d => (d.target as any).x)
           .attr('y2', d => (d.target as any).y);
       
-      // Update node and label positions (FIX: correct function calls with proper types)
+      // Update node and label positions (labels kept hidden for cleaner visualization)
       // Update node positions
       nodes.attr('transform', d => `translate(${d.x},${d.y})`);
       
-      // Update label positions based on zoom level
-      const zoomLevel = transformRef.current ? transformRef.current.k : 1;
-      const showLabels = zoomLevel >= 0.5;
-      const showROI = zoomLevel >= 0.7;
-      
+      // Keep labels hidden for cleaner visualization regardless of zoom level
       labels
         .attr('x', d => d.x!)
         .attr('y', d => d.y! + labelOffsetY)
-        .style('display', showLabels ? 'block' : 'none');
+        .style('display', 'none'); // Keep labels hidden for cleaner visualization
       
       roiLabels
         .attr('x', d => d.x!)
         .attr('y', d => d.y! + roiOffsetY)
-        .style('display', showROI ? 'block' : 'none');
+        .style('display', 'none'); // Keep ROI labels hidden for cleaner visualization
     });
     
     // Auto-stop simulation after initial stabilization - FIXED: storing timeout reference
@@ -208,11 +204,9 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
     
     // Function to update label visibility based on zoom level
     function updateLabelVisibility(transform: d3.ZoomTransform) {
-      const zoomLevel = transform.k;
-      const showLabels = zoomLevel >= 0.5;
-      
-      labels.style('display', showLabels ? 'block' : 'none');
-      roiLabels.style('display', zoomLevel >= 0.7 ? 'block' : 'none');
+      // Keep labels hidden for cleaner visualization regardless of zoom level
+      labels.style('display', 'none');
+      roiLabels.style('display', 'none');
     }
     
     // Cleanup function
