@@ -9,6 +9,7 @@ import PlayerFilters from './filters/PlayerFilters';
 import FinancialFilters from './filters/FinancialFilters';
 import PerformanceFilters from './filters/PerformanceFilters';
 import QuickFilterButtons from './components/QuickFilterButtons';
+import { recordFilterBreadcrumb } from '../../utils/telemetry';
 
 /**
  * Props for the FilterPanel component
@@ -90,15 +91,17 @@ const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange })
   // Update parent component when debounced filters change (instead of on every filter change)
   useEffect(() => {
     onFiltersChangeRef.current(debouncedFilters);
+    // Record a compact telemetry breadcrumb (no PII, only counts/flags)
+    recordFilterBreadcrumb(debouncedFilters, 'FilterPanel:debouncedChange');
   }, [debouncedFilters]);
 
   /**
    * Update a specific filter value
    */
-  const updateFilter = useCallback(<K extends keyof FilterState>(
+  const updateFilter = useCallback<<K extends keyof FilterState>(
     key: K,
     value: FilterState[K]
-  ) => {
+  ) => void>((key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value

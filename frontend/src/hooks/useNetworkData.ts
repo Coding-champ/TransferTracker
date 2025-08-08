@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NetworkData, FilterState } from '../types';
 import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
-import { handleError, isApiTimeoutError, isNetworkError, ApiError } from '../utils/errors';
+import { handleError, isApiTimeoutError, isNetworkError, ApiError, isAbortError } from '../utils/errors';
+import { filtersToApiParams } from '../utils';
+import apiService from '../services/api';
+import { RequestCancelledError } from '../services/ApiErrors';
+import { useToast } from '../contexts/ToastContext';
 
 interface UseNetworkDataReturn {
   networkData: NetworkData | null;
@@ -17,97 +21,48 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
   
-  // Cache for preventing duplicate requests
   const requestCacheRef = useRef<Map<string, Promise<any>>>(new Map());
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Memoize query parameters to prevent unnecessary re-fetches
-  const queryParams = useMemo(() => {
-    const params = new URLSearchParams();
-    
-    // Array parameters
-    if (filters.seasons.length > 0) {
-      params.set('seasons', filters.seasons.join(','));
-    }
-    if (filters.leagues.length > 0) {
-      params.set('leagues', filters.leagues.join(','));
-    }
-    if (filters.countries.length > 0) {
-      params.set('countries', filters.countries.join(','));
-    }
-    if (filters.continents.length > 0) {
-      params.set('continents', filters.continents.join(','));
-    }
-    if (filters.transferTypes.length > 0) {
-      params.set('transferTypes', filters.transferTypes.join(','));
-    }
-    if (filters.transferWindows.length > 0) {
-      params.set('transferWindows', filters.transferWindows.join(','));
-    }
-    if (filters.positions.length > 0) {
-      params.set('positions', filters.positions.join(','));
-    }
-    if (filters.nationalities.length > 0) {
-      params.set('nationalities', filters.nationalities.join(','));
-    }
-    if (filters.clubs.length > 0) {
-      params.set('clubs', filters.clubs.join(','));
-    }
-    if (filters.leagueTiers.length > 0) {
-      params.set('leagueTiers', filters.leagueTiers.join(','));
-    }
-    
-    // Numeric parameters
-    if (filters.minTransferFee) {
-      params.set('minTransferFee', filters.minTransferFee.toString());
-    }
-    if (filters.maxTransferFee) {
-      params.set('maxTransferFee', filters.maxTransferFee.toString());
-    }
-    if (filters.minPlayerAge) {
-      params.set('minPlayerAge', filters.minPlayerAge.toString());
-    }
-    if (filters.maxPlayerAge) {
-      params.set('maxPlayerAge', filters.maxPlayerAge.toString());
-    }
-    if (filters.minContractDuration) {
-      params.set('minContractDuration', filters.minContractDuration.toString());
-    }
-    if (filters.maxContractDuration) {
-      params.set('maxContractDuration', filters.maxContractDuration.toString());
-    }
-    if (filters.minROI !== undefined) {
-      params.set('minROI', filters.minROI.toString());
-    }
-    if (filters.maxROI !== undefined) {
-      params.set('maxROI', filters.maxROI.toString());
-    }
-    if (filters.minPerformanceRating !== undefined) {
-      params.set('minPerformanceRating', filters.minPerformanceRating.toString());
-    }
-    if (filters.maxPerformanceRating !== undefined) {
-      params.set('maxPerformanceRating', filters.maxPerformanceRating.toString());
-    }
-    
-    // Boolean parameters
-    if (filters.hasTransferFee) {
-      params.set('hasTransferFee', 'true');
-    }
-    if (filters.excludeLoans) {
-      params.set('excludeLoans', 'true');
-    }
-    if (filters.isLoanToBuy) {
-      params.set('isLoanToBuy', 'true');
-    }
-    if (filters.onlySuccessfulTransfers) {
-      params.set('onlySuccessfulTransfers', 'true');
-    }
-    
-    return params;
-  }, [filters]);
+  const { showToast } = useToast();
 
-  // Stable query string for caching
-  const queryString = useMemo(() => queryParams.toString(), [queryParams]);
+  // Memoize query parameters string for caching
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    const f = filters;
+
+    // Arrays
+    if (f.seasons.length > 0) params.set('seasons', f.seasons.join(','));
+    if (f.leagues.length > 0) params.set('leagues', f.leagues.join(','));
+    if (f.countries.length > 0) params.set('countries', f.countries.join(','));
+    if (f.continents.length > 0) params.set('continents', f.continents.join(','));
+    if (f.transferTypes.length > 0) params.set('transferTypes', f.transferTypes.join(','));
+    if (f.transferWindows.length > 0) params.set('transferWindows', f.transferWindows.join(','));
+    if (f.positions.length > 0) params.set('positions', f.positions.join(','));
+    if (f.nationalities.length > 0) params.set('nationalities', f.nationalities.join(','));
+    if (f.clubs.length > 0) params.set('clubs', f.clubs.join(','));
+    if (f.leagueTiers.length > 0) params.set('leagueTiers', f.leagueTiers.join(','));
+
+    // Numerics
+    if (f.minTransferFee) params.set('minTransferFee', f.minTransferFee.toString());
+    if (f.maxTransferFee) params.set('maxTransferFee', f.maxTransferFee.toString());
+    if (f.minPlayerAge) params.set('minPlayerAge', f.minPlayerAge.toString());
+    if (f.maxPlayerAge) params.set('maxPlayerAge', f.maxPlayerAge.toString());
+    if (f.minContractDuration) params.set('minContractDuration', f.minContractDuration.toString());
+    if (f.maxContractDuration) params.set('maxContractDuration', f.maxContractDuration.toString());
+    if (f.minROI !== undefined) params.set('minROI', f.minROI.toString());
+    if (f.maxROI !== undefined) params.set('maxROI', f.maxROI.toString());
+    if (f.minPerformanceRating !== undefined) params.set('minPerformanceRating', f.minPerformanceRating.toString());
+    if (f.maxPerformanceRating !== undefined) params.set('maxPerformanceRating', f.maxPerformanceRating.toString());
+
+    // Booleans
+    if (f.hasTransferFee) params.set('hasTransferFee', 'true');
+    if (f.excludeLoans) params.set('excludeLoans', 'true');
+    if (f.isLoanToBuy) params.set('isLoanToBuy', 'true');
+    if (f.onlySuccessfulTransfers) params.set('onlySuccessfulTransfers', 'true');
+
+    return params.toString();
+  }, [filters]);
 
   // Fetch data when query parameters change (with debouncing)
   useEffect(() => {
@@ -122,8 +77,7 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           setNetworkData(cachedData);
           setIsStale(false);
           return;
-        } catch (err) {
-          // If cached request failed, remove from cache and continue
+        } catch {
           requestCacheRef.current.delete(cacheKey);
         }
       }
@@ -144,60 +98,36 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
       
       const fetchPromise = (async () => {
         try {
-          console.log('Fetching with enhanced filters:', queryString);
+          const apiParams = filtersToApiParams(filters);
+          const response = await apiService.getNetworkData(apiParams, { signal });
 
-          const response = await fetch(`http://localhost:3001/api/network-data?${queryString}`, {
-            signal
-          });
-          
-          if (signal?.aborted) {
-            throw new Error('Request aborted');
-          }
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            console.log('Enhanced network data received:', {
-              nodes: result.data.nodes.length,
-              edges: result.data.edges.length,
-              totalTransfers: result.data.metadata.totalTransfers,
-              avgROI: result.data.metadata.avgROI,
-              transferSuccessRate: result.data.metadata.transferSuccessRate
-            });
-            
-            // Only update state if component is still mounted and request wasn't aborted
+          if (response.success) {
             if (!signal?.aborted) {
-              setNetworkData(result.data);
+              setNetworkData(response.data);
               setError(null);
             }
-            
-            return result.data;
+            return response.data;
           } else {
-            throw new Error(result.error || 'Failed to fetch network data');
+            throw new Error(response.error || 'Failed to fetch network data');
           }
         } catch (err) {
-          const processedError = handleError(err) as ApiError;
-          
-          if (processedError.name === 'AbortError') {
-            console.log('Request was aborted');
+          // Ignore explicit cancellations
+          if (err instanceof RequestCancelledError || isAbortError(err)) {
             return null;
           }
-          
+
+          const processedError = handleError(err) as ApiError;
           console.error('Network request failed:', processedError);
           
           if (!signal?.aborted) {
-            // Set appropriate error message based on error type
             if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
-              console.log('🔧 Using mock data due to network/timeout error');
               setNetworkData(MOCK_NETWORK_DATA as NetworkData);
-              setError(null); // Clear error when using mock data
+              setError(null);
+              showToast('Network issue detected, using fallback data', { type: 'warning' });
             } else {
               const errorMessage = (processedError as any).message || 'An error occurred';
               setError(errorMessage);
+              showToast(errorMessage, { type: 'error' });
             }
           }
           
@@ -206,34 +136,28 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           if (!signal?.aborted) {
             setLoading(false);
           }
-          // Clean up cache entry
           requestCacheRef.current.delete(cacheKey);
         }
       })();
 
-      // Cache the promise
       requestCacheRef.current.set(cacheKey, fetchPromise);
     }, 300);
     
     return () => {
       clearTimeout(timeoutId);
-      // Cleanup: abort any pending requests
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      // Clear any pending cache entries
       requestCacheRef.current.clear();
     };
-  }, [queryString]); // Only depend on queryString
+  }, [queryString, filters, showToast]);
 
   // Cleanup effect for component unmount
   useEffect(() => {
-    // Capture current refs for cleanup
     const currentController = abortControllerRef.current;
     const currentCache = requestCacheRef.current;
     
     return () => {
-      // Ensure all requests are aborted when component unmounts
       if (currentController) {
         currentController.abort();
       }
@@ -243,22 +167,15 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
 
   // Manual refetch function
   const refetch = useCallback(() => {
-    // Cancel any pending debounced requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
-    // Clear cache
     requestCacheRef.current.clear();
-    
-    // Create new abort controller
     abortControllerRef.current = new AbortController();
-    
-    // Trigger a new fetch by creating a fake queryString change
+
     setIsStale(true);
     setTimeout(() => {
-      // This will trigger the useEffect above
       setError(null);
     }, 0);
   }, []);

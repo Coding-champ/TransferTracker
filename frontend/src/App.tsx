@@ -6,6 +6,7 @@ import { countActiveFilters } from './utils';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
 import { FilterState } from './types';
+import { ToastProvider } from './contexts/ToastContext';
 
 // Main App content component that uses the context
 function AppContent() {
@@ -54,8 +55,8 @@ function AppContent() {
         <ErrorBoundary>
           <TransferDashboard />
         </ErrorBoundary>
-        
-        {/* Enhanced Footer Info */}
+
+        {/* Footer */}
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Enhanced Features & Usage Guide</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
@@ -96,7 +97,6 @@ function AppContent() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-500">
@@ -117,13 +117,15 @@ function AppContent() {
   );
 }
 
-// Main App component wrapped with context provider
+// Main App component wrapped with providers
 function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <ToastProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

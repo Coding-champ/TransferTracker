@@ -424,7 +424,7 @@ async function main() {
           playerNationality: loanPlayer.nationality,
           playerPosition: loanPlayer.position,
           playerAgeAtTransfer: 18 + Math.floor(Math.random() * 8),
-          marketValueAtTransfer: BigInt(2000000 + Math.random() * 8000000),
+          marketValueAtTransfer: BigInt(Math.round(2000000 + Math.random() * 8000000)),
           transferFee: null, // Loans don't have transfer fees
           transferType: 'loan',
           transferWindow: TRANSFER_WINDOWS.SUMMER,
@@ -452,7 +452,7 @@ async function main() {
       // Erstelle 2-3 sehr teure Transfers um >€50M zu erreichen
       for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) {
         const starPlayer = players[Math.floor(Math.random() * players.length)];
-        const transferValue = BigInt(25000000 + Math.random() * 75000000); // €25M - €100M
+        const transferValue = BigInt(Math.round(25000000 + Math.random() * 75000000)); // €25M - €100M
         
         await createTransfer({
           playerName: `${starPlayer.name} Star ${i}`,
@@ -493,8 +493,8 @@ async function main() {
           playerNationality: youngPlayer.nationality,
           playerPosition: youngPlayer.position,
           playerAgeAtTransfer: 16 + Math.floor(Math.random() * 6), // 16-21 Jahre alt
-          marketValueAtTransfer: BigInt(5000000 + Math.random() * 15000000),
-          transferFee: BigInt(3000000 + Math.random() * 12000000),
+          marketValueAtTransfer: BigInt(Math.round(5000000 + Math.random() * 15000000)),
+          transferFee: BigInt(Math.round(3000000 + Math.random() * 12000000)),
           transferType: 'sale',
           transferWindow: TRANSFER_WINDOWS.SUMMER,
           date: new Date(2023, 6, Math.floor(Math.random() * 30) + 1),
@@ -530,8 +530,8 @@ async function main() {
           playerNationality: tradingPlayer.nationality,
           playerPosition: tradingPlayer.position,
           playerAgeAtTransfer: 20 + Math.floor(Math.random() * 8),
-          marketValueAtTransfer: BigInt(10000000 + Math.random() * 20000000),
-          transferFee: BigInt(8000000 + Math.random() * 18000000),
+          marketValueAtTransfer: BigInt(Math.round(10000000 + Math.random() * 20000000)),
+          transferFee: BigInt(Math.round(8000000 + Math.random() * 18000000)),
           transferType: Math.random() > 0.7 ? 'loan' : 'sale',
           transferWindow: Math.random() > 0.5 ? TRANSFER_WINDOWS.SUMMER : TRANSFER_WINDOWS.WINTER,
           date: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
@@ -580,8 +580,8 @@ async function main() {
           playerNationality: bridgePlayer.nationality,
           playerPosition: bridgePlayer.position,
           playerAgeAtTransfer: 21 + Math.floor(Math.random() * 7),
-          marketValueAtTransfer: BigInt(15000000 + Math.random() * 25000000),
-          transferFee: BigInt(12000000 + Math.random() * 23000000),
+          marketValueAtTransfer: BigInt(Math.round(15000000 + Math.random() * 25000000)),
+          transferFee: BigInt(Math.round(12000000 + Math.random() * 23000000)),
           transferType: 'sale',
           transferWindow: TRANSFER_WINDOWS.SUMMER,
           date: new Date(2023, 6, Math.floor(Math.random() * 30) + 1),
@@ -608,7 +608,7 @@ async function main() {
       // Erstelle 4-5 erfolgreiche Transfers
       for (let i = 0; i < 4 + Math.floor(Math.random() * 2); i++) {
         const successPlayer = players[Math.floor(Math.random() * players.length)];
-        const transferValue = BigInt(20000000 + Math.random() * 30000000);
+        const transferValue = BigInt(Math.round(20000000 + Math.random() * 30000000));
         
         const successTransfer = await createTransfer({
           playerName: `${successPlayer.name} Success ${i}`,

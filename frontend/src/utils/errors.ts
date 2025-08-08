@@ -49,6 +49,15 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Detect abort/cancel errors across fetch and axios.
+ */
+export const isAbortError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as any;
+  return e?.name === 'AbortError' || e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED';
+};
+
+/**
  * Utility function to handle and categorize errors
  */
 export const handleError = (error: unknown): ApiError => {
