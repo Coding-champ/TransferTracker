@@ -9,10 +9,10 @@ interface NetworkLegendProps {
 const NetworkLegend: React.FC<NetworkLegendProps> = ({ networkData }) => {
   // Enhanced color scale for leagues
   const colorScale = d3.scaleOrdinal<string>()
-    .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1', 'Eredivisie', 'Primeira Liga', 'Süper Lig'])
-    .range(['#d70909', '#3d0845', '#ff6b35', '#004225', '#1e3a8a', '#ff8c00', '#228b22', '#dc143c']);
+    .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1', 'Primera División', 'Série A', 'MLS', 'Championship', '2. Bundesliga'])
+    .range(['#d70909', '#3d0845', '#ff6b35', '#146441ff', '#1e3a8a','#748ccfff','#4f895fff', '#cf4e84ff', '#696c74ff', '#a30e0eff']);
 
-  const uniqueLeagues = Array.from(new Set(networkData.nodes.map(n => n.league))).slice(0, 8);
+  const uniqueLeagues = Array.from(new Set(networkData.nodes.map(n => n.league))).slice(0, 10);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4">
@@ -41,7 +41,6 @@ const NetworkLegend: React.FC<NetworkLegendProps> = ({ networkData }) => {
         </div>
         <div className="text-xs text-gray-600">• Node size = Transfer activity</div>
         <div className="text-xs text-gray-600">• Edge thickness = Transfer volume</div>
-        <div className="text-xs text-gray-600">• Green edges = High success rate</div>
       </div>
     </div>
   );

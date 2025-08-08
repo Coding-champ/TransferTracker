@@ -92,7 +92,8 @@ export const createNodes = (
     .attr('cy', 0)
     .attr('fill', '#f97316')
     .style('opacity', d => (d.fx !== null && d.fy !== null) ? 1 : 0)
-    .style('pointer-events', 'none');
+    .style('pointer-events', 'none')
+    .style('display', 'none');
 
   return { nodes: nodeGroups, nodeCircles };
 };

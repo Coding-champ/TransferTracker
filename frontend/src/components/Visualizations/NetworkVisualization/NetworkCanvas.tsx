@@ -15,6 +15,7 @@ import { useNetworkInteractions } from './hooks/useNetworkInteractions';
 import { createArrowMarkers, createLinks } from './utils/edgeUtils';
 import { createNodes, createLabels } from './utils/nodeUtils';
 import NetworkControls from './components/NetworkControls';
+import { formatCurrency } from '../../../utils';
 
 interface NetworkCanvasProps {
   networkData: NetworkData;
@@ -130,8 +131,8 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
     
     // Create color scale for nodes
     const colorScale = d3.scaleOrdinal<string>()
-      .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1'])
-      .range(['#d70909', '#3d0845', '#ff6b35', '#004225', '#1e3a8a']);
+      .domain(['Bundesliga', 'Premier League', 'La Liga', 'Serie A', 'Ligue 1', 'Primera División', 'Série A', 'MLS', 'Championship', '2. Bundesliga'])
+      .range(['#d70909', '#3d0845', '#ff6b35', '#146441ff', '#1e3a8a','#748ccfff','#4f895fff', '#cf4e84ff', '#696c74ff', '#a30e0eff']);
     
     // Create nodes
     const { nodes, nodeCircles } = createNodes(zoomGroup, networkData.nodes, {
@@ -153,7 +154,7 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
         // Toggle pin state on click
         toggleNodePin(node);
         
-        // Update pin indicator - FIXED: added proper typing and node type assertion
+        // Update pin indicator
         nodes.selectAll('.pin-indicator')
           .filter((d: any) => d.id === node.id)
           .style('opacity', function(d: any) { 
@@ -177,7 +178,6 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
           .attr('y2', d => (d.target as any).y);
       
       // Update node and label positions (labels kept hidden for cleaner visualization)
-      // Update node positions
       nodes.attr('transform', d => `translate(${d.x},${d.y})`);
       
       // Keep labels hidden for cleaner visualization regardless of zoom level
@@ -322,13 +322,8 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
             <div>Transfers: <span className="font-medium">{hoveredEdge.stats.transferCount}</span></div>
             <div>Value: <span className="font-medium">€{hoveredEdge.stats.totalValue.toLocaleString()}</span></div>
-            {hoveredEdge.stats.transferSuccessRate !== undefined && (
-              <div>
-                Success Rate: <span className={`font-medium ${hoveredEdge.stats.transferSuccessRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
-                  {hoveredEdge.stats.transferSuccessRate}%
-                </span>
-              </div>
-            )}
+            <div>Type: <span className="font-medium">{hoveredEdge.stats.types}</span></div>
+            <div>Window: <span className="font-medium">{hoveredEdge.stats.transferWindows}</span></div>
             {hoveredEdge.stats.avgROI !== undefined && (
               <div>
                 Avg ROI: <span className={`font-medium ${hoveredEdge.stats.avgROI > 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -336,6 +331,17 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
                 </span>
               </div>
             )}
+            {hoveredEdge.transfers.slice(0, 4).map((transfer, idx) => (
+              <div key={idx} className="text-xs bg-gray-50 rounded p-2">
+                <div className="font-medium text-gray-700">{transfer.playerName}</div>
+                <div className="flex justify-between text-gray-500 mt-1">
+                  <span>
+                    {transfer.transferFee ? formatCurrency(transfer.transferFee) : 'Free'}
+                  </span>
+                  <span>{transfer.season}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
