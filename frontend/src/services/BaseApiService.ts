@@ -16,6 +16,7 @@ import {
   ApiTimeoutError,
   ApiNotFoundError
 } from './ApiErrors';
+import { captureException, getTelemetryContext } from '../utils/telemetry';
 
 export abstract class BaseApiService {
   protected cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -28,6 +29,7 @@ export abstract class BaseApiService {
       useCache?: boolean;
       cacheTTL?: number;
       cacheKey?: string;
+      telemetryMeta?: Record<string, any>;
     } = {}
   ): Promise<ApiResponse<T>> {
     const { useCache = false, cacheTTL = 5 * 60 * 1000, cacheKey } = options;
@@ -65,12 +67,39 @@ export abstract class BaseApiService {
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       // Clean up pending request on error
       if (useCache && cacheKey) {
         this.pendingRequests.delete(cacheKey);
       }
-      throw this.handleApiError(error, context);
+
+      const mapped = this.handleApiError(error, context);
+
+      // Capture telemetry for server/network/timeout issues
+      if (
+        mapped instanceof ServerError ||
+        mapped instanceof NetworkError ||
+        mapped instanceof TimeoutError ||
+        mapped instanceof ApiTimeoutError
+      ) {
+        try {
+          const cfg = error?.config || {};
+          const baseCtx = getTelemetryContext();
+          captureException(error, {
+            context,
+            url: cfg?.url,
+            method: cfg?.method,
+            params: cfg?.params,
+            httpStatus: error?.response?.status,
+            ...baseCtx,
+            ...(options.telemetryMeta || {}),
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      throw mapped;
     } finally {
       timer();
     }

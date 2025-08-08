@@ -2,7 +2,7 @@
 // Diese Klasse kapselt alle API-Aufrufe und bietet eine einfache Schnittstelle für die Frontend-Komponenten.
 // Sie enthält Methoden für die Kommunikation mit dem Backend, einschließlich Fehlerbehandlung, Caching und Performance-Optimierung.
 
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 import { 
   ApiResponse, 
   League, 
@@ -18,8 +18,6 @@ import {
 } from '../types';
 import { 
   API_BASE_URL, 
-  buildQueryParams, 
-  filtersToApiParams, 
   debugLog, 
   createPerformanceTimer 
 } from '../utils';
@@ -75,7 +73,8 @@ class ApiService extends BaseApiService {
   async checkHealth(): Promise<ApiResponse<{ message: string; timestamp: string; database: string }>> {
     return this.execute(
       () => apiClient.get('/health'),
-      'Health Check'
+      'Health Check',
+      { telemetryMeta: { feature: 'health' } }
     );
   }
 
@@ -88,7 +87,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/leagues'),
       'Get Leagues',
-      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey: 'leagues' }
+      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey: 'leagues', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -100,7 +99,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/clubs', { params: leagueId ? { leagueId } : {} }),
       'Get Clubs',
-      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey }
+      { useCache: true, cacheTTL: 10 * 60 * 1000, cacheKey, telemetryMeta: { feature: 'filters', leagueId } }
     );
   }
 
@@ -111,7 +110,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/seasons'),
       'Get Seasons',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'seasons' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'seasons', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -122,7 +121,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/transfer-types'),
       'Get Transfer Types',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-types' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-types', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -133,7 +132,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/transfer-windows'),
       'Get Transfer Windows',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-windows' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'transfer-windows', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -144,7 +143,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/positions'),
       'Get Positions',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'positions' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'positions', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -155,7 +154,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/nationalities'),
       'Get Nationalities',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'nationalities' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'nationalities', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -166,7 +165,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/continents'),
       'Get Continents',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'continents' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'continents', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -177,7 +176,7 @@ class ApiService extends BaseApiService {
     return this.execute(
       () => apiClient.get('/league-tiers'),
       'Get League Tiers',
-      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'league-tiers' }
+      { useCache: true, cacheTTL: 5 * 60 * 1000, cacheKey: 'league-tiers', telemetryMeta: { feature: 'filters' } }
     );
   }
 
@@ -186,7 +185,7 @@ class ApiService extends BaseApiService {
   /**
    * Get network data with enhanced filters
    */
-  async getNetworkData(filters: FilterParams = {}): Promise<ApiResponse<NetworkData>> {
+  async getNetworkData(filters: FilterParams = {}, p0: { signal: AbortSignal; }): Promise<ApiResponse<NetworkData>> {
     // Convert filter object to query parameters
     const params: any = {};
     
@@ -204,7 +203,8 @@ class ApiService extends BaseApiService {
     
     return this.execute(
       () => apiClient.get('/network-data', { params }),
-      'Get Network Data'
+      'Get Network Data',
+      { telemetryMeta: { feature: 'network', paramsSample: Object.keys(params).slice(0, 6) } }
     );
   }
 
@@ -214,7 +214,8 @@ class ApiService extends BaseApiService {
   async getTransfers(options: TransferQueryParams = {}): Promise<ApiResponse<PaginatedResponse<Transfer[]>>> {
     return this.execute(
       () => apiClient.get('/transfers', { params: options }),
-      'Get Transfers'
+      'Get Transfers',
+      { telemetryMeta: { feature: 'table' } }
     );
   }
 
@@ -224,7 +225,8 @@ class ApiService extends BaseApiService {
   async getStatistics(): Promise<ApiResponse<Statistics>> {
     return this.execute(
       () => apiClient.get('/statistics'),
-      'Get Statistics'
+      'Get Statistics',
+      { telemetryMeta: { feature: 'statistics' } }
     );
   }
 
@@ -240,7 +242,8 @@ class ApiService extends BaseApiService {
     
     return this.execute(
       () => apiClient.get('/transfer-success-stats', { params }),
-      'Get Success Stats'
+      'Get Success Stats',
+      { telemetryMeta: { feature: 'analytics', clubId, season } }
     );
   }
 
@@ -250,7 +253,8 @@ class ApiService extends BaseApiService {
   async getLoanToBuyAnalytics(): Promise<ApiResponse<LoanToBuyAnalytics>> {
     return this.execute(
       () => apiClient.get('/loan-to-buy-analytics'),
-      'Get Loan-to-Buy Analytics'
+      'Get Loan-to-Buy Analytics',
+      { telemetryMeta: { feature: 'analytics' } }
     );
   }
 
@@ -309,18 +313,6 @@ class ApiService extends BaseApiService {
       timer();
     }
   }
-
-  // ========== CACHING UTILITIES ==========
-  
-  // Note: Basic cache implementation moved to BaseApiService.
-  // The cache property and utility methods are inherited.
-
-  // Note: Cached fetch functionality is now handled by BaseApiService execute method.
-  // Individual cache methods have been replaced by the centralized execute pattern.
-
-  // ========== CACHED METHODS ==========
-  // Note: Caching is now handled at the individual method level using the execute pattern.
-  // Legacy cached methods have been consolidated into the main methods with cache options.
 }
 
 // ========== EXPORT SINGLETON INSTANCE ==========

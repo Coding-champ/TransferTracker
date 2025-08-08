@@ -75,3 +75,14 @@ export class ApiNotFoundError extends NotFoundError {
     this.name = 'ApiNotFoundError';
   }
 }
+
+/**
+ * Explicit error for cancelled requests, to allow silent handling upstream.
+ * Maps Axios ERR_CANCELED / AbortController aborts to a distinct type.
+ */
+export class RequestCancelledError extends ApiError {
+  constructor(message: string = 'Request was cancelled') {
+    super(message);
+    this.name = 'RequestCancelledError';
+  }
+}
