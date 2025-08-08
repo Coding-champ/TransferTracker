@@ -1,6 +1,10 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import * as d3 from 'd3';
 import * as d3Sankey from 'd3-sankey';
+import { NetworkData } from '../../../../types';
+import { NodeTooltip, FlowTooltip, NodeTooltipData, FlowTooltipData } from './SankeyTooltip';
+import { createNodeTooltipData, createFlowTooltipData } from '../utils/tooltipData';
+import { detectPatterns, getPatternById } from '../utils/patterns';
 
 interface SankeyNode {
   id: string;
@@ -28,6 +32,10 @@ interface SankeyChartProps {
   width: number;
   height: number;
   groupingMode: string;
+  networkData?: NetworkData;
+  selectedPattern?: string | null;
+  focusedNode?: string | null;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 const SankeyChart: React.FC<SankeyChartProps> = ({
@@ -35,12 +43,95 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
   links,
   width,
   height,
-  groupingMode
+  groupingMode,
+  networkData,
+  selectedPattern,
+  focusedNode,
+  onNodeClick
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [tooltipData, setTooltipData] = useState<{
+    type: 'node' | 'flow';
+    data: NodeTooltipData | FlowTooltipData;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Detect patterns when networkData changes
+  const getPatternMatches = useCallback(() => {
+    return networkData ? detectPatterns(networkData.edges, networkData.nodes) : new Map();
+  }, [networkData]);
 
   const renderSankey = useCallback(() => {
     if (!svgRef.current || nodes.length === 0 || links.length === 0) return;
+
+    const patternMatches = getPatternMatches();
+    const selectedPatternEdges = selectedPattern ? patternMatches.get(selectedPattern) || [] : [];
+    
+    const getAggregationLevel = (): 'club' | 'league' | 'country' | 'continent' => {
+      return groupingMode.includes('club') ? 'club' :
+             groupingMode.includes('league') ? 'league' :
+             groupingMode.includes('country') ? 'country' :
+             'continent';
+    };
+
+    const shouldHighlightLink = (link: SankeyLink): boolean => {
+      if (!selectedPattern || !networkData) return false;
+      
+      const aggregationLevel = getAggregationLevel();
+      
+      // Check if this link matches the selected pattern
+      return selectedPatternEdges.some((edge: any) => {
+        const sourceNode = networkData.nodes.find(n => {
+          switch (aggregationLevel) {
+            case 'club': return n.name === link.sourceCategory;
+            case 'league': return n.league === link.sourceCategory;
+            case 'country': return n.country === link.sourceCategory;
+            case 'continent': return n.continent === link.sourceCategory;
+            default: return false;
+          }
+        });
+        
+        const targetNode = networkData.nodes.find(n => {
+          switch (aggregationLevel) {
+            case 'club': return n.name === link.targetCategory;
+            case 'league': return n.league === link.targetCategory;
+            case 'country': return n.country === link.targetCategory;
+            case 'continent': return n.continent === link.targetCategory;
+            default: return false;
+          }
+        });
+        
+        if (!sourceNode || !targetNode) return false;
+        
+        const edgeSourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
+        const edgeTargetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
+        
+        return edgeSourceId === sourceNode.id && edgeTargetId === targetNode.id;
+      });
+    };
+
+    const shouldHighlightNode = (node: SankeyNode): boolean => {
+      if (focusedNode) {
+        return node.name === focusedNode;
+      }
+      
+      if (selectedPattern) {
+        // Highlight nodes that are part of the selected pattern
+        const relevantLinks = links.filter(link => shouldHighlightLink(link));
+        return relevantLinks.some(link => 
+          link.sourceCategory === node.name || link.targetCategory === node.name
+        );
+      }
+      
+      return false;
+    };
+
+    const getConnectedLinks = (nodeName: string): SankeyLink[] => {
+      return links.filter(link => 
+        link.sourceCategory === nodeName || link.targetCategory === nodeName
+      );
+    };
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -76,56 +167,92 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       .domain(nodes.map(d => d.name))
       .range(d3.schemeCategory10);
 
+    // Get pattern color if pattern is selected
+    const selectedPatternObj = selectedPattern ? getPatternById(selectedPattern) : null;
+
     // Draw links
-    g.append('g')
-      .selectAll('.link')
+    const linkGroup = g.append('g');
+    
+    linkGroup.selectAll('.link')
       .data(sankeyData.links)
       .enter()
       .append('path')
       .attr('class', 'link')
       .attr('d', d3Sankey.sankeyLinkHorizontal())
-      .attr('stroke', (d: any) => colorScale(d.source.name) as string)
+      .attr('stroke', (d: any) => {
+        const link = links.find(l => 
+          l.sourceCategory === d.source.name && l.targetCategory === d.target.name
+        );
+        if (link && shouldHighlightLink(link) && selectedPatternObj) {
+          return selectedPatternObj.strokeColor;
+        }
+        return colorScale(d.source.name) as string;
+      })
       .attr('stroke-width', (d: any) => Math.max(1, d.width || 0))
-      .attr('stroke-opacity', 0.4)
+      .attr('stroke-opacity', (d: any) => {
+        const link = links.find(l => 
+          l.sourceCategory === d.source.name && l.targetCategory === d.target.name
+        );
+        
+        if (focusedNode) {
+          return (d.source.name === focusedNode || d.target.name === focusedNode) ? 0.8 : 0.1;
+        }
+        
+        if (selectedPattern && link) {
+          return shouldHighlightLink(link) ? 0.9 : 0.15;
+        }
+        
+        return 0.4;
+      })
       .attr('fill', 'none')
+      .style('cursor', 'pointer')
       .on('mouseover', function(event, d: any) {
+        // Highlight this link
         d3.select(this).attr('stroke-opacity', 0.8);
         
-        // Add tooltip
-        const tooltip = svg.append('g')
-          .attr('class', 'link-tooltip')
-          .attr('transform', `translate(${event.offsetX}, ${event.offsetY})`);
-
-        const rect = tooltip.append('rect')
-          .attr('fill', 'black')
-          .attr('opacity', 0.9)
-          .attr('rx', 4);
-
-        const text = tooltip.append('text')
-          .attr('fill', 'white')
-          .attr('font-size', '12px')
-          .attr('text-anchor', 'middle')
-          .attr('y', -5);
-
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 0)
-          .text(`${d.source.name} → ${d.target.name}`);
-
-        text.append('tspan')
-          .attr('x', 0)
-          .attr('dy', 16)
-          .text(`€${(d.value / 1000000).toFixed(1)}M`);
-
-        const bbox = text.node()!.getBBox();
-        rect.attr('x', bbox.x - 4)
-          .attr('y', bbox.y - 4)
-          .attr('width', bbox.width + 8)
-          .attr('height', bbox.height + 8);
+        // Create tooltip data
+        if (networkData) {
+          const tooltipData = createFlowTooltipData(
+            d.source.name,
+            d.target.name,
+            networkData,
+            getAggregationLevel()
+          );
+          
+          if (tooltipData) {
+            setTooltipData({
+              type: 'flow',
+              data: tooltipData,
+              x: event.clientX,
+              y: event.clientY
+            });
+          }
+        }
       })
-      .on('mouseout', function() {
-        d3.select(this).attr('stroke-opacity', 0.4);
-        svg.select('.link-tooltip').remove();
+      .on('mousemove', function(event) {
+        setTooltipData(prev => prev ? {
+          ...prev,
+          x: event.clientX,
+          y: event.clientY
+        } : null);
+      })
+      .on('mouseout', function(event, d: any) {
+        // Reset link opacity based on current state
+        const link = links.find(l => 
+          l.sourceCategory === d.source.name && l.targetCategory === d.target.name
+        );
+        
+        if (focusedNode) {
+          d3.select(this).attr('stroke-opacity', 
+            (d.source.name === focusedNode || d.target.name === focusedNode) ? 0.8 : 0.1
+          );
+        } else if (selectedPattern && link) {
+          d3.select(this).attr('stroke-opacity', shouldHighlightLink(link) ? 0.9 : 0.15);
+        } else {
+          d3.select(this).attr('stroke-opacity', 0.4);
+        }
+        
+        setTooltipData(null);
       });
 
     // Draw nodes
@@ -140,14 +267,98 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     node.append('rect')
       .attr('height', (d: any) => (d.y1 || 0) - (d.y0 || 0))
       .attr('width', sankeyLayout.nodeWidth())
-      .attr('fill', (d: any) => colorScale(d.name) as string)
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1)
-      .on('mouseover', function(event, d: any) {
-        d3.select(this).attr('opacity', 0.8);
+      .attr('fill', (d: any) => {
+        if (shouldHighlightNode(d)) {
+          return selectedPatternObj ? selectedPatternObj.color : '#3B82F6';
+        }
+        return colorScale(d.name) as string;
       })
-      .on('mouseout', function() {
-        d3.select(this).attr('opacity', 1);
+      .attr('stroke', (d: any) => shouldHighlightNode(d) ? '#1D4ED8' : 'white')
+      .attr('stroke-width', (d: any) => shouldHighlightNode(d) ? 2 : 1)
+      .attr('opacity', (d: any) => {
+        if (focusedNode) {
+          return d.name === focusedNode ? 1 : 0.3;
+        }
+        if (selectedPattern) {
+          return shouldHighlightNode(d) ? 1 : 0.4;
+        }
+        return 1;
+      })
+      .style('cursor', 'pointer')
+      .on('mouseover', function(event, d: any) {
+        // Highlight connected links
+        const connectedLinks = getConnectedLinks(d.name);
+        
+        linkGroup.selectAll('.link')
+          .attr('stroke-opacity', function(linkData: any) {
+            const isConnected = connectedLinks.some(cl => 
+              cl.sourceCategory === linkData.source.name && cl.targetCategory === linkData.target.name
+            );
+            return isConnected ? 0.8 : 0.1;
+          });
+        
+        // Highlight this node
+        d3.select(this).attr('opacity', 1).attr('stroke-width', 2);
+        
+        // Create tooltip data
+        if (networkData) {
+          const tooltipData = createNodeTooltipData(
+            d.id,
+            d.name,
+            networkData,
+            getAggregationLevel()
+          );
+          
+          if (tooltipData) {
+            setTooltipData({
+              type: 'node',
+              data: tooltipData,
+              x: event.clientX,
+              y: event.clientY
+            });
+          }
+        }
+      })
+      .on('mousemove', function(event) {
+        setTooltipData(prev => prev ? {
+          ...prev,
+          x: event.clientX,
+          y: event.clientY
+        } : null);
+      })
+      .on('mouseout', function(event, d: any) {
+        // Reset all links to their default state
+        linkGroup.selectAll('.link')
+          .attr('stroke-opacity', function(linkData: any) {
+            const link = links.find(l => 
+              l.sourceCategory === linkData.source.name && l.targetCategory === linkData.target.name
+            );
+            
+            if (focusedNode) {
+              return (linkData.source.name === focusedNode || linkData.target.name === focusedNode) ? 0.8 : 0.1;
+            }
+            
+            if (selectedPattern && link) {
+              return shouldHighlightLink(link) ? 0.9 : 0.15;
+            }
+            
+            return 0.4;
+          });
+        
+        // Reset node appearance
+        const baseOpacity = focusedNode ? (d.name === focusedNode ? 1 : 0.3) :
+                          selectedPattern ? (shouldHighlightNode(d) ? 1 : 0.4) : 1;
+        
+        d3.select(this)
+          .attr('opacity', baseOpacity)
+          .attr('stroke-width', shouldHighlightNode(d) ? 2 : 1);
+        
+        setTooltipData(null);
+      })
+      .on('click', function(event, d: any) {
+        if (onNodeClick) {
+          onNodeClick(d.name);
+        }
       });
 
     // Add node labels
@@ -158,6 +369,15 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       .attr('text-anchor', (d: any) => (d.x0 || 0) < innerWidth / 2 ? 'start' : 'end')
       .attr('font-size', '12px')
       .attr('fill', '#374151')
+      .attr('opacity', (d: any) => {
+        if (focusedNode) {
+          return d.name === focusedNode ? 1 : 0.5;
+        }
+        if (selectedPattern) {
+          return shouldHighlightNode(d) ? 1 : 0.6;
+        }
+        return 1;
+      })
       .text((d: any) => d.name)
       .each(function(d: any) {
         // Wrap long text
@@ -183,7 +403,15 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
         }
       });
 
-    // Add title
+    // Add title with pattern information
+    let titleText = `Transfer Flows by ${groupingMode.charAt(0).toUpperCase() + groupingMode.slice(1)}`;
+    if (selectedPattern && selectedPatternObj) {
+      titleText += ` - ${selectedPatternObj.name}`;
+    }
+    if (focusedNode) {
+      titleText += ` (Focused on ${focusedNode})`;
+    }
+
     svg.append('text')
       .attr('x', width / 2)
       .attr('y', 15)
@@ -191,21 +419,40 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       .attr('font-size', '16px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text(`Transfer Flows by ${groupingMode.charAt(0).toUpperCase() + groupingMode.slice(1)}`);
+      .text(titleText);
 
-  }, [nodes, links, width, height, groupingMode]);
+  }, [nodes, links, width, height, groupingMode, networkData, selectedPattern, focusedNode, onNodeClick, getPatternMatches]);
 
   useEffect(() => {
     renderSankey();
   }, [renderSankey]);
 
   return (
-    <svg
-      ref={svgRef}
-      width={width}
-      height={height}
-      className="border rounded-lg bg-white"
-    />
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        width={width}
+        height={height}
+        className="border rounded-lg bg-white"
+      />
+      
+      {/* Enhanced Tooltips */}
+      {tooltipData && tooltipData.type === 'node' && (
+        <NodeTooltip
+          data={tooltipData.data as NodeTooltipData}
+          x={tooltipData.x}
+          y={tooltipData.y}
+        />
+      )}
+      
+      {tooltipData && tooltipData.type === 'flow' && (
+        <FlowTooltip
+          data={tooltipData.data as FlowTooltipData}
+          x={tooltipData.x}
+          y={tooltipData.y}
+        />
+      )}
+    </div>
   );
 };
 
