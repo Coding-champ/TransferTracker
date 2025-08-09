@@ -1,7 +1,11 @@
 /**
  * Optimized Hooks Index
  * Exports all performance-optimized hooks and monitoring utilities
+ * Phase 3: Added State Management Hooks
  */
+
+// State Management Hooks (Phase 3)
+export * from './state';
 
 // API hooks
 export * from './api';
@@ -48,5 +52,6 @@ export const MIGRATED_HOOKS = {
   useNetworkData: 'useOptimizedNetwork',
   useTransferData: 'useOptimizedCache',
   useFilterData: 'useFilterData', // Enhanced in API hooks
+  useAppContext: 'useGlobalState', // Phase 3 replacement
   // Add more migrations as needed
 } as const;
