@@ -20,7 +20,7 @@ type AppAction =
   | { type: 'CLEAR_SELECTIONS' };
 
 // Define the context interface
-interface AppContextType {
+export interface AppContextType {
   state: AppState;
   setFilters: (filters: FilterState) => void;
   setSelectedNode: (node: NetworkNode | null) => void;
