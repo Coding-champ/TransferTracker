@@ -7,8 +7,61 @@
 // State Management Hooks (Phase 3)
 export * from './state';
 
-// API hooks
-export * from './api';
+// API hooks - explicit exports to avoid naming conflicts
+export { 
+  useApiCall, 
+  useSimpleApiCall,
+  useFilterData,
+  useFilterCategory,
+  useLeagues,
+  useApiQuery,
+  useApiMutation,
+  useApiCache,
+  useNetworkStatus,
+  useRequestDeduplication,
+  useErrorRecovery,
+  useOfflineSync,
+  useRequestQueue,
+  createCacheKey,
+  createRequestConfig,
+  DEFAULT_QUERY_OPTIONS,
+  DEFAULT_MUTATION_OPTIONS,
+  DEFAULT_CACHE_OPTIONS,
+  DEFAULT_NETWORK_OPTIONS,
+  useEnhancedApi,
+  useEnhancedMutation,
+  debugLog,
+  createApiTimer,
+  type ApiCallConfig,
+  type ApiCallState,
+  type UseApiCallReturn,
+  type ApiQueryOptions,
+  type ApiQueryState,
+  type ApiQueryResult,
+  type ApiMutationOptions,
+  type ApiMutationState,
+  type ApiMutationResult,
+  type NetworkCondition,
+  type NetworkStatusOptions,
+  type NetworkStatusState,
+  type ErrorClassification,
+  type ErrorRecoveryOptions,
+  type ErrorRecoveryState,
+  type QueuedRequest,
+  type RequestQueueOptions,
+  type RequestQueueState,
+  type DeduplicationOptions,
+  type DeduplicationState,
+  type OfflineAction,
+  type OfflineSyncOptions,
+  type OfflineSyncState,
+  type RequestConfig,
+  type RequestMethod,
+  type ApiHookConfig
+} from './api';
+
+// Rename the conflicting type to avoid collision with state CacheEntry
+export type { CacheEntry as ApiCacheEntry, CacheOptions, CacheState } from './api';
 
 // Performance hooks  
 export { useMemoizedCallback, useThrottledCallback, useDebouncedCallback } from './performance/useMemoizedCallback';
@@ -21,9 +74,8 @@ export { useThrottle, useThrottledValue, useThrottledAsync } from './performance
 // UI hooks
 export * from './ui';
 
-// Cache hooks
-export { useApiCache } from './cache/useApiCache';
-export { useRequestDeduplication, useStaleWhileRevalidate } from './cache/useRequestDeduplication';
+// Cache hooks (legacy - keeping for backward compatibility)
+export { useRequestDeduplication as useRequestDeduplicationLegacy, useStaleWhileRevalidate } from './cache/useRequestDeduplication';
 
 // Data hooks
 export { useOptimizedNetworkData } from './data/useOptimizedNetworkData';
