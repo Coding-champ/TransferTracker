@@ -141,8 +141,11 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
               <div>
                 <p className="text-sm text-gray-600">Memory Usage</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {formatMemory(perfSummary.memoryUsage)}
+                  {perfSummary.memoryUsage > 0 ? formatMemory(perfSummary.memoryUsage) : 'Collecting...'}
                 </p>
+                {perfSummary.memoryUsage === 0 && (
+                  <p className="text-xs text-gray-400">No memory data yet</p>
+                )}
               </div>
               <div className="text-2xl">💾</div>
             </div>
@@ -470,7 +473,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div key={activeTab} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {renderTabContent()}
         </div>
       </div>
