@@ -376,7 +376,7 @@ class UserInteractionTracker {
   /**
    * Add interaction to collection
    */
-  private addInteraction(interaction: UserInteraction): void {
+  public addInteraction(interaction: UserInteraction): void {
     this.interactions.push(interaction);
 
     // Prevent memory leaks

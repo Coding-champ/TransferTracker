@@ -38,55 +38,106 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
   const [recentErrors, setRecentErrors] = useState<ErrorMetric[]>([]);
   const [forceRender, setForceRender] = useState(0); // Force re-render key
 
-  // Initialize sample data when telemetry is enabled
+  // Initialize sample data immediately when dashboard opens
   useEffect(() => {
     if (!isOpen) return;
     
-    const isTelemetryEnabled = telemetryConfig.isEnabled();
-    if (!isTelemetryEnabled) return;
-    
-    // Generate initial sample data when dashboard opens and telemetry is enabled
+    // Always generate sample data for dashboard demonstration, regardless of telemetry state
     const initSampleData = () => {
-      // Generate minimal sample data for better user experience
-      const components = ['App', 'FilterPanel', 'TransferDashboard', 'DevDashboard'];
+      // Generate realistic sample data for better user experience
+      const components = ['App', 'FilterPanel', 'TransferDashboard', 'DevDashboard', 'NetworkView', 'SankeyChart'];
       
-      for (let i = 0; i < 8; i++) {
+      // Generate render metrics
+      for (let i = 0; i < 15; i++) {
         const component = components[i % components.length];
-        const renderTime = 3 + Math.random() * 12; // 3-15ms realistic
+        const renderTime = 2 + Math.random() * 18; // 2-20ms realistic range
         performanceMetrics.trackRender(component, renderTime);
       }
       
-      // Track some memory usage
+      // Track memory usage samples
       performanceMetrics.trackMemory('Dashboard');
+      performanceMetrics.trackMemory('App');
+      
+      // Track some lifecycle events
+      components.forEach(component => {
+        performanceMetrics.trackLifecycle(component, 'mount');
+      });
+      
+      // Add some sample errors for demonstration
+      const errorMessages = [
+        'Failed to load network data',
+        'Render timeout in FilterPanel',
+        'Network connection lost',
+        'Invalid transfer data format'
+      ];
+      
+      errorMessages.forEach((message, index) => {
+        errorTracker.trackJavaScriptError(
+          new Error(message),
+          components[index % components.length],
+          { 
+            type: 'sample',
+            severity: index % 2 === 0 ? 'medium' : 'low',
+            timestamp: Date.now() - (index * 60000) // Spread errors over time
+          }
+        );
+      });
+      
+      // Add some sample user interactions
+      const sampleInteractions = [
+        {
+          id: `click-${Date.now()}`,
+          timestamp: Date.now() - 30000,
+          type: 'click' as const,
+          target: 'filter-button',
+          componentName: 'FilterPanel',
+          metadata: { type: 'sample' }
+        },
+        {
+          id: `click-${Date.now() + 1}`,
+          timestamp: Date.now() - 20000,
+          type: 'click' as const,
+          target: 'network-node',
+          componentName: 'NetworkView',
+          metadata: { type: 'sample' }
+        },
+        {
+          id: `scroll-${Date.now()}`,
+          timestamp: Date.now() - 10000,
+          type: 'scroll' as const,
+          target: 'dashboard',
+          componentName: 'TransferDashboard',
+          metadata: { type: 'sample', velocity: 150 }
+        }
+      ];
+      
+      // Add sample interactions
+      sampleInteractions.forEach(interaction => {
+        userInteractionTracker.addInteraction(interaction);
+      });
       
       // Force component re-render to display new data
       setForceRender(prev => prev + 1);
     };
     
-    // Small delay to ensure data is available
-    const timeout = setTimeout(initSampleData, 100);
-    return () => clearTimeout(timeout);
+    // Generate sample data immediately
+    initSampleData();
   }, [isOpen]); // Simplified dependency array
 
-  // Update data periodically and on tab changes - only when telemetry is enabled
+  // Update data periodically and on tab changes
   useEffect(() => {
     if (!isOpen) return;
 
     const updateData = () => {
       try {
-        // Always get the latest data regardless of telemetry state
+        // Always get the latest data
         setPerfSummary(performanceMetrics.getSummary());
         setErrorStats(errorTracker.getErrorStats());
         setInteractionStats(userInteractionTracker.getInteractionStats());
         
-        // Only get detailed metrics if telemetry is enabled
-        if (telemetryConfig.isEnabled()) {
-          setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
-          setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
-        } else {
-          setRenderMetrics([]);
-          setRecentErrors([]);
-        }
+        // Always get detailed metrics for dashboard display
+        setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
+        setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
       } catch (error) {
         console.error('Error updating dashboard data:', error);
       }
@@ -96,7 +147,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
     updateData();
     
     // Only set interval if dashboard is open - reduce frequency to save CPU
-    const interval = setInterval(updateData, 5000); // 5 seconds instead of 2
+    const interval = setInterval(updateData, 5000); // 5 seconds
 
     return () => clearInterval(interval);
   }, [isOpen, activeTab, forceRender]); // Include forceRender to trigger updates
@@ -472,7 +523,28 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Performance Dashboard</h2>
+            <div className="flex items-center space-x-4">
+              <h2 className="text-xl font-semibold text-gray-900">Performance Dashboard</h2>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${telemetryConfig.isEnabled() ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-sm text-gray-600">
+                  {telemetryConfig.isEnabled() ? 'Live Data' : 'Demo Data'}
+                </span>
+                <button
+                  onClick={() => {
+                    if (telemetryConfig.isEnabled()) {
+                      telemetryConfig.disable();
+                    } else {
+                      telemetryConfig.enable();
+                    }
+                    setForceRender(prev => prev + 1);
+                  }}
+                  className="ml-2 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                >
+                  {telemetryConfig.isEnabled() ? 'Disable' : 'Enable'} Telemetry
+                </button>
+              </div>
+            </div>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-xl font-bold"
@@ -506,8 +578,10 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Content */}
-        <div key={activeTab} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          {renderTabContent()}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div key={`${activeTab}-${forceRender}`}>
+            {renderTabContent()}
+          </div>
         </div>
       </div>
     </div>

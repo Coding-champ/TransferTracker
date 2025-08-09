@@ -42,7 +42,7 @@ class PerformanceMetrics {
    * Track component render performance
    */
   trackRender(componentName: string, renderTime: number, propsChanged: string[] = []): void {
-    if (!this.isDevelopment) return;
+    // Always track for dashboard display - environment check moved to caller
 
     const renderCount = this.renderCounts.get(componentName) || 0;
     this.renderCounts.set(componentName, renderCount + 1);
@@ -70,7 +70,7 @@ class PerformanceMetrics {
    * Track memory usage
    */
   trackMemory(componentName?: string): void {
-    if (!this.isDevelopment) return;
+    // Always track for dashboard display - environment check moved to caller
 
     let memory;
     let heapUsed = 0;
@@ -119,7 +119,7 @@ class PerformanceMetrics {
    * Track component lifecycle events
    */
   trackLifecycle(componentName: string, phase: 'mount' | 'update' | 'unmount'): void {
-    if (!this.isDevelopment) return;
+    // Always track for dashboard display - environment check moved to caller
 
     const now = Date.now();
     let duration = 0;

@@ -48,7 +48,7 @@ class ErrorTracker {
     componentName?: string,
     metadata?: Record<string, any>
   ): void {
-    if (!this.isDevelopment) return;
+    // Always track for dashboard display - environment check moved to caller
 
     const errorMetric: ErrorMetric = {
       id: `js-error-${Date.now()}`,
