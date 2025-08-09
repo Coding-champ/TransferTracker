@@ -85,9 +85,11 @@ export const useZoomControls = (svgRef: React.RefObject<SVGSVGElement>) => {
    * Clean up zoom behavior when component unmounts
    */
   useEffect(() => {
+    const currentSvg = svgRef.current;
+    const currentZoom = zoomRef.current;
+    
     return () => {
-      const currentSvg = svgRef.current;
-      if (currentSvg && zoomRef.current) {
+      if (currentSvg && currentZoom) {
         const svg = d3.select(currentSvg);
         svg.on('.zoom', null);
       }

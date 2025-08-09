@@ -211,14 +211,14 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({
     
     // Cleanup function
     return () => {
-      const currentSimulation = simulationRef.current;
-      if (currentSimulation) {
-        currentSimulation.stop();
+      if (simulation) {
+        simulation.stop();
       }
       
       // Clean up timeout on unmount
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      const currentTimeout = timeoutRef.current;
+      if (currentTimeout) {
+        clearTimeout(currentTimeout);
         timeoutRef.current = null;
       }
     };

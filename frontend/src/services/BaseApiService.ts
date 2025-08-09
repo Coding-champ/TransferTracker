@@ -8,7 +8,6 @@ import {
   ApiError,
   NetworkError,
   TimeoutError,
-  NotFoundError,
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,

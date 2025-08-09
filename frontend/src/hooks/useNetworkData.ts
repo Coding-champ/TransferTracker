@@ -67,18 +67,19 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
   // Fetch data when query parameters change (with debouncing)
   useEffect(() => {
     setIsStale(true);
+    const currentCache = requestCacheRef.current;
     
     const timeoutId = setTimeout(async () => {
       // Check cache first to prevent duplicate requests
       const cacheKey = queryString;
-      if (requestCacheRef.current.has(cacheKey)) {
+      if (currentCache.has(cacheKey)) {
         try {
-          const cachedData = await requestCacheRef.current.get(cacheKey)!;
+          const cachedData = await currentCache.get(cacheKey)!;
           setNetworkData(cachedData);
           setIsStale(false);
           return;
         } catch {
-          requestCacheRef.current.delete(cacheKey);
+          currentCache.delete(cacheKey);
         }
       }
 
@@ -136,11 +137,11 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           if (!signal?.aborted) {
             setLoading(false);
           }
-          requestCacheRef.current.delete(cacheKey);
+          currentCache.delete(cacheKey);
         }
       })();
 
-      requestCacheRef.current.set(cacheKey, fetchPromise);
+      currentCache.set(cacheKey, fetchPromise);
     }, 300);
     
     return () => {
@@ -148,7 +149,7 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      requestCacheRef.current.clear();
+      currentCache.clear();
     };
   }, [queryString, filters, showToast]);
 
