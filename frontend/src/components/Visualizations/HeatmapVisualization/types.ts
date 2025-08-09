@@ -1,4 +1,4 @@
-import { NetworkData, FilterState } from '../../types/index';
+import { NetworkData, FilterState } from '../../../types/index';
 
 export interface HeatmapCell {
   source: string;
