@@ -225,11 +225,15 @@ export const useMemoryMonitor = (
     warningThreshold
   ]);
 
-  // Automatic monitoring
+  // Automatic monitoring - only when telemetry is enabled
   useEffect(() => {
-    if (!enabled || !telemetryConfig.isEnabled()) return;
+    if (!enabled) return;
+
+    // Only take initial snapshot and start monitoring when telemetry is enabled
+    if (!telemetryConfig.isEnabled()) return;
 
     const intervalId = setInterval(() => {
+      // Double-check telemetry state before expensive operations
       if (telemetryConfig.isEnabled()) {
         takeSnapshot('auto');
       }
@@ -239,7 +243,7 @@ export const useMemoryMonitor = (
     takeSnapshot('initial');
 
     return () => clearInterval(intervalId);
-  }, [enabled, interval, takeSnapshot]);
+  }, [enabled, interval, takeSnapshot]); // Keep dependencies for proper cleanup
 
   // Cleanup on unmount
   useEffect(() => {

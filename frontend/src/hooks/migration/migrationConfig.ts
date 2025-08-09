@@ -50,10 +50,10 @@ export interface GlobalMigrationConfig {
 }
 
 /**
- * Default migration configuration
+ * Default migration configuration - DISABLED by default for zero CPU overhead
  */
 export const DEFAULT_MIGRATION_CONFIG: GlobalMigrationConfig = {
-  enabled: process.env.NODE_ENV === 'development',
+  enabled: false, // Disabled by default to prevent CPU usage
   environment: process.env.NODE_ENV as 'development' | 'staging' | 'production',
   defaultStrategy: {
     type: 'gradual',
@@ -61,12 +61,12 @@ export const DEFAULT_MIGRATION_CONFIG: GlobalMigrationConfig = {
   },
   components: {},
   monitoring: {
-    collectMetrics: true,
-    sampleRate: 1.0,
-    reportingInterval: 30000 // 30 seconds
+    collectMetrics: false, // Disabled by default
+    sampleRate: 0.1, // Reduced sample rate
+    reportingInterval: 60000 // Increased to 60 seconds
   },
   safety: {
-    maxConcurrentMigrations: 3,
+    maxConcurrentMigrations: 1, // Reduced concurrent migrations
     automaticRollback: true,
     rollbackThreshold: {
       errorRate: 0.05, // 5% error rate
@@ -106,7 +106,7 @@ export const MIGRATION_STRATEGIES = {
 } as const;
 
 /**
- * Component-specific migration configurations
+ * Component-specific migration configurations - DISABLED by default
  */
 export const COMPONENT_MIGRATIONS: Record<string, ComponentMigrationConfig> = {
   'FilterPanel': {
@@ -114,7 +114,7 @@ export const COMPONENT_MIGRATIONS: Record<string, ComponentMigrationConfig> = {
     oldHook: 'useNetworkData',
     newHook: 'useOptimizedNetwork',
     strategy: MIGRATION_STRATEGIES.SAFE_GRADUAL,
-    enabled: true,
+    enabled: false, // Disabled by default
     rollbackOnFailure: true,
     performanceThresholds: {
       maxRenderTime: 50, // 50ms max render time
@@ -132,7 +132,7 @@ export const COMPONENT_MIGRATIONS: Record<string, ComponentMigrationConfig> = {
     oldHook: 'useNetworkData',
     newHook: 'useOptimizedNetwork',
     strategy: MIGRATION_STRATEGIES.CANARY,
-    enabled: true,
+    enabled: false, // Disabled by default
     rollbackOnFailure: true,
     performanceThresholds: {
       maxRenderTime: 100, // 100ms for complex visualization
@@ -258,6 +258,16 @@ export class MigrationConfigManager {
   }
 
   /**
+   * Update global configuration
+   */
+  updateGlobalConfig(updates: Partial<GlobalMigrationConfig>): void {
+    this.config = {
+      ...this.config,
+      ...updates
+    };
+  }
+
+  /**
    * Get global configuration
    */
   getGlobalConfig(): GlobalMigrationConfig {
@@ -342,7 +352,7 @@ export class MigrationConfigManager {
 // Singleton instance
 export const migrationConfig = new MigrationConfigManager();
 
-// Development-only global access
+// Development-only global access - only when explicitly enabled
 if (process.env.NODE_ENV === 'development') {
   (window as any).migrationConfig = migrationConfig;
   
@@ -360,10 +370,16 @@ if (process.env.NODE_ENV === 'development') {
     setUserSegment: (segments: string[]) => {
       localStorage.setItem('userSegments', JSON.stringify(segments));
     },
-    getActiveMigrations: () => migrationConfig.getActiveMigrations()
+    getActiveMigrations: () => migrationConfig.getActiveMigrations(),
+    enableMigrationSystem: () => {
+      migrationConfig.updateGlobalConfig({ enabled: true });
+      console.log('🔄 Migration system enabled');
+    }
   };
 
-  console.log('🔄 Migration configuration available:');
-  console.log('- window.migrationConfig - Configuration manager');
-  console.log('- window.migrationHelpers - Testing utilities');
+  // Only log when migrations are explicitly enabled to avoid startup overhead
+  // console.log('🔄 Migration configuration available:');
+  // console.log('- window.migrationConfig - Configuration manager');
+  // console.log('- window.migrationHelpers - Testing utilities');
+  // console.log('- window.migrationHelpers.enableMigrationSystem() - Enable migration system');
 }

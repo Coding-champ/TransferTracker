@@ -4,6 +4,7 @@ import { formatCurrency, validateFilterCombination } from '../../utils';
 import { useFilterData } from './hooks/useFilterData';
 import { useDebounce } from '../../hooks/useDebounce';
 import { usePerformanceMetrics } from '../../hooks/performance/usePerformanceMetrics';
+import { telemetryConfig } from '../../utils/telemetry/config';
 import BasicFilters from './filters/BasicFilters';
 import GeographicFilters from './filters/GeographicFilters';
 import PlayerFilters from './filters/PlayerFilters';
@@ -26,8 +27,10 @@ interface FilterPanelProps {
  * Optimized with React.memo and memoized callbacks for better performance
  */
 const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange }) => {
-  // Performance tracking
-  usePerformanceMetrics('FilterPanel', { onFiltersChange });
+  // Performance tracking - only when telemetry is enabled
+  usePerformanceMetrics('FilterPanel', { onFiltersChange }, { 
+    enabled: telemetryConfig.isEnabled() 
+  });
   
   // Memoize the initial filter state to prevent recreation
   const initialFilters = useMemo<FilterState>(() => ({

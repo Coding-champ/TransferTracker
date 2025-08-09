@@ -183,13 +183,18 @@ export const useGlobalRenderStats = () => {
 
     updateStats();
     
-    // Only start interval when telemetry is enabled
+    // Only start interval when telemetry is enabled - check initial state
     if (!telemetryConfig.isEnabled()) return;
     
-    const interval = setInterval(updateStats, 5000); // Update every 5 seconds only when enabled
+    const interval = setInterval(() => {
+      // Double-check before updating to prevent unnecessary work
+      if (telemetryConfig.isEnabled()) {
+        updateStats();
+      }
+    }, 10000); // Increased to 10 seconds and only when enabled
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Remove dependencies to prevent interval recreation
 
   return stats;
 };

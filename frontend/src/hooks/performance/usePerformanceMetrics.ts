@@ -77,16 +77,16 @@ export const usePerformanceMetrics = (
   const updateCountRef = useRef(0);
   const alertsRef = useRef<PerformanceAlert[]>([]);
 
-  // Use existing hooks
+  // Use existing hooks only when telemetry is enabled
   const renderStats = useRenderTracker(
     componentName, 
     props, 
-    { enabled: enabled && trackRenders }
+    { enabled: enabled && trackRenders && telemetryConfig.isEnabled() }
   );
   
   const memoryStats = useMemoryMonitor(
     componentName, 
-    { enabled: enabled && trackMemory }
+    { enabled: enabled && trackMemory && telemetryConfig.isEnabled() }
   );
 
   const [performanceMetrics, setPerformanceMetrics] = useState<ComponentPerformanceMetrics>({
@@ -349,7 +349,12 @@ export const useGlobalPerformanceStats = () => {
     // Only start interval if telemetry is enabled
     if (!telemetryConfig.isEnabled()) return;
     
-    const interval = setInterval(updateStats, 10000); // Update every 10 seconds only when enabled
+    const interval = setInterval(() => {
+      // Double-check before running expensive operations
+      if (telemetryConfig.isEnabled()) {
+        updateStats();
+      }
+    }, 10000); // Update every 10 seconds only when enabled
 
     return () => clearInterval(interval);
   }, []);

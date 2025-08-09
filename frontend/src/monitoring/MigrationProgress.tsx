@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { migrationConfig, type ComponentMigrationConfig } from '../hooks/migration/migrationConfig';
 import { performanceMetrics } from '../utils/telemetry/performanceMetrics';
 import { errorTracker } from '../utils/telemetry/errorTracking';
+import { telemetryConfig } from '../utils/telemetry/config';
 
 interface MigrationProgressProps {
   className?: string;
@@ -30,7 +31,22 @@ export const MigrationProgress: React.FC<MigrationProgressProps> = ({ className 
 
   useEffect(() => {
     const updateMigrationStatus = () => {
+      // Only run when migration system is globally enabled AND telemetry is enabled
+      if (!migrationConfig.getGlobalConfig().enabled || !telemetryConfig.isEnabled()) {
+        setMigrations([]);
+        setGlobalProgress(0);
+        return;
+      }
+
       const activeMigrations = migrationConfig.getActiveMigrations();
+      
+      // If no active migrations, don't do expensive calculations
+      if (activeMigrations.length === 0) {
+        setMigrations([]);
+        setGlobalProgress(0);
+        return;
+      }
+
       const migrationStatuses = activeMigrations.map(config => {
         // Calculate rollout progress based on strategy
         let rolloutProgress = 0;
@@ -79,10 +95,21 @@ export const MigrationProgress: React.FC<MigrationProgressProps> = ({ className 
     };
 
     updateMigrationStatus();
-    const interval = setInterval(updateMigrationStatus, 5000);
+    
+    // Only start interval when both migration system and telemetry are enabled
+    if (!migrationConfig.getGlobalConfig().enabled || !telemetryConfig.isEnabled()) {
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      // Double-check before running expensive operations
+      if (migrationConfig.getGlobalConfig().enabled && telemetryConfig.isEnabled()) {
+        updateMigrationStatus();
+      }
+    }, 10000); // Increased to 10 seconds and only when explicitly enabled
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Remove dependencies to prevent frequent re-creation
 
   const getRecommendationColor = (recommendation: MigrationStatus['recommendation']) => {
     switch (recommendation) {
