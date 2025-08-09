@@ -21,7 +21,7 @@ import {
   debugLog, 
   createPerformanceTimer 
 } from '../utils';
-import { BaseApiService } from './BaseApiService';
+import { BaseApiService } from './base/BaseApiService';
 
 // Create axios instance with default config
 const apiClient = axios.create({

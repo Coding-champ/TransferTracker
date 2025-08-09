@@ -2,13 +2,12 @@
 // This class provides common API patterns including caching, error handling, and performance monitoring.
 
 import { AxiosResponse } from 'axios';
-import { ApiResponse } from '../types';
-import { createPerformanceTimer, debugLog } from '../utils';
+import { ApiResponse } from '../../types';
+import { createPerformanceTimer, debugLog } from '../../utils';
 import {
   ApiError,
   NetworkError,
   TimeoutError,
-  NotFoundError,
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,
@@ -16,7 +15,7 @@ import {
   ApiTimeoutError,
   ApiNotFoundError
 } from './ApiErrors';
-import { captureException, getTelemetryContext } from '../utils/telemetry';
+import { captureException, getTelemetryContext } from '../../utils/telemetry';
 
 export abstract class BaseApiService {
   protected cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
