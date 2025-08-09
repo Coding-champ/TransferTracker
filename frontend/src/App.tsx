@@ -7,6 +7,15 @@ import { AppProvider, useAppContext } from './contexts/AppContext';
 import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
 import { FilterState } from './types';
 import { ToastProvider } from './contexts/ToastContext';
+import { MonitoringProvider } from './monitoring';
+
+// Development-only performance tracking
+if (process.env.NODE_ENV === 'development') {
+  // Initialize telemetry system
+  import('./utils/telemetry').then((telemetryModule) => {
+    telemetryModule.telemetry.init();
+  });
+}
 
 // Main App content component that uses the context
 function AppContent() {
@@ -109,6 +118,9 @@ function AppContent() {
               <span>📊 Real-time Visualization</span>
               <span>🔍 Interactive Exploration</span>
               <span>💡 Performance Insights</span>
+              {process.env.NODE_ENV === 'development' && (
+                <span className="text-blue-600">🔧 Dev: Ctrl+Shift+D for Performance Dashboard</span>
+              )}
             </div>
           </div>
         </div>
@@ -123,7 +135,9 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AppProvider>
-          <AppContent />
+          <MonitoringProvider>
+            <AppContent />
+          </MonitoringProvider>
         </AppProvider>
       </ToastProvider>
     </ErrorBoundary>
