@@ -53,7 +53,7 @@ interface MonitoringProviderProps {
 
 export const MonitoringProvider: React.FC<MonitoringProviderProps> = ({
   children,
-  enableOverlay = process.env.NODE_ENV === 'development',
+  enableOverlay = false, // Disabled by default - only dashboard needed
   enableDashboard = process.env.NODE_ENV === 'development',
   overlayPosition = 'top-right'
 }) => {

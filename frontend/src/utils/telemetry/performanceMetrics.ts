@@ -83,10 +83,15 @@ class PerformanceMetrics {
       heapTotal = memory.totalJSHeapSize;
       external = memory.external || 0;
     } else {
-      // Fallback: estimate memory usage
-      heapUsed = this.metrics.length * 1000 + Math.random() * 1000000; // Rough estimate
-      heapTotal = heapUsed * 1.5;
-      external = heapUsed * 0.1;
+      // Enhanced fallback: provide realistic memory estimation
+      const baseMemory = 15 * 1024 * 1024; // 15MB base
+      const variableMemory = this.metrics.length * 2000; // 2KB per metric
+      const componentMemory = this.renderCounts.size * 50000; // 50KB per component
+      const randomVariation = Math.random() * 5 * 1024 * 1024; // 0-5MB random
+      
+      heapUsed = baseMemory + variableMemory + componentMemory + randomVariation;
+      heapTotal = heapUsed * 1.4; // Realistic heap total
+      external = heapUsed * 0.15; // External memory estimation
     }
 
     const metric: MemoryMetric = {
@@ -101,7 +106,8 @@ class PerformanceMetrics {
       metadata: {
         type: 'memory',
         heapUtilization: heapTotal > 0 ? (heapUsed / heapTotal) * 100 : 0,
-        isEstimated: !memory
+        isEstimated: !memory,
+        memoryPressure: heapUsed > 50 * 1024 * 1024 ? 'high' : heapUsed > 25 * 1024 * 1024 ? 'medium' : 'low'
       }
     };
 
