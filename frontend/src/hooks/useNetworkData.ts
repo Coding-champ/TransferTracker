@@ -4,7 +4,7 @@ import { MOCK_NETWORK_DATA } from '../data/mockNetworkData';
 import { handleError, isApiTimeoutError, isNetworkError, ApiError, isAbortError } from '../utils/errors';
 import { filtersToApiParams } from '../utils';
 import apiService from '../services/api';
-import { RequestCancelledError } from '../services/ApiErrors';
+import { RequestCancelledError } from '../services/base/ApiErrors';
 import { useToast } from '../contexts/ToastContext';
 
 interface UseNetworkDataReturn {

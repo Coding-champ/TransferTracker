@@ -1,6 +1,6 @@
-import { BaseApiService } from '../BaseApiService';
+import { BaseApiService } from '../base/BaseApiService';
 import { ApiResponse } from '../../types';
-import { ApiError, NetworkError, TimeoutError, NotFoundError, ApiTimeoutError, ApiNotFoundError } from '../ApiErrors';
+import { ApiError, NetworkError, TimeoutError, ApiTimeoutError, ApiNotFoundError } from '../base/ApiErrors';
 import axios, { AxiosResponse } from 'axios';
 import { createPerformanceTimer } from '../../utils';
 
