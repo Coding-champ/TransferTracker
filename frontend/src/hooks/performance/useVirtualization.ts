@@ -172,7 +172,7 @@ export const useVirtualization = <T = any>(
     const totalHeight = getTotalHeight();
     const { startIndex, endIndex } = calculateVisibleRange(scrollTop, containerHeight);
 
-    const visibleItems = [];
+    const visibleItems: Array<{ index: number; data: T }> = [];
     for (let i = startIndex; i <= endIndex; i++) {
       if (i < items.length) {
         visibleItems.push({
@@ -195,12 +195,7 @@ export const useVirtualization = <T = any>(
     // Track performance metrics
     if (telemetryConfig.isEnabled()) {
       const visibleCount = endIndex - startIndex + 1;
-      performanceMetrics.trackEvent('virtualization_scroll', {
-        scrollTop,
-        visibleCount,
-        totalItems: items.length,
-        renderRatio: visibleCount / items.length
-      });
+      performanceMetrics.trackRender('Virtualization', scrollTop, [`visible:${visibleCount}`, `total:${items.length}`]);
 
       // Alert if rendering too many items
       if (visibleCount > 50 && onThresholdExceeded) {
@@ -359,11 +354,13 @@ export const useWindowVirtualization = <T = any>(
 
   // Check if we need to load more items
   useEffect(() => {
-    const { endIndex } = virtualization;
-    if (endIndex >= items.length - 5 && hasMore) {
+    const lastVisibleIndex = virtualization.visibleItems.length > 0 
+      ? virtualization.visibleItems[virtualization.visibleItems.length - 1].index 
+      : 0;
+    if (lastVisibleIndex >= items.length - 5 && hasMore) {
       loadMore();
     }
-  }, [virtualization, items.length, hasMore, loadMore]);
+  }, [virtualization.visibleItems, items.length, hasMore, loadMore]);
 
   return {
     ...virtualization,

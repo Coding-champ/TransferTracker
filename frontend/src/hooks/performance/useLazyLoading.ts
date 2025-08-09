@@ -119,11 +119,8 @@ export const useLazyLoading = <P extends object = {}>(
           // Track successful loading in telemetry
           if (telemetryConfig.isEnabled()) {
             const loadTime = performance.now() - loadStartTime;
-            performanceMetrics.trackEvent('lazy_loading_success', {
-              loadTime,
-              component: Component.displayName || Component.name || 'Unknown',
-              retryCount: state.retryCount
-            });
+            // Use the existing telemetry system
+            performanceMetrics.trackRender(Component.displayName || Component.name || 'Unknown', loadTime, ['lazy_loaded']);
 
             // Alert if loading took too long
             if (loadTime > 3000 && onThresholdExceeded) {
@@ -146,11 +143,7 @@ export const useLazyLoading = <P extends object = {}>(
           
           // Track failed loading attempt
           if (telemetryConfig.isEnabled()) {
-            performanceMetrics.trackEvent('lazy_loading_error', {
-              error: loadError.message,
-              retryCount: newRetryCount,
-              component: 'Unknown'
-            });
+            performanceMetrics.trackRender('LazyLoading', 0, [`error:${loadError.message}`]);
 
             // Create alert for repeated failures
             if (newRetryCount >= retryAttempts && onAlert) {
@@ -263,12 +256,8 @@ export const useLazyLoading = <P extends object = {}>(
     };
   }
 
-  // Create lazy component wrapper
-  const LazyComponent: ComponentType<P> | null = componentRef.current ? 
-    React.memo((props: P) => {
-      if (!componentRef.current) return null;
-      return React.createElement(componentRef.current, props);
-    }) : null;
+  // Create lazy component wrapper  
+  const LazyComponent = componentRef.current;
 
   return {
     LazyComponent,
@@ -288,48 +277,31 @@ export function withLazyLoading<P extends object>(
   componentLoader: () => Promise<{ default: ComponentType<P> } | ComponentType<P>>,
   options: UseLazyLoadingOptions = {}
 ): ComponentType<P> {
-  const LazyLoadedComponent: ComponentType<P> = (props: P) => {
+  const LazyLoadedComponent = (props: P) => {
     const { LazyComponent, isLoading, error } = useLazyLoading(componentLoader, options);
 
     if (error) {
       return React.createElement('div', {
         className: 'p-4 border border-red-200 rounded-lg bg-red-50'
-      }, [
-        React.createElement('h3', { 
-          key: 'title',
-          className: 'text-red-800 font-medium' 
-        }, 'Failed to load component'),
-        React.createElement('p', { 
-          key: 'message',
-          className: 'text-red-600 text-sm mt-1' 
-        }, error.message)
-      ]);
+      }, `Error loading component: ${error.message}`);
     }
 
     if (isLoading) {
-      return options.fallback || React.createElement('div', {
+      return React.createElement('div', {
         className: 'flex items-center justify-center p-4'
-      }, React.createElement('div', {
-        className: 'animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600'
-      }));
+      }, 'Loading...');
     }
 
     if (!LazyComponent) {
       return null;
     }
 
-    return React.createElement(Suspense, {
-      fallback: options.fallback || React.createElement('div', {
-        className: 'flex items-center justify-center p-4'
-      }, React.createElement('div', {
-        className: 'animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600'
-      }))
-    }, React.createElement(LazyComponent, props));
+    return React.createElement(LazyComponent, props);
   };
 
   LazyLoadedComponent.displayName = `withLazyLoading(${componentLoader.name || 'Component'})`;
   
-  return LazyLoadedComponent;
+  return LazyLoadedComponent as ComponentType<P>;
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 // Core performance types
-export type * from './types';
+export * from './types';
 
 // Memory optimization hooks
 export { 

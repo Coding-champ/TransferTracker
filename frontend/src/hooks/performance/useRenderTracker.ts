@@ -25,6 +25,7 @@ export interface UseRenderTrackerOptions {
   threshold?: number; // Render time threshold in ms
   maxRenderCount?: number; // Max renders before flagging as excessive
   trackProps?: boolean;
+  logExcessiveRenders?: boolean; // Log warnings for excessive renders
 }
 
 /**
@@ -39,7 +40,8 @@ export const useRenderTracker = (
     enabled = process.env.NODE_ENV === 'development',
     threshold = 16.67, // 60fps threshold
     maxRenderCount = 20,
-    trackProps = true
+    trackProps = true,
+    logExcessiveRenders = false
   } = options;
 
   const renderCountRef = useRef(0);
@@ -137,7 +139,7 @@ export const useRenderTracker = (
     });
 
     // Log warning for excessive renders only when enabled
-    if (isExcessive && renderCountRef.current % 10 === 0) {
+    if (isExcessive && logExcessiveRenders && renderCountRef.current % 10 === 0) {
       console.warn(
         `🚨 ${componentName}: Excessive renders detected`,
         {
@@ -148,7 +150,7 @@ export const useRenderTracker = (
         }
       );
     }
-  }, [enabled, maxRenderCount, threshold, componentName]);
+  }, [enabled, maxRenderCount, threshold, componentName, logExcessiveRenders]);
 
   return renderStats;
 };
