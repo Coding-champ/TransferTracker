@@ -3,12 +3,19 @@
  * Exports all performance-optimized hooks and monitoring utilities
  */
 
-// Performance hooks
+// API hooks
+export * from './api';
+
+// Performance hooks  
 export { useMemoizedCallback, useThrottledCallback, useDebouncedCallback } from './performance/useMemoizedCallback';
 export { useShallowMemo, useShallowMemoFilters, useShallowMemoArray, useStableObject, useStableArray } from './performance/useShallowMemo';
 export { useRenderTracker, useGlobalRenderStats, useAutoRenderTracker, withRenderTracker } from './performance/useRenderTracker';
 export { useMemoryMonitor, useGlobalMemoryMonitor, useGarbageCollector, withMemoryMonitor } from './performance/useMemoryMonitor';
 export { usePerformanceMetrics, useGlobalPerformanceStats, withPerformanceMetrics } from './performance/usePerformanceMetrics';
+export { useThrottle, useThrottledValue, useThrottledAsync } from './performance/useThrottle';
+
+// UI hooks
+export * from './ui';
 
 // Cache hooks
 export { useApiCache } from './cache/useApiCache';
@@ -28,13 +35,18 @@ export { default as useOptimizedNetwork } from './optimized/useOptimizedNetwork'
 export { default as useOptimizedFilters } from './optimized/useOptimizedFilters';
 export { default as useOptimizedCache } from './optimized/useOptimizedCache';
 
-// Legacy hooks (for backward compatibility)
+// Enhanced legacy hooks (backward compatible with improvements)
 export { useNetworkData } from './useNetworkData';
-export { useDebounce } from './useDebounce';
+export { 
+  useDebounce, 
+  useDebouncedCallback as useDebouncedCallbackLegacy, 
+  useDebouncedExecutor 
+} from './useDebounce';
 
 // Hook migration utilities
 export const MIGRATED_HOOKS = {
   useNetworkData: 'useOptimizedNetwork',
   useTransferData: 'useOptimizedCache',
+  useFilterData: 'useFilterData', // Enhanced in API hooks
   // Add more migrations as needed
 } as const;
