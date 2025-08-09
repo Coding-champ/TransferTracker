@@ -35,7 +35,8 @@ class PerformanceMetrics {
   private renderCounts = new Map<string, number>();
   private componentMountTimes = new Map<string, number>();
   private isDevelopment = process.env.NODE_ENV === 'development';
-  private maxMetrics = 1000; // Prevent memory leaks
+  private maxMetrics = 200; // Reduced from 1000 to prevent memory leaks
+  public intervalIds: Set<NodeJS.Timeout> = new Set(); // Made public for cleanup access
 
   /**
    * Track component render performance
@@ -198,9 +199,17 @@ class PerformanceMetrics {
   /**
    * Clear old metrics to prevent memory leaks
    */
-  clearOldMetrics(maxAge: number = 300000): void { // 5 minutes default
+  clearOldMetrics(maxAge: number = 600000): void { // 10 minutes default (increased from 5)
     const cutoffTime = Date.now() - maxAge;
     this.metrics = this.metrics.filter(metric => metric.timestamp > cutoffTime);
+  }
+
+  /**
+   * Clear intervals to prevent memory leaks
+   */
+  clearIntervals(): void {
+    this.intervalIds.forEach(id => clearInterval(id));
+    this.intervalIds.clear();
   }
 
   /**
@@ -247,24 +256,29 @@ class PerformanceMetrics {
     this.metrics = [];
     this.renderCounts.clear();
     this.componentMountTimes.clear();
+    this.clearIntervals();
   }
 }
 
 // Singleton instance
 export const performanceMetrics = new PerformanceMetrics();
 
-// Development-only console logging
+// Development-only console logging - now configurable
 if (process.env.NODE_ENV === 'development') {
-  // Auto-cleanup every 5 minutes
-  setInterval(() => {
+  // Reduced frequency auto-cleanup 
+  const cleanupIntervalId = setInterval(() => {
     performanceMetrics.clearOldMetrics();
-  }, 300000);
+  }, 600000); // Every 10 minutes instead of 5
+  
+  performanceMetrics.intervalIds.add(cleanupIntervalId);
 
-  // Log excessive renders every 30 seconds
-  setInterval(() => {
+  // Reduced frequency excessive render logging 
+  const excessiveRenderIntervalId = setInterval(() => {
     const excessive = performanceMetrics.getExcessiveRenders();
     if (excessive.length > 0) {
       console.warn('🚨 Components with excessive renders:', excessive);
     }
-  }, 30000);
+  }, 120000); // Every 2 minutes instead of 30 seconds
+  
+  performanceMetrics.intervalIds.add(excessiveRenderIntervalId);
 }

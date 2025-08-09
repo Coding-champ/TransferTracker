@@ -1,6 +1,7 @@
 /**
  * Telemetry - Main telemetry API
  * Central hub for all performance monitoring, error tracking, and user interaction analysis
+ * Now with performance-optimized configuration system
  */
 
 // Import for internal use
@@ -8,6 +9,7 @@ import { performanceMetrics } from './performanceMetrics';
 import { errorTracker } from './errorTracking';
 import { userInteractionTracker } from './userInteractions';
 import { exportUtils } from './exportUtils';
+import { telemetryConfig } from './config';
 
 // Core telemetry modules
 export { 
@@ -38,17 +40,30 @@ export {
   type TelemetryReport 
 } from './exportUtils';
 
+export { 
+  telemetryConfig,
+  type TelemetryConfig
+} from './config';
+
 /**
  * Main Telemetry class - Central API for all telemetry functionality
+ * Now with configurable performance settings
  */
 class Telemetry {
   private isDevelopment = process.env.NODE_ENV === 'development';
+  private intervalIds: Set<NodeJS.Timeout> = new Set();
 
   /**
-   * Initialize telemetry system
+   * Initialize telemetry system with configuration
    */
   init(): void {
     if (!this.isDevelopment) return;
+
+    // Check if telemetry is enabled
+    if (!telemetryConfig.isEnabled()) {
+      console.log('📊 Telemetry available but disabled. Use window.telemetryConfig.enable() to activate.');
+      return;
+    }
 
     console.log('🔍 Telemetry system initialized');
     console.log('📊 Performance monitoring active');
@@ -58,75 +73,122 @@ class Telemetry {
     // Setup keyboard shortcuts for quick access
     this.setupKeyboardShortcuts();
     
-    // Start collecting initial data
+    // Start collecting initial data only if enabled
     this.startInitialDataCollection();
   }
 
   /**
-   * Start collecting initial performance data
+   * Enable telemetry with optional low-impact mode
    */
-  private startInitialDataCollection(): void {
-    // Track initial memory usage
-    performanceMetrics.trackMemory('App');
-    
-    // Track app lifecycle
-    performanceMetrics.trackLifecycle('App', 'mount');
-    
-    // Add comprehensive sample render tracking to ensure data is available
-    performanceMetrics.trackRender('App', 34.6);
-    performanceMetrics.trackRender('FilterPanel', 89.4, ['filters', 'activeFilters']);
-    performanceMetrics.trackRender('TransferDashboard', 45.2, ['data', 'filters']);
-    performanceMetrics.trackRender('NetworkVisualization', 156.8, ['nodes', 'edges']);
-    performanceMetrics.trackRender('SankeyChart', 78.3, ['transfers']);
-    performanceMetrics.trackRender('CircularHierarchy', 234.7, ['leagues', 'data']);
-    performanceMetrics.trackRender('ErrorBoundary', 12.1);
-    performanceMetrics.trackRender('ToastProvider', 5.7);
-    
-    // Add multiple renders to simulate real usage and show excessive renders
-    for (let i = 0; i < 105; i++) {
-      performanceMetrics.trackRender('FilterPanel', 15.2 + Math.random() * 10, ['filters']);
+  enable(lowImpact: boolean = false): void {
+    if (lowImpact) {
+      telemetryConfig.enableLowImpact();
+    } else {
+      telemetryConfig.enable();
     }
     
-    // Add some sample user interactions
-    userInteractionTracker.trackFocus('App', 'App', { type: 'initial' });
-    userInteractionTracker.trackFocus('filter-button', 'FilterPanel', { type: 'click' });
-    userInteractionTracker.trackFocus('dashboard-tab', 'TransferDashboard', { type: 'tab-switch' });
+    // Clear any existing intervals first
+    this.clearIntervals();
     
-    // Track more memory snapshots
-    setTimeout(() => performanceMetrics.trackMemory('FilterPanel'), 1000);
-    setTimeout(() => performanceMetrics.trackMemory('TransferDashboard'), 2000);
-    setTimeout(() => performanceMetrics.trackMemory('NetworkVisualization'), 3000);
+    // Start data collection
+    this.startInitialDataCollection();
     
-    // Set up periodic data collection
-    setInterval(() => {
-      performanceMetrics.trackMemory('System');
-      // Add periodic render tracking to simulate ongoing activity
-      const components = ['FilterPanel', 'TransferDashboard', 'App'];
-      const randomComponent = components[Math.floor(Math.random() * components.length)];
-      performanceMetrics.trackRender(randomComponent, 8 + Math.random() * 20);
-    }, 5000); // Every 5 seconds
+    console.log('📊 Telemetry enabled', lowImpact ? '(low-impact mode)' : '');
+  }
+
+  /**
+   * Disable telemetry and stop all monitoring
+   */
+  disable(): void {
+    telemetryConfig.disable();
+    this.clearIntervals();
+    performanceMetrics.reset();
+    console.log('📊 Telemetry disabled and data cleared');
+  }
+
+  /**
+   * Clear all intervals
+   */
+  private clearIntervals(): void {
+    this.intervalIds.forEach(id => clearInterval(id));
+    this.intervalIds.clear();
+    telemetryConfig.clearAllIntervals();
+  }
+
+  /**
+   * Start collecting initial performance data (optimized)
+   */
+  private startInitialDataCollection(): void {
+    const config = telemetryConfig.getConfig();
     
-    console.log('📊 Enhanced telemetry data collection started with sample data');
+    if (!config.enabled) return;
+
+    // Track initial memory usage if enabled
+    if (config.dataCollection.memoryTracking) {
+      performanceMetrics.trackMemory('App');
+    }
+    
+    // Track app lifecycle if enabled
+    if (config.dataCollection.lifecycleTracking) {
+      performanceMetrics.trackLifecycle('App', 'mount');
+    }
+    
+    // Generate minimal sample data only if configured
+    if (config.sampleData.generateOnInit && config.sampleData.amount > 0) {
+      this.generateMinimalSampleData(config.sampleData.amount);
+    }
+    
+    // Set up periodic data collection with configurable interval
+    if (config.sampleData.generatePeriodic) {
+      const intervalId = setInterval(() => {
+        if (!telemetryConfig.isEnabled()) return;
+        
+        // Only collect memory data periodically
+        if (telemetryConfig.isEnabled('memoryTracking')) {
+          performanceMetrics.trackMemory('System');
+        }
+      }, config.intervals.dataCollection);
+      
+      this.intervalIds.add(intervalId);
+      telemetryConfig.registerInterval(intervalId);
+    }
+    
+    console.log('📊 Optimized telemetry data collection started');
+  }
+
+  /**
+   * Generate minimal sample data for testing
+   */
+  private generateMinimalSampleData(amount: number): void {
+    const components = ['App', 'FilterPanel', 'TransferDashboard'];
+    
+    for (let i = 0; i < Math.min(amount, 10); i++) { // Cap at 10 samples
+      const component = components[i % components.length];
+      const renderTime = 5 + Math.random() * 15; // 5-20ms realistic render times
+      performanceMetrics.trackRender(component, renderTime);
+    }
   }
 
   /**
    * Track component render performance
    */
   trackRender(componentName: string, startTime: number, propsChanged: string[] = []): void {
-    if (!this.isDevelopment) return;
+    if (!this.isDevelopment || !telemetryConfig.isEnabled('renderTracking')) return;
     
     const renderTime = performance.now() - startTime;
     performanceMetrics.trackRender(componentName, renderTime, propsChanged);
     
-    // Track memory after render
-    performanceMetrics.trackMemory(componentName);
+    // Track memory after render only if memory tracking enabled
+    if (telemetryConfig.isEnabled('memoryTracking')) {
+      performanceMetrics.trackMemory(componentName);
+    }
   }
 
   /**
    * Track component lifecycle
    */
   trackLifecycle(componentName: string, phase: 'mount' | 'update' | 'unmount'): void {
-    if (!this.isDevelopment) return;
+    if (!this.isDevelopment || !telemetryConfig.isEnabled('lifecycleTracking')) return;
     
     performanceMetrics.trackLifecycle(componentName, phase);
   }
@@ -139,7 +201,7 @@ class Telemetry {
     action?: string;
     metadata?: Record<string, any>;
   }): void {
-    if (!this.isDevelopment) return;
+    if (!this.isDevelopment || !telemetryConfig.isEnabled('errorTracking')) return;
 
     if (context?.action) {
       errorTracker.trackUserActionError(context.action, error, context.componentName, context.metadata);
@@ -180,7 +242,7 @@ class Telemetry {
     componentName?: string,
     metadata?: Record<string, any>
   ): void {
-    if (!this.isDevelopment) return;
+    if (!this.isDevelopment || !telemetryConfig.isEnabled('userInteractionTracking')) return;
 
     switch (type) {
       case 'click':
@@ -297,8 +359,8 @@ export const telemetry = new Telemetry();
 if (process.env.NODE_ENV === 'development') {
   (window as any).telemetry = telemetry;
   
-  // Auto-initialize
-  telemetry.init();
+  // Don't auto-initialize - let user control it
+  console.log('📊 Telemetry available. Use window.telemetryConfig.enable() to activate or window.telemetryConfig.enableLowImpact() for minimal impact.');
 }
 
 /**

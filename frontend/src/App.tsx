@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import './App.css';
 import TransferDashboard from './components/TransferDashboard';
 import FilterPanel from './components/FilterPanel';
+import TelemetryControls from './components/TelemetryControls';
 import { countActiveFilters } from './utils';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
@@ -11,10 +12,11 @@ import { MonitoringProvider } from './monitoring';
 
 // Development-only performance tracking
 if (process.env.NODE_ENV === 'development') {
-  // Initialize telemetry system
+  // Initialize telemetry system but don't auto-start
   import('./utils/telemetry/index').then((module) => {
     const telemetry = module.telemetry;
     if (telemetry && telemetry.init) {
+      // Just initialize, don't start collecting data
       telemetry.init();
     }
   });
@@ -128,6 +130,9 @@ function AppContent() {
           </div>
         </div>
       </footer>
+      
+      {/* Telemetry Controls - Development only */}
+      <TelemetryControls />
     </div>
   );
 }
