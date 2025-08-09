@@ -10,15 +10,12 @@ import { FilterState } from './types';
 import { ToastProvider } from './contexts/ToastContext';
 import { MonitoringProvider } from './monitoring';
 
-// Development-only performance tracking
+// Development-only performance tracking - only make available, don't auto-init
 if (process.env.NODE_ENV === 'development') {
-  // Initialize telemetry system but don't auto-start
+  // Only load telemetry for global access, don't auto-initialize
   import('./utils/telemetry/index').then((module) => {
-    const telemetry = module.telemetry;
-    if (telemetry && telemetry.init) {
-      // Just initialize, don't start collecting data
-      telemetry.init();
-    }
+    // Make telemetry available globally but don't auto-start
+    console.log('📊 Telemetry system loaded. Use window.telemetryConfig.enable() to activate.');
   });
 }
 
@@ -131,8 +128,8 @@ function AppContent() {
         </div>
       </footer>
       
-      {/* Telemetry Controls - Development only */}
-      <TelemetryControls />
+      {/* Telemetry Controls - Development only and only when enabled */}
+      {process.env.NODE_ENV === 'development' && <TelemetryControls />}
     </div>
   );
 }

@@ -194,10 +194,11 @@ export const telemetryConfig = new TelemetryConfigManager();
 if (process.env.NODE_ENV === 'development') {
   (window as any).telemetryConfig = telemetryConfig;
   
-  console.log('🔧 Telemetry configuration available:');
-  console.log('- window.telemetryConfig.enable() - Enable telemetry');
-  console.log('- window.telemetryConfig.disable() - Disable telemetry');
-  console.log('- window.telemetryConfig.enableLowImpact() - Enable with minimal performance impact');
+  // Only log when explicitly requested to avoid startup overhead
+  // console.log('🔧 Telemetry configuration available:');
+  // console.log('- window.telemetryConfig.enable() - Enable telemetry');
+  // console.log('- window.telemetryConfig.disable() - Disable telemetry');
+  // console.log('- window.telemetryConfig.enableLowImpact() - Enable with minimal performance impact');
 }
 
 export default telemetryConfig;

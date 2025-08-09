@@ -75,8 +75,9 @@ if (process.env.NODE_ENV === 'development') {
     window.dispatchEvent(new CustomEvent('openDashboard'));
   };
 
-  console.log('🔍 Monitoring tools available:');
-  console.log('- Ctrl/Cmd + Shift + D: Toggle performance dashboard');
-  console.log('- Ctrl/Cmd + Shift + P: Toggle performance overlay');
-  console.log('- window.openDashboard() - Open dashboard programmatically');
+  // Only log when explicitly requested to avoid startup overhead  
+  // console.log('🔍 Monitoring tools available:');
+  // console.log('- Ctrl/Cmd + Shift + D: Toggle performance dashboard');
+  // console.log('- Ctrl/Cmd + Shift + P: Toggle performance overlay');
+  // console.log('- window.openDashboard() - Open dashboard programmatically');
 }

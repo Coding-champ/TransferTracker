@@ -54,27 +54,16 @@ class Telemetry {
   private intervalIds: Set<NodeJS.Timeout> = new Set();
 
   /**
-   * Initialize telemetry system with configuration
+   * Initialize telemetry system with configuration - only when explicitly enabled
    */
   init(): void {
     if (!this.isDevelopment) return;
 
-    // Check if telemetry is enabled
-    if (!telemetryConfig.isEnabled()) {
-      console.log('📊 Telemetry available but disabled. Use window.telemetryConfig.enable() to activate.');
-      return;
-    }
-
-    console.log('🔍 Telemetry system initialized');
-    console.log('📊 Performance monitoring active');
-    console.log('🚨 Error tracking enabled');
-    console.log('👆 User interaction tracking enabled');
-    
-    // Setup keyboard shortcuts for quick access
+    // Only setup global access and shortcuts, don't start data collection
     this.setupKeyboardShortcuts();
     
-    // Start collecting initial data only if enabled
-    this.startInitialDataCollection();
+    console.log('🔍 Telemetry system ready (disabled by default)');
+    console.log('📊 Use window.telemetryConfig.enable() to activate monitoring');
   }
 
   /**
@@ -359,8 +348,8 @@ export const telemetry = new Telemetry();
 if (process.env.NODE_ENV === 'development') {
   (window as any).telemetry = telemetry;
   
-  // Don't auto-initialize - let user control it
-  console.log('📊 Telemetry available. Use window.telemetryConfig.enable() to activate or window.telemetryConfig.enableLowImpact() for minimal impact.');
+  // Only log when explicitly requested to avoid overhead
+  // console.log('📊 Telemetry available. Use window.telemetryConfig.enable() to activate or window.telemetryConfig.enableLowImpact() for minimal impact.');
 }
 
 /**
