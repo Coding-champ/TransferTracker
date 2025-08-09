@@ -1,7 +1,6 @@
 import React from 'react';
 import { NetworkData, FilterState } from '../../../types';
 import VisualizationLoading from './VisualizationLoading';
-import EmptyState from './EmptyState';
 
 interface VisualizationContainerProps {
   children: React.ReactNode;
@@ -49,7 +48,25 @@ export const VisualizationContainer: React.FC<VisualizationContainerProps> = ({
   }
 
   if (!networkData || networkData.nodes.length === 0) {
-    return <EmptyState title={title} />;
+    // For certain visualizations like heatmap, allow rendering with mock data
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-semibold">{title}</h3>
+            {description && (
+              <p className="text-sm text-gray-600 mt-1">{description}</p>
+            )}
+          </div>
+          <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded">
+            No data available - showing demo visualization
+          </div>
+        </div>
+        <div className="relative">
+          {children}
+        </div>
+      </div>
+    );
   }
 
   return (
