@@ -1,18 +1,18 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { NetworkData, FilterState } from '../../../types/index';
-import { HeatmapGrid } from '../../../visualizations/heatmap/components/HeatmapGrid';
-import { HeatmapTooltip } from '../../../visualizations/heatmap/components/HeatmapTooltip';
-import { HeatmapColorScale } from '../../../visualizations/heatmap/components/HeatmapColorScale';
-import { TransferDetailsModal } from '../../../visualizations/heatmap/components/TransferDetailsModal';
-import { useHeatmapData } from '../../../visualizations/heatmap/hooks/useHeatmapData';
-import { useDrillDown } from '../../../visualizations/heatmap/hooks/useDrillDown';
+import { HeatmapGrid } from './components/HeatmapGrid';
+import { HeatmapTooltip } from './components/HeatmapTooltip';
+import { HeatmapColorScale } from './components/HeatmapColorScale';
+import { TransferDetailsModal } from './components/TransferDetailsModal';
+import { useHeatmapData } from './hooks/useHeatmapData';
+import { useDrillDown } from './hooks/useDrillDown';
 import { 
   HeatmapMode, 
   HeatmapCell, 
   HeatmapConfig, 
   HeatmapTooltipData,
   TransferDetail
-} from '../../../visualizations/heatmap/types';
+} from './types';
 import { createMockNetworkData, createMockFilters } from '../../../utils/mockData';
 
 interface HeatmapVisualizationProps {

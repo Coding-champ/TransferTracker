@@ -1,4 +1,4 @@
-import { NetworkData } from '../../../types/index';
+import { NetworkData } from '../../../../types/index';
 import { HeatmapData, HeatmapCell, DrillDownState } from '../types';
 
 export const calculateHeatmapMatrix = (

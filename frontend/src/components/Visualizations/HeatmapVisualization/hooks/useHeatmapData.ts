@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NetworkData } from '../../../types/index';
+import { NetworkData, NetworkEdge, NetworkNode } from '../../../../types/index';
 import { HeatmapData, UseHeatmapDataProps } from '../types';
 import { calculateHeatmapMatrix } from '../utils/heatmapCalculations';
 
@@ -19,7 +19,7 @@ export const useHeatmapData = ({
 
     // Apply season filter
     if (filters.seasons?.length) {
-      filteredEdges = filteredEdges.filter(edge => 
+      filteredEdges = filteredEdges.filter((edge: NetworkEdge) => 
         edge.stats.seasons.some(season => filters.seasons.includes(season))
       );
     }
@@ -28,24 +28,24 @@ export const useHeatmapData = ({
     if (filters.leagues?.length) {
       const filteredNodeIds = new Set(
         filteredNodes
-          .filter(node => filters.leagues.includes(node.league))
-          .map(node => node.id)
+          .filter((node: NetworkNode) => filters.leagues.includes(node.league))
+          .map((node: NetworkNode) => node.id)
       );
       
-      filteredEdges = filteredEdges.filter(edge => {
+      filteredEdges = filteredEdges.filter((edge: NetworkEdge) => {
         const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
         const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
         return filteredNodeIds.has(sourceId) && filteredNodeIds.has(targetId);
       });
       
-      filteredNodes = filteredNodes.filter(node => 
+      filteredNodes = filteredNodes.filter((node: NetworkNode) => 
         filters.leagues.includes(node.league)
       );
     }
 
     // Apply transfer type filter
     if (filters.transferTypes?.length) {
-      filteredEdges = filteredEdges.filter(edge => 
+      filteredEdges = filteredEdges.filter((edge: NetworkEdge) => 
         edge.stats.types.some(type => filters.transferTypes.includes(type))
       );
     }
@@ -54,7 +54,7 @@ export const useHeatmapData = ({
     if (filters.minTransferFee !== undefined || filters.maxTransferFee !== undefined) {
       const min = filters.minTransferFee ?? 0;
       const max = filters.maxTransferFee ?? Infinity;
-      filteredEdges = filteredEdges.filter(edge => 
+      filteredEdges = filteredEdges.filter((edge: NetworkEdge) => 
         edge.stats.totalValue >= min && edge.stats.totalValue <= max
       );
     }
@@ -63,7 +63,7 @@ export const useHeatmapData = ({
     if (filters.minPlayerAge !== undefined || filters.maxPlayerAge !== undefined) {
       const minAge = filters.minPlayerAge ?? 0;
       const maxAge = filters.maxPlayerAge ?? Infinity;
-      filteredEdges = filteredEdges.filter(edge => 
+      filteredEdges = filteredEdges.filter((edge: NetworkEdge) => 
         edge.transfers.some(transfer => 
           transfer.playerAge !== undefined && 
           transfer.playerAge >= minAge && 
@@ -76,8 +76,8 @@ export const useHeatmapData = ({
       nodes: filteredNodes,
       edges: filteredEdges,
       metadata: {
-        totalTransfers: filteredEdges.reduce((sum, edge) => sum + edge.stats.transferCount, 0),
-        totalValue: filteredEdges.reduce((sum, edge) => sum + edge.stats.totalValue, 0),
+        totalTransfers: filteredEdges.reduce((sum: number, edge: NetworkEdge) => sum + edge.stats.transferCount, 0),
+        totalValue: filteredEdges.reduce((sum: number, edge: NetworkEdge) => sum + edge.stats.totalValue, 0),
         dateRange: {
           start: null, // Could be calculated from transfer dates if needed
           end: null
@@ -85,10 +85,10 @@ export const useHeatmapData = ({
         clubCount: filteredNodes.length,
         edgeCount: filteredEdges.length,
         avgROI: filteredEdges.length > 0 
-          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.avgROI || 0), 0) / filteredEdges.length 
+          ? filteredEdges.reduce((sum: number, edge: NetworkEdge) => sum + (edge.stats.avgROI || 0), 0) / filteredEdges.length 
           : 0,
         transferSuccessRate: filteredEdges.length > 0
-          ? filteredEdges.reduce((sum, edge) => sum + (edge.stats.transferSuccessRate || 0), 0) / filteredEdges.length
+          ? filteredEdges.reduce((sum: number, edge: NetworkEdge) => sum + (edge.stats.transferSuccessRate || 0), 0) / filteredEdges.length
           : 0,
         filters
       }

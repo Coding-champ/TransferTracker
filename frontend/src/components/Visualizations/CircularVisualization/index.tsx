@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import * as d3 from 'd3';
 import { VisualizationProps } from '../../../types';
-import { useD3Container } from '../../../visualizations/shared/hooks/useD3Container';
-import { useCircularLayout } from '../../../visualizations/circular/hooks/useCircularLayout';
-import { useCircularInteraction } from '../../../visualizations/circular/hooks/useCircularInteraction';
-import { useCircularZoom } from '../../../visualizations/circular/hooks/useCircularZoom';
+import { useD3Container } from '../shared/hooks/useD3Container';
+import { useCircularLayout } from './hooks/useCircularLayout';
+import { useCircularInteraction } from './hooks/useCircularInteraction';
+import { useCircularZoom } from './hooks/useCircularZoom';
 import { 
   CircularVisualizationConfig,
   CircularZoomState,
   CircularNode
-} from '../../../visualizations/circular/types';
-import { createLeagueColorScale } from '../../../visualizations/shared/utils/d3-helpers';
+} from './types';
+import { createLeagueColorScale } from '../shared/utils/d3-helpers';
 import { 
   animateNodesEnter,
   animateArcsEnter,
   animateTierCircles,
   animateFilterTransition 
-} from '../../../visualizations/circular/utils/circularAnimations';
+} from './utils/circularAnimations';
 
 interface CircularVisualizationProps extends VisualizationProps {}
 
