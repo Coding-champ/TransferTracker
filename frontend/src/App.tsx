@@ -2,11 +2,22 @@ import React, { useCallback } from 'react';
 import './App.css';
 import TransferDashboard from './components/TransferDashboard';
 import FilterPanel from './components/FilterPanel';
+import TelemetryControls from './components/TelemetryControls';
 import { countActiveFilters } from './utils';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import ErrorBoundary from './components/ErrorBoundaries/ErrorBoundary';
 import { FilterState } from './types';
 import { ToastProvider } from './contexts/ToastContext';
+import { MonitoringProvider } from './monitoring';
+
+// Development-only performance tracking - only make available, don't auto-init
+if (process.env.NODE_ENV === 'development') {
+  // Only load telemetry for global access, don't auto-initialize or log
+  import('./utils/telemetry/index').then((module) => {
+    // Make telemetry available globally but don't auto-start or log to avoid overhead
+    (window as any).telemetryModule = module;
+  });
+}
 
 // Main App content component that uses the context
 function AppContent() {
@@ -109,10 +120,16 @@ function AppContent() {
               <span>📊 Real-time Visualization</span>
               <span>🔍 Interactive Exploration</span>
               <span>💡 Performance Insights</span>
+              {process.env.NODE_ENV === 'development' && (
+                <span className="text-blue-600">🔧 Dev: Ctrl+Shift+D for Performance Dashboard</span>
+              )}
             </div>
           </div>
         </div>
       </footer>
+      
+      {/* Telemetry Controls - Development only and only when enabled */}
+      {process.env.NODE_ENV === 'development' && <TelemetryControls />}
     </div>
   );
 }
@@ -123,7 +140,9 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AppProvider>
-          <AppContent />
+          <MonitoringProvider>
+            <AppContent />
+          </MonitoringProvider>
         </AppProvider>
       </ToastProvider>
     </ErrorBoundary>
