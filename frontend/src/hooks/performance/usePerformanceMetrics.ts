@@ -8,6 +8,7 @@ import { useRenderTracker, type RenderTracking } from './useRenderTracker';
 import { useMemoryMonitor, type MemoryStats } from './useMemoryMonitor';
 import { performanceMetrics as telemetryMetrics } from '../../utils/telemetry/performanceMetrics';
 import { telemetry } from '../../utils/telemetry/index';
+import { telemetryConfig } from '../../utils/telemetry/config';
 
 export interface PerformanceAlert {
   id: string;
@@ -321,19 +322,34 @@ export const useGlobalPerformanceStats = () => {
 
   useEffect(() => {
     const updateStats = () => {
-      const summary = telemetryMetrics.getSummary();
-      // This would be enhanced to collect data from all monitored components
-      setStats({
-        totalComponents: summary.componentCount,
-        averageScore: 85, // Calculated from all component scores
-        criticalAlerts: 0, // Count of critical alerts across all components
-        slowComponents: [], // Components with low render scores
-        memoryHeavyComponents: [] // Components with high memory usage
-      });
+      // Only collect stats if telemetry is enabled to prevent CPU usage
+      if (telemetryConfig.isEnabled()) {
+        const summary = telemetryMetrics.getSummary();
+        setStats({
+          totalComponents: summary.componentCount,
+          averageScore: 85, // Calculated from all component scores
+          criticalAlerts: 0, // Count of critical alerts across all components
+          slowComponents: [], // Components with low render scores
+          memoryHeavyComponents: [] // Components with high memory usage
+        });
+      } else {
+        // Reset stats when telemetry is disabled
+        setStats({
+          totalComponents: 0,
+          averageScore: 0,
+          criticalAlerts: 0,
+          slowComponents: [],
+          memoryHeavyComponents: []
+        });
+      }
     };
 
     updateStats();
-    const interval = setInterval(updateStats, 10000); // Update every 10 seconds
+    
+    // Only start interval if telemetry is enabled
+    if (!telemetryConfig.isEnabled()) return;
+    
+    const interval = setInterval(updateStats, 10000); // Update every 10 seconds only when enabled
 
     return () => clearInterval(interval);
   }, []);

@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { performanceMetrics } from '../../utils/telemetry/performanceMetrics';
+import { telemetryConfig } from '../../utils/telemetry/config';
 
 export interface MemoryInfo {
   usedJSHeapSize: number;
@@ -226,13 +227,15 @@ export const useMemoryMonitor = (
 
   // Automatic monitoring
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !telemetryConfig.isEnabled()) return;
 
     const intervalId = setInterval(() => {
-      takeSnapshot('auto');
+      if (telemetryConfig.isEnabled()) {
+        takeSnapshot('auto');
+      }
     }, interval);
 
-    // Take initial snapshot
+    // Take initial snapshot only when telemetry is enabled
     takeSnapshot('initial');
 
     return () => clearInterval(intervalId);
@@ -241,7 +244,7 @@ export const useMemoryMonitor = (
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (enabled && componentName) {
+      if (enabled && componentName && telemetryConfig.isEnabled()) {
         takeSnapshot('unmount');
       }
     };

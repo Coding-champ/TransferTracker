@@ -12,10 +12,10 @@ import { MonitoringProvider } from './monitoring';
 
 // Development-only performance tracking - only make available, don't auto-init
 if (process.env.NODE_ENV === 'development') {
-  // Only load telemetry for global access, don't auto-initialize
+  // Only load telemetry for global access, don't auto-initialize or log
   import('./utils/telemetry/index').then((module) => {
-    // Make telemetry available globally but don't auto-start
-    console.log('📊 Telemetry system loaded. Use window.telemetryConfig.enable() to activate.');
+    // Make telemetry available globally but don't auto-start or log to avoid overhead
+    (window as any).telemetryModule = module;
   });
 }
 

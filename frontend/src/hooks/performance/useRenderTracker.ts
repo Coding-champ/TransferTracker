@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { performanceMetrics } from '../../utils/telemetry/performanceMetrics';
+import { telemetryConfig } from '../../utils/telemetry/config';
 
 export interface RenderTracking {
   componentName: string;
@@ -56,15 +57,15 @@ export const useRenderTracker = (
     isExcessive: false
   });
 
-  // Track render start
-  if (enabled) {
+  // Track render start - only when telemetry is enabled
+  if (enabled && telemetryConfig.isEnabled()) {
     renderStartTimeRef.current = performance.now();
     renderCountRef.current += 1;
   }
 
   // Track props changes
   useEffect(() => {
-    if (!enabled || !trackProps || !props) return;
+    if (!enabled || !trackProps || !props || !telemetryConfig.isEnabled()) return;
 
     const changedProps: string[] = [];
     
@@ -101,7 +102,7 @@ export const useRenderTracker = (
 
   // Track render end and update stats
   useEffect(() => {
-    if (!enabled || !renderStartTimeRef.current) return;
+    if (!enabled || !renderStartTimeRef.current || !telemetryConfig.isEnabled()) return;
 
     const renderTime = performance.now() - renderStartTimeRef.current;
     renderTimesRef.current.push(renderTime);
@@ -115,7 +116,7 @@ export const useRenderTracker = (
     const averageRenderTime = totalRenderTime / renderTimesRef.current.length;
     const isExcessive = renderCountRef.current > maxRenderCount || averageRenderTime > threshold;
 
-    // Track in performance metrics
+    // Track in performance metrics only when telemetry is enabled
     const changedProps = propsChangesRef.current.length > 0 
       ? propsChangesRef.current[propsChangesRef.current.length - 1].changedProps 
       : [];
@@ -133,7 +134,7 @@ export const useRenderTracker = (
       isExcessive
     });
 
-    // Log warning for excessive renders
+    // Log warning for excessive renders only when telemetry is enabled
     if (isExcessive && renderCountRef.current % 10 === 0) {
       console.warn(
         `🚨 ${componentName}: Excessive renders detected`,
@@ -162,16 +163,30 @@ export const useGlobalRenderStats = () => {
 
   useEffect(() => {
     const updateStats = () => {
-      const summary = performanceMetrics.getSummary();
-      setStats({
-        totalComponents: summary.componentCount,
-        excessiveRenders: summary.excessiveRenders,
-        averageRenderTime: summary.averageRenderTime
-      });
+      // Only collect stats when telemetry is enabled
+      if (telemetryConfig.isEnabled()) {
+        const summary = performanceMetrics.getSummary();
+        setStats({
+          totalComponents: summary.componentCount,
+          excessiveRenders: summary.excessiveRenders,
+          averageRenderTime: summary.averageRenderTime
+        });
+      } else {
+        // Reset stats when disabled
+        setStats({
+          totalComponents: 0,
+          excessiveRenders: 0,
+          averageRenderTime: 0
+        });
+      }
     };
 
     updateStats();
-    const interval = setInterval(updateStats, 5000); // Update every 5 seconds
+    
+    // Only start interval when telemetry is enabled
+    if (!telemetryConfig.isEnabled()) return;
+    
+    const interval = setInterval(updateStats, 5000); // Update every 5 seconds only when enabled
 
     return () => clearInterval(interval);
   }, []);

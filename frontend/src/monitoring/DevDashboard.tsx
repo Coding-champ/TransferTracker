@@ -38,90 +38,53 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
   const [recentErrors, setRecentErrors] = useState<ErrorMetric[]>([]);
   const [forceRender, setForceRender] = useState(0); // Force re-render key
 
-  // Initialize sample data immediately when dashboard opens
+  // Initialize sample data only when telemetry is enabled
   useEffect(() => {
     if (!isOpen) return;
     
-    // Always generate sample data for dashboard demonstration, regardless of telemetry state
-    const initSampleData = () => {
-      // Generate realistic sample data for better user experience
-      const components = ['App', 'FilterPanel', 'TransferDashboard', 'DevDashboard', 'NetworkView', 'SankeyChart'];
-      
-      // Generate render metrics
-      for (let i = 0; i < 15; i++) {
-        const component = components[i % components.length];
-        const renderTime = 2 + Math.random() * 18; // 2-20ms realistic range
-        performanceMetrics.trackRender(component, renderTime);
-      }
-      
-      // Track memory usage samples
-      performanceMetrics.trackMemory('Dashboard');
-      performanceMetrics.trackMemory('App');
-      
-      // Track some lifecycle events
-      components.forEach(component => {
-        performanceMetrics.trackLifecycle(component, 'mount');
-      });
-      
-      // Add some sample errors for demonstration
-      const errorMessages = [
-        'Failed to load network data',
-        'Render timeout in FilterPanel',
-        'Network connection lost',
-        'Invalid transfer data format'
-      ];
-      
-      errorMessages.forEach((message, index) => {
-        errorTracker.trackJavaScriptError(
-          new Error(message),
-          components[index % components.length],
-          { 
-            type: 'sample',
-            severity: index % 2 === 0 ? 'medium' : 'low',
-            timestamp: Date.now() - (index * 60000) // Spread errors over time
-          }
-        );
-      });
-      
-      // Add some sample user interactions
-      const sampleInteractions = [
-        {
-          id: `click-${Date.now()}`,
-          timestamp: Date.now() - 30000,
-          type: 'click' as const,
-          target: 'filter-button',
-          componentName: 'FilterPanel',
-          metadata: { type: 'sample' }
-        },
-        {
-          id: `click-${Date.now() + 1}`,
-          timestamp: Date.now() - 20000,
-          type: 'click' as const,
-          target: 'network-node',
-          componentName: 'NetworkView',
-          metadata: { type: 'sample' }
-        },
-        {
-          id: `scroll-${Date.now()}`,
-          timestamp: Date.now() - 10000,
-          type: 'scroll' as const,
-          target: 'dashboard',
-          componentName: 'TransferDashboard',
-          metadata: { type: 'sample', velocity: 150 }
+    // Only generate sample data if telemetry is actually enabled
+    if (telemetryConfig.isEnabled()) {
+      const initSampleData = () => {
+        // Generate minimal realistic sample data only when telemetry is active
+        const components = ['App', 'FilterPanel', 'TransferDashboard'];
+        
+        // Generate only 5 render metrics (reduced from 15)
+        for (let i = 0; i < 5; i++) {
+          const component = components[i % components.length];
+          const renderTime = 5 + Math.random() * 10; // 5-15ms realistic range
+          performanceMetrics.trackRender(component, renderTime);
         }
-      ];
+        
+        // Track minimal memory usage
+        performanceMetrics.trackMemory('Dashboard');
+        
+        // Track minimal lifecycle events
+        performanceMetrics.trackLifecycle('App', 'mount');
+        
+        // Add minimal sample error for demonstration
+        errorTracker.trackJavaScriptError(
+          new Error('Sample: Dashboard initialization'),
+          'DevDashboard',
+          { type: 'sample', severity: 'low', timestamp: Date.now() }
+        );
+        
+        // Add minimal sample interaction
+        userInteractionTracker.addInteraction({
+          id: `dashboard-open-${Date.now()}`,
+          timestamp: Date.now(),
+          type: 'click' as const,
+          target: 'dashboard-toggle',
+          componentName: 'DevDashboard',
+          metadata: { type: 'sample' }
+        });
+      };
       
-      // Add sample interactions
-      sampleInteractions.forEach(interaction => {
-        userInteractionTracker.addInteraction(interaction);
-      });
-      
-      // Force component re-render to display new data
-      setForceRender(prev => prev + 1);
-    };
+      // Generate minimal sample data only when enabled
+      initSampleData();
+    }
     
-    // Generate sample data immediately
-    initSampleData();
+    // Force component re-render to display data
+    setForceRender(prev => prev + 1);
   }, [isOpen]); // Simplified dependency array
 
   // Update data periodically and on tab changes
@@ -130,14 +93,45 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
 
     const updateData = () => {
       try {
-        // Always get the latest data
-        setPerfSummary(performanceMetrics.getSummary());
-        setErrorStats(errorTracker.getErrorStats());
-        setInteractionStats(userInteractionTracker.getInteractionStats());
-        
-        // Always get detailed metrics for dashboard display
-        setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
-        setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
+        // Only update data if telemetry is enabled to prevent CPU usage
+        if (telemetryConfig.isEnabled()) {
+          setPerfSummary(performanceMetrics.getSummary());
+          setErrorStats(errorTracker.getErrorStats());
+          setInteractionStats(userInteractionTracker.getInteractionStats());
+          
+          // Get detailed metrics for dashboard display
+          setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
+          setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
+        } else {
+          // Show empty state when telemetry is disabled
+          setPerfSummary({
+            totalMetrics: 0,
+            componentCount: 0,
+            averageRenderTime: 0,
+            memoryUsage: 0,
+            excessiveRenders: 0
+          });
+          setErrorStats({ 
+            total: 0, 
+            byType: {}, 
+            bySeverity: {}, 
+            topErrors: [], 
+            recentErrors: [] 
+          });
+          setInteractionStats({ 
+            total: 0, 
+            byType: {}, 
+            byComponent: {}, 
+            patterns: {
+              mostClickedTargets: [],
+              averageScrollVelocity: 0,
+              keyboardShortcuts: [],
+              sessionDuration: 0
+            }
+          });
+          setRenderMetrics([]);
+          setRecentErrors([]);
+        }
       } catch (error) {
         console.error('Error updating dashboard data:', error);
       }
@@ -146,8 +140,10 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
     // Update immediately when dashboard opens or tab changes
     updateData();
     
-    // Only set interval if dashboard is open - reduce frequency to save CPU
-    const interval = setInterval(updateData, 5000); // 5 seconds
+    // Only set interval if telemetry is enabled - prevent CPU usage when disabled
+    if (!telemetryConfig.isEnabled()) return;
+    
+    const interval = setInterval(updateData, 5000); // 5 seconds only when enabled
 
     return () => clearInterval(interval);
   }, [isOpen, activeTab, forceRender]); // Include forceRender to trigger updates

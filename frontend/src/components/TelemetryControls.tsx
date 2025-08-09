@@ -18,10 +18,15 @@ export const TelemetryControls: React.FC<TelemetryControlsProps> = ({ className 
     // Update config state when it changes
     const updateConfig = () => setConfig(telemetryConfig.getConfig());
     
-    // Only poll when visible and reduce frequency to prevent CPU usage
+    // Only poll when visible and telemetry system is potentially active
     let interval: NodeJS.Timeout | null = null;
     if (isVisible) {
       interval = setInterval(updateConfig, 5000); // 5 seconds instead of 1
+    }
+    
+    // Update immediately when becoming visible
+    if (isVisible) {
+      updateConfig();
     }
     
     return () => {

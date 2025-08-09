@@ -59,11 +59,8 @@ class Telemetry {
   init(): void {
     if (!this.isDevelopment) return;
 
-    // Only setup global access and shortcuts, don't start data collection
+    // Only setup global access and shortcuts, don't start data collection or log
     this.setupKeyboardShortcuts();
-    
-    console.log('🔍 Telemetry system ready (disabled by default)');
-    console.log('📊 Use window.telemetryConfig.enable() to activate monitoring');
   }
 
   /**
