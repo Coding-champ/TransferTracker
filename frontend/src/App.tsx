@@ -12,8 +12,11 @@ import { MonitoringProvider } from './monitoring';
 // Development-only performance tracking
 if (process.env.NODE_ENV === 'development') {
   // Initialize telemetry system
-  import('./utils/telemetry').then((telemetryModule) => {
-    telemetryModule.telemetry.init();
+  import('./utils/telemetry').then((module) => {
+    const telemetry = module.default;
+    if (telemetry && telemetry.init) {
+      telemetry.init();
+    }
   });
 }
 
