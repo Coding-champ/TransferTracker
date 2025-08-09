@@ -1,9 +1,14 @@
 /**
- * Performance Hooks
+ * Performance Hooks - Zero CPU Overhead Implementation
  * 
- * Hooks for performance monitoring, optimization, and memory management
+ * Complete suite of performance monitoring, optimization, and memory management hooks
+ * designed for zero unnecessary CPU usage and optimal React performance.
  */
 
+// Core performance types
+export type * from './types';
+
+// Memory optimization hooks
 export { 
   useMemoizedCallback, 
   useThrottledCallback, 
@@ -18,6 +23,13 @@ export {
   useStableArray 
 } from './useShallowMemo';
 
+export { 
+  useThrottle, 
+  useThrottledValue, 
+  useThrottledAsync 
+} from './useThrottle';
+
+// Performance monitoring hooks
 export { 
   useRenderTracker, 
   useGlobalRenderStats, 
@@ -38,8 +50,15 @@ export {
   withPerformanceMetrics 
 } from './usePerformanceMetrics';
 
+// Component optimization hooks
 export { 
-  useThrottle, 
-  useThrottledValue, 
-  useThrottledAsync 
-} from './useThrottle';
+  useLazyLoading, 
+  withLazyLoading, 
+  createLazyComponent 
+} from './useLazyLoading';
+
+export { 
+  useVirtualization, 
+  useWindowVirtualization, 
+  withVirtualization 
+} from './useVirtualization';

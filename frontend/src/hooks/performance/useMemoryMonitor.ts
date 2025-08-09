@@ -165,8 +165,10 @@ export const useMemoryMonitor = (
       historyRef.current = historyRef.current.slice(-maxHistory);
     }
 
-    // Track in global metrics
-    performanceMetrics.trackMemory(componentName);
+    // Track in global metrics - only when telemetry is enabled
+    if (telemetryConfig.isEnabled()) {
+      performanceMetrics.trackMemory(componentName);
+    }
 
     // Update stats
     const history = historyRef.current;
@@ -225,30 +227,24 @@ export const useMemoryMonitor = (
     warningThreshold
   ]);
 
-  // Automatic monitoring - only when telemetry is enabled
+  // Automatic monitoring - only when enabled
   useEffect(() => {
     if (!enabled) return;
 
-    // Only take initial snapshot and start monitoring when telemetry is enabled
-    if (!telemetryConfig.isEnabled()) return;
-
     const intervalId = setInterval(() => {
-      // Double-check telemetry state before expensive operations
-      if (telemetryConfig.isEnabled()) {
-        takeSnapshot('auto');
-      }
+      takeSnapshot('auto');
     }, interval);
 
-    // Take initial snapshot only when telemetry is enabled
+    // Take initial snapshot when enabled
     takeSnapshot('initial');
 
     return () => clearInterval(intervalId);
-  }, [enabled, interval, takeSnapshot]); // Keep dependencies for proper cleanup
+  }, [enabled, interval, takeSnapshot]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (enabled && componentName && telemetryConfig.isEnabled()) {
+      if (enabled && componentName) {
         takeSnapshot('unmount');
       }
     };
