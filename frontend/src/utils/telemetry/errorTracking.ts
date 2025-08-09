@@ -339,7 +339,7 @@ class ErrorTracker {
       return 'critical';
     }
     
-    if (stack && stack.includes('React') || lowerMessage.includes('render')) {
+    if ((stack && stack.includes('React')) || lowerMessage.includes('render')) {
       return 'high';
     }
     

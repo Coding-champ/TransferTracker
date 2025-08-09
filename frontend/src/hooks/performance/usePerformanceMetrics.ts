@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRenderTracker, type RenderTracking } from './useRenderTracker';
 import { useMemoryMonitor, type MemoryStats } from './useMemoryMonitor';
-import { performanceMetrics as telemetryMetrics, type PerformanceMetric } from '../../utils/telemetry/performanceMetrics';
+import { performanceMetrics as telemetryMetrics } from '../../utils/telemetry/performanceMetrics';
 import { telemetry } from '../../utils/telemetry/index';
 
 export interface PerformanceAlert {

@@ -27,7 +27,7 @@ interface FilterPanelProps {
  */
 const FilterPanel: React.FC<FilterPanelProps> = React.memo(({ onFiltersChange }) => {
   // Performance tracking
-  const performanceData = usePerformanceMetrics('FilterPanel', { onFiltersChange });
+  usePerformanceMetrics('FilterPanel', { onFiltersChange });
   
   // Memoize the initial filter state to prevent recreation
   const initialFilters = useMemo<FilterState>(() => ({

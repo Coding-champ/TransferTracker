@@ -36,23 +36,28 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
   const [renderMetrics, setRenderMetrics] = useState<PerformanceMetric[]>([]);
   const [recentErrors, setRecentErrors] = useState<ErrorMetric[]>([]);
 
-  // Update data periodically
+  // Update data periodically and on tab changes
   useEffect(() => {
     if (!isOpen) return;
 
     const updateData = () => {
-      setPerfSummary(performanceMetrics.getSummary());
-      setErrorStats(errorTracker.getErrorStats());
-      setInteractionStats(userInteractionTracker.getInteractionStats());
-      setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
-      setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
+      try {
+        setPerfSummary(performanceMetrics.getSummary());
+        setErrorStats(errorTracker.getErrorStats());
+        setInteractionStats(userInteractionTracker.getInteractionStats());
+        setRenderMetrics(performanceMetrics.getRenderMetrics().slice(-20)); // Last 20 renders
+        setRecentErrors(errorTracker.getErrors().slice(-10)); // Last 10 errors
+      } catch (error) {
+        console.error('Error updating dashboard data:', error);
+      }
     };
 
+    // Update immediately when dashboard opens or tab changes
     updateData();
     const interval = setInterval(updateData, 2000);
 
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, activeTab]); // Add activeTab dependency
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -95,6 +100,15 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ isOpen, onClose }) =
 
   const renderOverviewTab = () => {
     const grade = getPerformanceGrade(perfSummary.averageRenderTime);
+    
+    // Debug information - remove in production
+    console.log('Dashboard data:', {
+      perfSummary,
+      errorStats,
+      interactionStats,
+      renderMetrics: renderMetrics.length,
+      recentErrors: recentErrors.length
+    });
     
     return (
       <div className="space-y-6">

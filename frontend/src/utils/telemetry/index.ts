@@ -3,6 +3,12 @@
  * Central hub for all performance monitoring, error tracking, and user interaction analysis
  */
 
+// Import for internal use
+import { performanceMetrics } from './performanceMetrics';
+import { errorTracker } from './errorTracking';
+import { userInteractionTracker } from './userInteractions';
+import { exportUtils } from './exportUtils';
+
 // Core telemetry modules
 export { 
   performanceMetrics, 
@@ -32,12 +38,6 @@ export {
   type TelemetryReport 
 } from './exportUtils';
 
-// Import for internal use
-import { performanceMetrics } from './performanceMetrics';
-import { errorTracker } from './errorTracking';
-import { userInteractionTracker } from './userInteractions';
-import { exportUtils } from './exportUtils';
-
 /**
  * Main Telemetry class - Central API for all telemetry functionality
  */
@@ -57,6 +57,25 @@ class Telemetry {
     
     // Setup keyboard shortcuts for quick access
     this.setupKeyboardShortcuts();
+    
+    // Start collecting initial data
+    this.startInitialDataCollection();
+  }
+
+  /**
+   * Start collecting initial performance data
+   */
+  private startInitialDataCollection(): void {
+    // Track initial memory usage
+    performanceMetrics.trackMemory('App');
+    
+    // Track app lifecycle
+    performanceMetrics.trackLifecycle('App', 'mount');
+    
+    // Set up periodic data collection
+    setInterval(() => {
+      performanceMetrics.trackMemory('System');
+    }, 5000); // Every 5 seconds
   }
 
   /**

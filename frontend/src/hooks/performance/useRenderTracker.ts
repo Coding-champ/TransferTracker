@@ -145,7 +145,7 @@ export const useRenderTracker = (
         }
       );
     }
-  });
+  }, [enabled, maxRenderCount, threshold, componentName]);
 
   return renderStats;
 };

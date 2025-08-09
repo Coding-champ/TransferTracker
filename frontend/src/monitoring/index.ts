@@ -3,6 +3,11 @@
  * Central export point for all monitoring and dashboard components
  */
 
+import { useState, useEffect } from 'react';
+import React from 'react';
+import DevDashboard from './DevDashboard';
+import PerformanceOverlay from './PerformanceOverlay';
+
 export { default as DevDashboard } from './DevDashboard';
 export { default as PerformanceOverlay } from './PerformanceOverlay';
 export { default as MigrationProgress } from './MigrationProgress';
@@ -11,8 +16,6 @@ export { default as ComponentAnalyzer } from './ComponentAnalyzer';
 /**
  * Hook to manage the dev dashboard state
  */
-import { useState, useEffect } from 'react';
-
 export const useDevDashboard = () => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -40,9 +43,6 @@ export const useDevDashboard = () => {
 /**
  * Provider component for monitoring features
  */
-import React from 'react';
-import DevDashboard from './DevDashboard';
-import PerformanceOverlay from './PerformanceOverlay';
 
 interface MonitoringProviderProps {
   children: React.ReactNode;
