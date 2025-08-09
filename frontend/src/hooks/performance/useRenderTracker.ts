@@ -25,6 +25,7 @@ export interface UseRenderTrackerOptions {
   threshold?: number; // Render time threshold in ms
   maxRenderCount?: number; // Max renders before flagging as excessive
   trackProps?: boolean;
+  logExcessiveRenders?: boolean; // Log warnings for excessive renders
 }
 
 /**
@@ -39,7 +40,8 @@ export const useRenderTracker = (
     enabled = process.env.NODE_ENV === 'development',
     threshold = 16.67, // 60fps threshold
     maxRenderCount = 20,
-    trackProps = true
+    trackProps = true,
+    logExcessiveRenders = false
   } = options;
 
   const renderCountRef = useRef(0);
@@ -57,15 +59,15 @@ export const useRenderTracker = (
     isExcessive: false
   });
 
-  // Track render start - only when telemetry is enabled
-  if (enabled && telemetryConfig.isEnabled()) {
+  // Track render start - only when enabled
+  if (enabled) {
     renderStartTimeRef.current = performance.now();
     renderCountRef.current += 1;
   }
 
   // Track props changes
   useEffect(() => {
-    if (!enabled || !trackProps || !props || !telemetryConfig.isEnabled()) return;
+    if (!enabled || !trackProps || !props) return;
 
     const changedProps: string[] = [];
     
@@ -102,7 +104,7 @@ export const useRenderTracker = (
 
   // Track render end and update stats
   useEffect(() => {
-    if (!enabled || !renderStartTimeRef.current || !telemetryConfig.isEnabled()) return;
+    if (!enabled || !renderStartTimeRef.current) return;
 
     const renderTime = performance.now() - renderStartTimeRef.current;
     renderTimesRef.current.push(renderTime);
@@ -117,11 +119,13 @@ export const useRenderTracker = (
     const isExcessive = renderCountRef.current > maxRenderCount || averageRenderTime > threshold;
 
     // Track in performance metrics only when telemetry is enabled
-    const changedProps = propsChangesRef.current.length > 0 
-      ? propsChangesRef.current[propsChangesRef.current.length - 1].changedProps 
-      : [];
-    
-    performanceMetrics.trackRender(componentName, renderTime, changedProps);
+    if (telemetryConfig.isEnabled()) {
+      const changedProps = propsChangesRef.current.length > 0 
+        ? propsChangesRef.current[propsChangesRef.current.length - 1].changedProps 
+        : [];
+      
+      performanceMetrics.trackRender(componentName, renderTime, changedProps);
+    }
 
     // Update local state
     setRenderStats({
@@ -134,8 +138,8 @@ export const useRenderTracker = (
       isExcessive
     });
 
-    // Log warning for excessive renders only when telemetry is enabled
-    if (isExcessive && renderCountRef.current % 10 === 0) {
+    // Log warning for excessive renders only when enabled
+    if (isExcessive && logExcessiveRenders && renderCountRef.current % 10 === 0) {
       console.warn(
         `🚨 ${componentName}: Excessive renders detected`,
         {
@@ -146,7 +150,7 @@ export const useRenderTracker = (
         }
       );
     }
-  }, [enabled, maxRenderCount, threshold, componentName]);
+  }, [enabled, maxRenderCount, threshold, componentName, logExcessiveRenders]);
 
   return renderStats;
 };
