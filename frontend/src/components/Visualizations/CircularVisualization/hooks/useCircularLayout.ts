@@ -11,12 +11,12 @@ import { calculateCircularPositions, groupNodesByTier } from '../utils/circularC
 export const useCircularLayout = ({
   networkData,
   config,
-  rotation
+  rotation,
+  zoomState
 }: UseCircularLayoutProps): CircularLayout | null => {
   
   return useMemo(() => {
-    // Provide immediate fallback if no data
-    if (!networkData?.nodes || !networkData?.edges || networkData.nodes.length === 0) {
+    if (!networkData?.nodes || !networkData?.edges) {
       return null;
     }
 
@@ -41,16 +41,27 @@ export const useCircularLayout = ({
       const nodes = nodesByTier.get(tier)!;
       const radius = minRadius + tierIndex * radiusStep;
       
-      // Always include all nodes - zoom will be handled by SVG transforms, not data filtering
+      // Apply zoom filtering if needed
+      let filteredNodes = nodes;
+      if (zoomState.level === 2 && zoomState.focusedTier !== null) {
+        // Focus on specific tier
+        if (tier !== zoomState.focusedTier) {
+          filteredNodes = [];
+        }
+      } else if (zoomState.level === 3 && zoomState.focusedLeague !== null) {
+        // Focus on specific league
+        filteredNodes = nodes.filter(node => node.league === zoomState.focusedLeague);
+      }
+
       const positions = calculateCircularPositions(
-        nodes.length,
+        filteredNodes.length,
         radius,
         centerX,
         centerY,
         rotation
       );
 
-      const tierNodes: CircularNode[] = nodes.map((node, nodeIndex) => {
+      const tierNodes: CircularNode[] = filteredNodes.map((node, nodeIndex) => {
         const position = positions[nodeIndex];
         return {
           id: node.id,
@@ -109,5 +120,5 @@ export const useCircularLayout = ({
       minRadius
     };
 
-  }, [networkData, config, rotation]); // Stable dependencies for immediate calculation
+  }, [networkData, config, rotation, zoomState]);
 };

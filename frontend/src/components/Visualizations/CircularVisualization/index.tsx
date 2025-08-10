@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import * as d3 from 'd3';
 import { VisualizationProps } from '../../../types';
-import { useAppContext } from '../../../contexts/AppContext';
 import { useD3Container } from '../shared/hooks/useD3Container';
 import { useCircularLayout } from './hooks/useCircularLayout';
 import { useCircularInteraction } from './hooks/useCircularInteraction';
 import { useCircularZoom } from './hooks/useCircularZoom';
 import { 
   CircularVisualizationConfig,
+  CircularZoomState,
   CircularNode
 } from './types';
 import { createLeagueColorScale } from '../shared/utils/d3-helpers';
@@ -28,24 +28,66 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 }) => {
   const [rotation, setRotation] = useState(0);
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+  const [zoomState, setZoomState] = useState<CircularZoomState>({
+    level: 1,
+    focusedTier: null,
+    focusedLeague: null,
+    scale: 1,
+    translateX: 0,
+    translateY: 0
+  });
 
-  // Get app context for filter management
-  const { setFilters } = useAppContext();
+  // Configuration for the visualization
+  const config = React.useMemo((): CircularVisualizationConfig => ({
+    width,
+    height,
+    margin: { top: 40, right: 40, bottom: 40, left: 40 },
+    minRadius: 60,
+    maxRadius: Math.min(width, height) / 2 - 80,
+    enableRotation: true,
+    enableZoom: true,
+    snapAngle: 30,
+    animationDuration: 800
+  }), [width, height]);
 
-  // Handle league selection with useCallback for performance
-  const handleLeagueSelection = React.useCallback((node: CircularNode) => {
-    setSelectedLeague(node.league);
-    // Note: Zoom focusing is now handled internally by the zoom hook
-  }, []);
+  // Setup D3 container
+  const { svgRef, svg, clearSvg } = useD3Container({
+    width,
+    height,
+    backgroundColor: 'white',
+    className: 'border rounded-lg'
+  });
 
-  // Handle league filtering with useCallback
-  const handleLeagueFilter = React.useCallback((league: string) => {
-    // Integrate with global filter state
-    setFilters({
-      ...filters,
-      leagues: [league]
-    });
-  }, [filters, setFilters]);
+  // Create circular layout - pass the actual data to use
+  const layout = useCircularLayout({
+    networkData: dataToUse,
+    config,
+    rotation,
+    zoomState
+  });
+
+  // Setup interactions
+  const { tooltip } = useCircularInteraction({
+    layout,
+    svgRef,
+    config,
+    onNodeClick: (node: CircularNode) => {
+      setSelectedLeague(node.league);
+    },
+    onLeagueFilter: (league: string) => {
+      // Integrate with global filter state here
+      console.log('Filter by league:', league);
+    },
+    onRotationChange: setRotation
+  });
+
+  // Setup zoom controls
+  const { zoomState: currentZoom, setZoomLevel, resetZoom } = useCircularZoom({
+    layout,
+    svgRef,
+    config,
+    onZoomChange: setZoomState
+  });
 
   // Create mock data for demo when no real data is available
   const createMockData = React.useCallback(() => {
@@ -89,86 +131,11 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     return networkData?.nodes?.length ? networkData : createMockData();
   }, [networkData, createMockData]);
 
-  // Clear selection handler
-  const handleClearSelection = React.useCallback(() => {
-    setSelectedLeague(null);
-    // Note: Zoom state is managed internally by zoom hook
-  }, []);
-
-  // Configuration for the visualization - stable object to prevent unnecessary re-renders
-  const config = React.useMemo((): CircularVisualizationConfig => ({
-    width,
-    height,
-    margin: { top: 40, right: 40, bottom: 40, left: 40 },
-    minRadius: 60,
-    maxRadius: Math.min(width, height) / 2 - 80,
-    enableRotation: true,
-    enableZoom: true,
-    snapAngle: 30,
-    animationDuration: 800
-  }), [width, height]);
-
-  // Setup D3 container
-  const { svgRef, svg, clearSvg } = useD3Container({
-    width,
-    height,
-    backgroundColor: 'white',
-    className: 'border rounded-lg'
-  });
-
-  // Create circular layout
-  const layout = useCircularLayout({
-    networkData: dataToUse,
-    config,
-    rotation
-  });
-
-  // Setup interactions
-  const { tooltip } = useCircularInteraction({
-    layout,
-    svgRef,
-    config,
-    onNodeClick: handleLeagueSelection,
-    onLeagueFilter: handleLeagueFilter,
-    onRotationChange: setRotation
-  });
-
-  // Setup zoom controls
-  const { zoomState: currentZoom, setZoomLevel, resetZoom } = useCircularZoom({
-    layout,
-    svgRef,
-    config
-  });
-
-  // Initial rendering - only depends on core data, not zoom level
+  // Render visualization
   React.useEffect(() => {
-    if (!svg) return;
+    if (!svg || !layout) return;
 
     clearSvg();
-    
-    // If no layout yet, show loading state
-    if (!layout) {
-      const loadingGroup = svg.append('g')
-        .attr('class', 'loading-indicator')
-        .attr('transform', `translate(${width / 2}, ${height / 2})`);
-      
-      loadingGroup.append('circle')
-        .attr('r', 20)
-        .attr('fill', 'none')
-        .attr('stroke', '#3b82f6')
-        .attr('stroke-width', 3)
-        .attr('stroke-dasharray', '15,5')
-        .style('animation', 'spin 1s linear infinite');
-      
-      loadingGroup.append('text')
-        .attr('text-anchor', 'middle')
-        .attr('dy', 50)
-        .attr('font-size', '14px')
-        .attr('fill', '#6b7280')
-        .text('Preparing circular layout...');
-      
-      return;
-    }
 
     // Create main visualization group
     const g = svg.append('g')
@@ -220,7 +187,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
       .range([4, 12]);
 
-    // Draw nodes with selection feedback
+    // Draw nodes
     const nodes = g.selectAll('.club-node')
       .data(layout.nodes)
       .enter()
@@ -231,10 +198,14 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => leagueColorScale(d.league) as string)
       .attr('stroke', 'white')
-      .attr('stroke-width', 2)
-      .attr('opacity', 1);
+      .attr('stroke-width', 2);
 
     animateNodesEnter(nodes);
+
+    // Apply filter animation if league is selected
+    if (selectedLeague) {
+      animateFilterTransition(layout, svg, selectedLeague);
+    }
 
     // Add legend
     const legend = svg.append('g')
@@ -261,12 +232,10 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
     // Add controls explanation
     const controls = [
-      'Drag to rotate view (R to reset)',
-      'Double-click to reset rotation',
-      'Mousewheel to zoom (1/2/3 keys)',
-      'Click node to select league',
-      'ESC to clear & reset, C to clear',
-      'F to apply league filter'
+      'Drag to rotate view',
+      'Double-click to reset',
+      'Mousewheel to zoom',
+      'Click node to filter league'
     ];
 
     controls.forEach((control, i) => {
@@ -279,14 +248,13 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
     yOffset += controls.length * 16 + 10;
 
-    // Add zoom level indicator - will be updated separately
+    // Add zoom level indicator
     legendContent.append('text')
-      .attr('class', 'zoom-level-indicator')
       .attr('y', yOffset)
       .attr('font-size', '11px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text('Zoom Level: 1'); // Default value, updated in separate effect
+      .text(`Zoom Level: ${currentZoom.level}`);
 
     // Size legend background
     const legendBounds = legendContent.node()!.getBBox();
@@ -294,24 +262,22 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, config, clearSvg, width, height]); // Removed currentZoom.level and selectedLeague to prevent re-renders
-
-  // Separate effect for selected league visual updates - doesn't re-render everything
+  }, [svg, layout, config, clearSvg]); // Removed selectedLeague and currentZoom.level to prevent re-renders
+  
+  // Separate effect for league selection updates - only updates styling, doesn't re-render everything  
   React.useEffect(() => {
     if (!svg || !layout) return;
-
+    
     const g = svg.select('.visualization-group');
     if (g.empty()) return;
 
-    // Node size scale
-    const sizeScale = d3.scaleLinear()
-      .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
-      .range([4, 12]);
-
-    // Update node styling for selection
+    // Apply filter animation if league is selected
+    if (selectedLeague) {
+      animateFilterTransition(layout, svg, selectedLeague);
+    }
+    
+    // Update nodes for selection highlighting
     g.selectAll('.club-node')
-      .transition()
-      .duration(300)
       .attr('stroke', (d: any) => {
         if (selectedLeague && d.league === selectedLeague) {
           return '#fbbf24'; // Golden highlight for selected league
@@ -330,48 +296,16 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         }
         return 1;
       });
-
-    // Handle selection rings for selected league nodes
-    const selectedNodes = selectedLeague ? layout.nodes.filter(n => n.league === selectedLeague) : [];
-    
-    const selectionRings = g.selectAll('.selection-ring')
-      .data(selectedNodes);
-
-    // Remove old rings
-    selectionRings.exit()
-      .transition()
-      .duration(200)
-      .attr('opacity', 0)
-      .remove();
-
-    // Add new rings
-    selectionRings.enter()
-      .append('circle')
-      .attr('class', 'selection-ring')
-      .attr('cx', d => d.x - config.margin.left)
-      .attr('cy', d => d.y - config.margin.top)
-      .attr('r', d => sizeScale(d.transferCount) + 8)
-      .attr('fill', 'none')
-      .attr('stroke', '#fbbf24')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '5,3')
-      .attr('opacity', 0)
-      .transition()
-      .duration(300)
-      .attr('opacity', 0.8);
-
-    // Apply filter animation if league is selected
-    if (selectedLeague) {
-      animateFilterTransition(layout, svg, selectedLeague);
-    }
-
-  }, [selectedLeague, svg, layout, config]);
-
+  }, [selectedLeague, svg, layout]);
+  
   // Separate effect for zoom level indicator updates
   React.useEffect(() => {
     if (!svg) return;
-
-    const zoomIndicator = svg.select('.zoom-level-indicator');
+    
+    const zoomIndicator = svg.select('.legend text').filter(function() {
+      return d3.select(this).text().includes('Zoom Level:');
+    });
+    
     if (!zoomIndicator.empty()) {
       zoomIndicator.text(`Zoom Level: ${currentZoom.level}`);
     }
@@ -395,27 +329,15 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
           setZoomLevel(3);
           break;
         case 'Escape':
-          handleClearSelection();
+          setSelectedLeague(null);
           resetZoom();
-          break;
-        case 'c':
-        case 'C':
-          // 'C' for clear selection
-          handleClearSelection();
-          break;
-        case 'f':
-        case 'F':
-          // 'F' to apply filter if league is selected
-          if (selectedLeague) {
-            handleLeagueFilter(selectedLeague);
-          }
           break;
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [setZoomLevel, resetZoom, handleClearSelection, handleLeagueFilter, selectedLeague]);
+  }, [setZoomLevel, resetZoom]);
 
   return (
     <div className="relative">
@@ -429,7 +351,6 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
           </div>
         </div>
       )}
-
       {/* Breadcrumb Navigation */}
       <div className="absolute top-4 left-4 z-10">
         <div className="bg-white border rounded-lg px-3 py-2 shadow-sm">
@@ -437,7 +358,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             <button
               onClick={() => {
                 setZoomLevel(1);
-                handleClearSelection();
+                setSelectedLeague(null);
               }}
               className="text-blue-600 hover:text-blue-800 hover:underline"
             >
@@ -463,6 +384,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
           </div>
         </div>
       </div>
+
       {/* Zoom Level Controls */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <div className="bg-white border rounded-lg p-2 shadow-sm">
@@ -534,15 +456,15 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             <div className="flex flex-col gap-1">
               <button
                 onClick={() => {
-                  // Apply league filter to global state
-                  handleLeagueFilter(selectedLeague);
+                  // Focus on league by setting zoom level 3 with the selected league
+                  setZoomLevel(3, undefined, selectedLeague);
                 }}
                 className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
               >
-                Apply Filter
+                Focus League
               </button>
               <button
-                onClick={handleClearSelection}
+                onClick={() => setSelectedLeague(null)}
                 className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded hover:bg-green-300"
               >
                 Clear Selection
@@ -557,7 +479,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         <button
           onClick={() => {
             setRotation(0);
-            handleClearSelection();
+            setSelectedLeague(null);
             resetZoom();
           }}
           className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700"
@@ -566,23 +488,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         </button>
       </div>
 
-      <svg ref={svgRef} width={width} height={height}>
-        <style>
-          {`
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-            .selection-ring {
-              animation: pulse 2s infinite;
-            }
-            @keyframes pulse {
-              0%, 100% { opacity: 0.8; }
-              50% { opacity: 0.4; }
-            }
-          `}
-        </style>
-      </svg>
+      <svg ref={svgRef} width={width} height={height} />
       
       {/* Render tooltip */}
       {tooltip}

@@ -50,13 +50,12 @@ export const useCircularZoom = ({
 
     setZoomState(newZoomState);
     
-    // Don't call onZoomChange to avoid triggering layout recalculation
-    // Only apply visual transform to existing elements
-
-    // Apply transform to visualization group
-    const svg = d3.select(svgRef.current);
-    svg.select('.visualization-group')
-       .attr('transform', transform.toString());
+    // Call onZoomChange to trigger layout recalculation when zoom level changes
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+    
+    // Don't apply visual transform here - let the layout recalculation handle the zoom
   }, [layout, svgRef, zoomState]);
 
   // Create zoom behavior
@@ -66,7 +65,7 @@ export const useCircularZoom = ({
 
   // Handle zoom level change
   const setZoomLevel = useCallback((level: 1 | 2 | 3, focusedTier?: number, focusedLeague?: string) => {
-    if (!layout || !svgRef.current) return;
+    if (!layout) return;
 
     const newZoomState: CircularZoomState = {
       level,
@@ -77,82 +76,13 @@ export const useCircularZoom = ({
       translateY: 0
     };
 
-    let targetTransform: d3.ZoomTransform;
-    const svg = d3.select(svgRef.current);
-
-    switch (level) {
-      case 1: // Overview - show all tiers
-        targetTransform = d3.zoomIdentity;
-        break;
-        
-      case 2: // Tier Focus - focus on specific tier
-        if (focusedTier !== undefined) {
-          const tier = layout.tiers.find(t => t.tier === focusedTier);
-          if (tier) {
-            const scale = Math.min(config.width, config.height) / (tier.radius * 2.5);
-            targetTransform = d3.zoomIdentity
-              .translate(config.width / 2, config.height / 2)
-              .scale(scale)
-              .translate(-layout.centerX, -layout.centerY);
-            newZoomState.scale = scale;
-          } else {
-            targetTransform = d3.zoomIdentity.scale(2);
-            newZoomState.scale = 2;
-          }
-        } else {
-          targetTransform = d3.zoomIdentity.scale(2);
-          newZoomState.scale = 2;
-        }
-        break;
-        
-      case 3: // League Details - focus on specific league nodes
-        if (focusedLeague) {
-          const leagueNodes = layout.nodes.filter(n => n.league === focusedLeague);
-          if (leagueNodes.length > 0) {
-            // Calculate bounding box of league nodes
-            const xExtent = d3.extent(leagueNodes, d => d.x) as [number, number];
-            const yExtent = d3.extent(leagueNodes, d => d.y) as [number, number];
-            
-            const centerX = (xExtent[0] + xExtent[1]) / 2;
-            const centerY = (yExtent[0] + yExtent[1]) / 2;
-            const width = xExtent[1] - xExtent[0];
-            const height = yExtent[1] - yExtent[0];
-            
-            const scale = Math.min(
-              config.width / (width * 1.5),
-              config.height / (height * 1.5),
-              4 // Max scale
-            );
-            
-            targetTransform = d3.zoomIdentity
-              .translate(config.width / 2, config.height / 2)
-              .scale(scale)
-              .translate(-centerX, -centerY);
-            newZoomState.scale = scale;
-          } else {
-            targetTransform = d3.zoomIdentity.scale(3);
-            newZoomState.scale = 3;
-          }
-        } else {
-          targetTransform = d3.zoomIdentity.scale(3);
-          newZoomState.scale = 3;
-        }
-        break;
-        
-      default:
-        targetTransform = d3.zoomIdentity;
-    }
-
-    // Apply zoom transformation with animation - but don't call onZoomChange to avoid re-renders
-    zoomTo(svg, zoomBehavior, targetTransform, { 
-      duration: config.animationDuration 
-    });
-
     setZoomState(newZoomState);
     
-    // Only update internal zoom state, don't trigger layout recalculation
-    // Note: Removed onZoomChange call to prevent re-renders
-  }, [layout, svgRef, config, zoomBehavior]);
+    // Call onZoomChange to trigger layout recalculation for data-based zoom
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+  }, [layout, onZoomChange]);
 
   // Zoom to specific tier
   const zoomToTier = useCallback((tier: number) => {
