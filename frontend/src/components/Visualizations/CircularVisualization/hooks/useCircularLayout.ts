@@ -44,14 +44,15 @@ export const useCircularLayout = ({
       // Apply zoom filtering if needed
       let filteredNodes = nodes;
       if (zoomState.level === 2 && zoomState.focusedTier !== null) {
-        // Focus on specific tier
+        // Focus on specific tier - only show nodes from the focused tier
         if (tier !== zoomState.focusedTier) {
           filteredNodes = [];
         }
       } else if (zoomState.level === 3 && zoomState.focusedLeague !== null) {
-        // Focus on specific league
+        // Focus on specific league - only show nodes from the focused league
         filteredNodes = nodes.filter(node => node.league === zoomState.focusedLeague);
       }
+      // Note: if level === 2 but focusedTier is null, show all tiers (no filtering)
 
       const positions = calculateCircularPositions(
         filteredNodes.length,
