@@ -157,19 +157,73 @@ export const useCircularInteraction = ({
                      .on('mouseout', null)
                      .on('click', null);
 
-    // Add node event listeners
+    // Add node event listeners with enhanced interactions
     svg.selectAll('.club-node')
        .on('mouseover', function(event, d) {
          const node = d as CircularNode;
-         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) * 1.3);
+         const currentNode = d3.select(this);
+         const currentRadius = +currentNode.attr('r');
+         
+         // Scale node to 1.2x size (not 1.3x to be more subtle)
+         currentNode.transition()
+           .duration(200)
+           .attr('r', currentRadius * 1.2)
+           .attr('stroke-width', 3);
+         
+         // Highlight all transfer lines connected to this node
+         svg.selectAll('.transfer-arc')
+           .transition()
+           .duration(200)
+           .attr('opacity', function(arcData: any) {
+             const arc = arcData as CircularArc;
+             return (arc.source.id === node.id || arc.target.id === node.id) ? 1 : 0.1;
+           })
+           .attr('stroke-width', function(arcData: any) {
+             const arc = arcData as CircularArc;
+             const baseWidth = Math.max(1, Math.log(arc.value / 1000000 + 1) * 2);
+             return (arc.source.id === node.id || arc.target.id === node.id) ? baseWidth * 1.5 : baseWidth;
+           });
+         
+         // Dim other nodes
+         svg.selectAll('.club-node')
+           .filter(function() { return this !== currentNode.node(); })
+           .transition()
+           .duration(200)
+           .attr('opacity', 0.3);
+         
          handleNodeMouseOver(node, event);
        })
-       .on('mouseout', function() {
-         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) / 1.3);
+       .on('mouseout', function(event, d) {
+         const currentNode = d3.select(this);
+         const currentRadius = +currentNode.attr('r');
+         
+         // Reset node size
+         currentNode.transition()
+           .duration(200)
+           .attr('r', currentRadius / 1.2)
+           .attr('stroke-width', 2);
+         
+         // Reset all transfer lines
+         svg.selectAll('.transfer-arc')
+           .transition()
+           .duration(200)
+           .attr('opacity', 0.6)
+           .attr('stroke-width', function(arcData: any) {
+             const arc = arcData as CircularArc;
+             return Math.max(1, Math.log(arc.value / 1000000 + 1) * 2);
+           });
+         
+         // Reset other nodes
+         svg.selectAll('.club-node')
+           .transition()
+           .duration(200)
+           .attr('opacity', 1);
+         
          handleNodeMouseOut();
        })
        .on('click', function(event, d) {
          const node = d as CircularNode;
+         event.stopPropagation();
          handleNodeClick(node);
        });
 

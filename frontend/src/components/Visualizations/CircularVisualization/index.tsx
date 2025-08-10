@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as d3 from 'd3';
 import { VisualizationProps } from '../../../types';
+import { useAppContext } from '../../../contexts/AppContext';
 import { useD3Container } from '../shared/hooks/useD3Container';
 import { useCircularLayout } from './hooks/useCircularLayout';
 import { useCircularInteraction } from './hooks/useCircularInteraction';
@@ -36,6 +37,9 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     translateX: 0,
     translateY: 0
   });
+
+  // Get app context for filter management
+  const { setFilters } = useAppContext();
 
   // Configuration for the visualization
   const config = React.useMemo((): CircularVisualizationConfig => ({
@@ -73,10 +77,15 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     config,
     onNodeClick: (node: CircularNode) => {
       setSelectedLeague(node.league);
+      // Focus zoom on the selected league
+      setZoomState(prev => ({ ...prev, focusedLeague: node.league }));
     },
     onLeagueFilter: (league: string) => {
-      // Integrate with global filter state here
-      console.log('Filter by league:', league);
+      // Integrate with global filter state
+      setFilters({
+        ...filters,
+        leagues: [league]
+      });
     },
     onRotationChange: setRotation
   });
@@ -91,9 +100,33 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
   // Render visualization
   React.useEffect(() => {
-    if (!svg || !layout) return;
+    if (!svg) return;
 
     clearSvg();
+    
+    // If no layout yet, show loading state
+    if (!layout) {
+      const loadingGroup = svg.append('g')
+        .attr('class', 'loading-indicator')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`);
+      
+      loadingGroup.append('circle')
+        .attr('r', 20)
+        .attr('fill', 'none')
+        .attr('stroke', '#3b82f6')
+        .attr('stroke-width', 3)
+        .attr('stroke-dasharray', '15,5')
+        .style('animation', 'spin 1s linear infinite');
+      
+      loadingGroup.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', 50)
+        .attr('font-size', '14px')
+        .attr('fill', '#6b7280')
+        .text('Preparing circular layout...');
+      
+      return;
+    }
 
     // Create main visualization group
     const g = svg.append('g')
@@ -145,7 +178,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
       .range([4, 12]);
 
-    // Draw nodes
+    // Draw nodes with selection feedback
     const nodes = g.selectAll('.club-node')
       .data(layout.nodes)
       .enter()
@@ -155,10 +188,55 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('cy', d => d.y - config.margin.top)
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => leagueColorScale(d.league) as string)
-      .attr('stroke', 'white')
-      .attr('stroke-width', 2);
+      .attr('stroke', d => {
+        if (selectedLeague && d.league === selectedLeague) {
+          return '#fbbf24'; // Golden highlight for selected league
+        }
+        return 'white';
+      })
+      .attr('stroke-width', d => {
+        if (selectedLeague && d.league === selectedLeague) {
+          return 4; // Thicker stroke for selected league
+        }
+        return 2;
+      })
+      .attr('opacity', d => {
+        if (selectedLeague && d.league !== selectedLeague) {
+          return 0.3; // Dim non-selected leagues
+        }
+        return 1;
+      });
 
     animateNodesEnter(nodes);
+
+    // Handle selection rings for selected league nodes
+    const selectedNodes = selectedLeague ? layout.nodes.filter(n => n.league === selectedLeague) : [];
+    
+    const selectionRings = g.selectAll('.selection-ring')
+      .data(selectedNodes);
+
+    // Remove old rings
+    selectionRings.exit()
+      .transition()
+      .duration(200)
+      .attr('opacity', 0)
+      .remove();
+
+    // Add new rings
+    selectionRings.enter()
+      .append('circle')
+      .attr('class', 'selection-ring')
+      .attr('cx', d => d.x - config.margin.left)
+      .attr('cy', d => d.y - config.margin.top)
+      .attr('r', d => sizeScale(d.transferCount) + 8)
+      .attr('fill', 'none')
+      .attr('stroke', '#fbbf24')
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '5,3')
+      .attr('opacity', 0)
+      .transition()
+      .duration(300)
+      .attr('opacity', 0.8);
 
     // Apply filter animation if league is selected
     if (selectedLeague) {
@@ -220,7 +298,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, config, selectedLeague, currentZoom.level, clearSvg]);
+  }, [svg, layout, config, selectedLeague, currentZoom.level, clearSvg, width, height]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
@@ -302,14 +380,28 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
         {selectedLeague && (
           <div className="bg-green-100 border border-green-300 rounded-lg p-2 shadow-sm">
-            <div className="text-xs font-medium text-green-800">Active Filter</div>
-            <div className="text-xs text-green-700">{selectedLeague}</div>
-            <button
-              onClick={() => setSelectedLeague(null)}
-              className="mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded hover:bg-green-300"
-            >
-              Clear
-            </button>
+            <div className="text-xs font-medium text-green-800 mb-1">Active Filter</div>
+            <div className="text-xs text-green-700 mb-2">League: {selectedLeague}</div>
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => {
+                  // Apply league filter to global state
+                  setFilters({
+                    ...filters,
+                    leagues: [selectedLeague]
+                  });
+                }}
+                className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Apply Filter
+              </button>
+              <button
+                onClick={() => setSelectedLeague(null)}
+                className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded hover:bg-green-300"
+              >
+                Clear Selection
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -328,7 +420,23 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         </button>
       </div>
 
-      <svg ref={svgRef} width={width} height={height} />
+      <svg ref={svgRef} width={width} height={height}>
+        <style>
+          {`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+            .selection-ring {
+              animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 0.8; }
+              50% { opacity: 0.4; }
+            }
+          `}
+        </style>
+      </svg>
       
       {/* Render tooltip */}
       {tooltip}
