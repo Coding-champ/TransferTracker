@@ -50,45 +50,6 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     animationDuration: 800
   }), [width, height]);
 
-  // Setup D3 container
-  const { svgRef, svg, clearSvg } = useD3Container({
-    width,
-    height,
-    backgroundColor: 'white',
-    className: 'border rounded-lg'
-  });
-
-  // Create circular layout - pass the actual data to use
-  const layout = useCircularLayout({
-    networkData: dataToUse,
-    config,
-    rotation,
-    zoomState
-  });
-
-  // Setup interactions
-  const { tooltip } = useCircularInteraction({
-    layout,
-    svgRef,
-    config,
-    onNodeClick: (node: CircularNode) => {
-      setSelectedLeague(node.league);
-    },
-    onLeagueFilter: (league: string) => {
-      // Integrate with global filter state here
-      console.log('Filter by league:', league);
-    },
-    onRotationChange: setRotation
-  });
-
-  // Setup zoom controls
-  const { zoomState: currentZoom, setZoomLevel, resetZoom } = useCircularZoom({
-    layout,
-    svgRef,
-    config,
-    onZoomChange: setZoomState
-  });
-
   // Create mock data for demo when no real data is available
   const createMockData = React.useCallback(() => {
     return {
@@ -130,6 +91,45 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   const dataToUse = React.useMemo(() => {
     return networkData?.nodes?.length ? networkData : createMockData();
   }, [networkData, createMockData]);
+
+  // Setup D3 container
+  const { svgRef, svg, clearSvg } = useD3Container({
+    width,
+    height,
+    backgroundColor: 'white',
+    className: 'border rounded-lg'
+  });
+
+  // Create circular layout - pass the actual data to use
+  const layout = useCircularLayout({
+    networkData: dataToUse,
+    config,
+    rotation,
+    zoomState: zoomState
+  });
+
+  // Setup interactions
+  const { tooltip } = useCircularInteraction({
+    layout,
+    svgRef,
+    config,
+    onNodeClick: (node: CircularNode) => {
+      setSelectedLeague(node.league);
+    },
+    onLeagueFilter: (league: string) => {
+      // Integrate with global filter state here
+      console.log('Filter by league:', league);
+    },
+    onRotationChange: setRotation
+  });
+
+  // Setup zoom controls
+  const { setZoomLevel, resetZoom } = useCircularZoom({
+    layout,
+    svgRef,
+    config,
+    onZoomChange: setZoomState
+  });
 
   // Render visualization
   React.useEffect(() => {
@@ -182,9 +182,16 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
     animateArcsEnter(arcs);
 
-    // Node size scale
+    // Node size scale - ensure valid domain
+    const transferCounts = layout.nodes.map(d => d.transferCount);
+    const transferCountExtent = d3.extent(transferCounts) as [number, number];
+    
+    // Ensure valid domain (handle edge cases)
+    const minTransferCount = transferCountExtent[0] || 1;
+    const maxTransferCount = Math.max(transferCountExtent[1] || 1, minTransferCount + 1);
+    
     const sizeScale = d3.scaleLinear()
-      .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
+      .domain([minTransferCount, maxTransferCount])
       .range([4, 12]);
 
     // Draw nodes
@@ -254,7 +261,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('font-size', '11px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text(`Zoom Level: ${currentZoom.level}`);
+      .text(`Zoom Level: ${zoomState.level}`);
 
     // Size legend background
     const legendBounds = legendContent.node()!.getBBox();
@@ -262,7 +269,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, config, clearSvg]); // Removed selectedLeague and currentZoom.level to prevent re-renders
+  }, [svg, layout, config, clearSvg, selectedLeague, zoomState.level]); // Include all dependencies
   
   // Separate effect for league selection updates - only updates styling, doesn't re-render everything  
   React.useEffect(() => {
@@ -307,9 +314,9 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     });
     
     if (!zoomIndicator.empty()) {
-      zoomIndicator.text(`Zoom Level: ${currentZoom.level}`);
+      zoomIndicator.text(`Zoom Level: ${zoomState.level}`);
     }
-  }, [currentZoom.level, svg]);
+  }, [zoomState.level, svg]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
@@ -364,14 +371,14 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             >
               All
             </button>
-            {currentZoom.level >= 2 && currentZoom.focusedTier && (
+            {zoomState.level >= 2 && zoomState.focusedTier && (
               <>
                 <span className="mx-2">→</span>
                 <button
-                  onClick={() => setZoomLevel(2, currentZoom.focusedTier!)}
+                  onClick={() => setZoomLevel(2, zoomState.focusedTier!)}
                   className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
-                  Tier {currentZoom.focusedTier}
+                  Tier {zoomState.focusedTier}
                 </button>
               </>
             )}
@@ -393,7 +400,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             <button
               onClick={() => setZoomLevel(1)}
               className={`px-2 py-1 text-xs rounded ${
-                currentZoom.level === 1 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                zoomState.level === 1 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
               }`}
             >
               Overview
@@ -401,7 +408,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             <button
               onClick={() => setZoomLevel(2)}
               className={`px-2 py-1 text-xs rounded ${
-                currentZoom.level === 2 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                zoomState.level === 2 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
               }`}
             >
               Tier Focus
@@ -409,7 +416,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
             <button
               onClick={() => setZoomLevel(3)}
               className={`px-2 py-1 text-xs rounded ${
-                currentZoom.level === 3 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                zoomState.level === 3 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
               }`}
             >
               League Details
@@ -417,7 +424,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
           </div>
           
           {/* Tier-specific zoom controls when in tier focus mode */}
-          {currentZoom.level === 2 && layout && (
+          {zoomState.level === 2 && layout && (
             <div className="mt-2 pt-2 border-t border-gray-200">
               <div className="text-xs font-medium text-gray-700 mb-1">Focus Tier</div>
               <div className="flex flex-col gap-1">
@@ -426,7 +433,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
                     key={tier.tier}
                     onClick={() => setZoomLevel(2, tier.tier)}
                     className={`px-2 py-1 text-xs rounded ${
-                      currentZoom.focusedTier === tier.tier 
+                      zoomState.focusedTier === tier.tier 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }`}
@@ -439,7 +446,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
           )}
           
           {/* League-specific zoom controls when in league details mode */}
-          {currentZoom.level === 3 && layout && selectedLeague && (
+          {zoomState.level === 3 && layout && selectedLeague && (
             <div className="mt-2 pt-2 border-t border-gray-200">
               <div className="text-xs font-medium text-gray-700 mb-1">League Focus</div>
               <div className="px-2 py-1 text-xs bg-green-50 text-green-700 rounded">

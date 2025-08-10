@@ -4,7 +4,6 @@ import {
   CircularZoomState,
   UseCircularZoomProps 
 } from '../types';
-import { zoomTo } from '../../shared/utils/animation-utils';
 
 export const useCircularZoom = ({
   layout,
@@ -56,7 +55,7 @@ export const useCircularZoom = ({
     }
     
     // Don't apply visual transform here - let the layout recalculation handle the zoom
-  }, [layout, svgRef, zoomState]);
+  }, [layout, svgRef, onZoomChange, zoomState]);
 
   // Create zoom behavior
   const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()

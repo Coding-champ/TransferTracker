@@ -115,6 +115,7 @@ export interface UseCircularLayoutProps {
   networkData: { nodes: NetworkNode[]; edges: NetworkEdge[] } | null;
   config: CircularVisualizationConfig;
   rotation: number;
+  zoomState: CircularZoomState;
 }
 
 export interface UseCircularInteractionProps {
