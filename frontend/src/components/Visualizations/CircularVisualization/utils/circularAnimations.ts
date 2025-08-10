@@ -1,7 +1,6 @@
 import * as d3 from 'd3';
 import { CircularNode, CircularArc, CircularLayout } from '../types';
 import { 
-  staggeredFadeIn,
   AnimationConfig 
 } from '../../shared/utils/animation-utils';
 
@@ -56,8 +55,6 @@ export const animateNodesEnter = (
   config: AnimationConfig = {}
 ) => {
   // Start with proper radius and opacity, then animate in
-  const targetRadius = nodeSelection.attr('data-target-r');
-  
   return nodeSelection
     .attr('r', 0) // Start with 0 radius
     .style('opacity', 1) // But visible opacity (not 0 like staggeredFadeIn does)
@@ -110,23 +107,14 @@ export const animateArcsEnter = (
   arcSelection: d3.Selection<SVGPathElement, CircularArc, any, any>,
   config: AnimationConfig = {}
 ) => {
+  // Simple fade-in animation without stroke-dasharray complications
   return arcSelection
-    .style('opacity', 0.6) // Start with target opacity (not 0)
-    .attr('stroke-dasharray', function() {
-      const totalLength = (this as SVGPathElement).getTotalLength();
-      return `${totalLength} ${totalLength}`;
-    })
-    .attr('stroke-dashoffset', function() {
-      return (this as SVGPathElement).getTotalLength();
-    })
+    .style('opacity', 0) // Start invisible
     .transition()
-    .duration(1000)
-    .ease(d3.easeLinear)
-    .delay((d, i) => i * 20)
-    .attr('stroke-dashoffset', 0)
-    .on('end', function() {
-      d3.select(this).attr('stroke-dasharray', null);
-    });
+    .duration(800)
+    .ease(d3.easeQuadOut)
+    .delay((d, i) => i * 30)
+    .style('opacity', 0.6); // End with target opacity
 };
 
 /**

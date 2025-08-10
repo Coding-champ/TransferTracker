@@ -28,16 +28,20 @@ export const useCircularInteraction = ({
   });
 
   const tooltip = useTooltip({
-    delay: 300,
+    delay: 0, // Remove delay for immediate response
     followMouse: true
   });
 
   // Handle node hover
   const handleNodeMouseOver = useCallback((node: CircularNode, event: MouseEvent) => {
+    // Clear any existing tooltip immediately
+    tooltip.hideTooltip();
+    
     setInteractionState(prev => ({ ...prev, hoveredNode: node }));
     
     const tooltipContent = `${node.name}\nLeague: ${node.league}\nTier: ${node.tier}\nTransfers: ${node.transferCount}\nTotal Value: €${(node.totalValue / 1000000).toFixed(1)}M`;
 
+    // Show new tooltip immediately
     tooltip.showTooltip({
       title: 'Club Details',
       content: tooltipContent
@@ -71,10 +75,14 @@ export const useCircularInteraction = ({
 
   // Handle arc hover
   const handleArcMouseOver = useCallback((arc: CircularArc, event: MouseEvent) => {
+    // Clear any existing tooltip immediately
+    tooltip.hideTooltip();
+    
     setInteractionState(prev => ({ ...prev, hoveredArc: arc }));
     
     const tooltipContent = `${arc.source.name} → ${arc.target.name}\nTransfers: ${arc.count}\nTotal Value: €${(arc.value / 1000000).toFixed(1)}M\nType: ${arc.type}`;
 
+    // Show new tooltip immediately
     tooltip.showTooltip({
       title: 'Transfer Flow',
       content: tooltipContent
@@ -153,9 +161,11 @@ export const useCircularInteraction = ({
   useEffect(() => {
     if (!svgRef.current || !layout) return;
 
+    const svgElement = svgRef.current; // Capture ref value once
+
     // Use a small delay to ensure DOM elements are created
     const timeoutId = setTimeout(() => {
-      const svg = d3.select(svgRef.current);
+      const svg = d3.select(svgElement);
       
       // Clear existing listeners
       svg.selectAll('*').on('mouseover', null)
@@ -257,7 +267,6 @@ export const useCircularInteraction = ({
 
     return () => {
       clearTimeout(timeoutId);
-      const svgElement = svgRef.current; // Capture ref value
       if (svgElement) {
         const svg = d3.select(svgElement);
         svg.selectAll('*').on('mouseover', null)
@@ -272,13 +281,15 @@ export const useCircularInteraction = ({
   // Handle mouse move for tooltip following
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      tooltip.updateTooltipPosition(event);
+      // Always update tooltip position if it's visible, and immediately update content
+      if (interactionState.hoveredNode || interactionState.hoveredArc) {
+        tooltip.updateTooltipPosition(event);
+      }
     };
 
-    if (interactionState.hoveredNode || interactionState.hoveredArc) {
-      document.addEventListener('mousemove', handleMouseMove);
-      return () => document.removeEventListener('mousemove', handleMouseMove);
-    }
+    // Attach to document to catch all mouse movements
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
   }, [interactionState.hoveredNode, interactionState.hoveredArc, tooltip]);
 
   return {
