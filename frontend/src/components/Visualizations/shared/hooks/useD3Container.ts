@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import * as d3 from 'd3';
 
 export interface D3ContainerConfig {
@@ -28,6 +28,7 @@ const defaultMargin = { top: 20, right: 20, bottom: 20, left: 20 };
 
 export const useD3Container = (config: D3ContainerConfig): D3Container => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [svg, setSvg] = useState<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
   const { width, height, margin = defaultMargin, backgroundColor = 'white', className = '' } = config;
   
   const innerWidth = width - margin.left - margin.right;
@@ -53,15 +54,17 @@ export const useD3Container = (config: D3ContainerConfig): D3Container => {
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const svg = d3.select(svgRef.current);
-    svg.attr('width', width)
+    const svgSelection = d3.select(svgRef.current);
+    svgSelection.attr('width', width)
        .attr('height', height)
        .attr('class', className)
        .style('background-color', backgroundColor);
 
+    // Update the svg state so components can use it immediately
+    setSvg(svgSelection);
+
   }, [width, height, backgroundColor, className]);
 
-  const svg = svgRef.current ? d3.select(svgRef.current) : null;
   const g = null; // Will be set by appendGroup
 
   return {

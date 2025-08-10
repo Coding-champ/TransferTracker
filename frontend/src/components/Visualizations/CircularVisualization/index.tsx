@@ -100,10 +100,12 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     className: 'border rounded-lg'
   });
 
-  // Create circular layout - pass the actual data to use
+  // Create circular layout - ensure we pass a stable config
+  const stableConfig = React.useMemo(() => config, [config]);
+
   const layout = useCircularLayout({
     networkData: dataToUse,
-    config,
+    config: stableConfig,
     rotation,
     zoomState: zoomState
   });
@@ -135,12 +137,13 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   React.useEffect(() => {
     if (!svg || !layout) return;
 
+    // Always clear before rendering
     clearSvg();
 
     // Create main visualization group
     const g = svg.append('g')
       .attr('class', 'visualization-group')
-      .attr('transform', `translate(${config.margin.left}, ${config.margin.top})`);
+      .attr('transform', `translate(${stableConfig.margin.left}, ${stableConfig.margin.top})`);
 
     // Color scales
     const uniqueLeagues = Array.from(new Set(layout.nodes.map(d => d.league)));
@@ -154,8 +157,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .enter()
       .append('circle')
       .attr('class', 'tier-circle')
-      .attr('cx', layout.centerX - config.margin.left)
-      .attr('cy', layout.centerY - config.margin.top)
+      .attr('cx', layout.centerX - stableConfig.margin.left)
+      .attr('cy', layout.centerY - stableConfig.margin.top)
       .attr('fill', 'none')
       .attr('stroke', '#e5e7eb')
       .attr('stroke-width', 1)
@@ -173,7 +176,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
         const dx = d.target.x - d.source.x;
         const dy = d.target.y - d.source.y;
         const dr = Math.sqrt(dx * dx + dy * dy) * 0.7;
-        return `M${d.source.x - config.margin.left},${d.source.y - config.margin.top}A${dr},${dr} 0 0,1 ${d.target.x - config.margin.left},${d.target.y - config.margin.top}`;
+        return `M${d.source.x - stableConfig.margin.left},${d.source.y - stableConfig.margin.top}A${dr},${dr} 0 0,1 ${d.target.x - stableConfig.margin.left},${d.target.y - stableConfig.margin.top}`;
       })
       .attr('fill', 'none')
       .attr('stroke', d => colorScale(d.value))
@@ -200,8 +203,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .enter()
       .append('circle')
       .attr('class', 'club-node')
-      .attr('cx', d => d.x - config.margin.left)
-      .attr('cy', d => d.y - config.margin.top)
+      .attr('cx', d => d.x - stableConfig.margin.left)
+      .attr('cy', d => d.y - stableConfig.margin.top)
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => leagueColorScale(d.league) as string)
       .attr('stroke', 'white')
@@ -269,7 +272,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, config, clearSvg, selectedLeague, zoomState.level]); // Include all dependencies
+  }, [svg, layout, stableConfig, clearSvg, selectedLeague, zoomState.level]); // Use stableConfig instead of config
   
   // Separate effect for league selection updates - only updates styling, doesn't re-render everything  
   React.useEffect(() => {
