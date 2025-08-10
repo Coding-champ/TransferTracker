@@ -50,15 +50,14 @@ export const useCircularZoom = ({
 
     setZoomState(newZoomState);
     
-    if (onZoomChange) {
-      onZoomChange(newZoomState);
-    }
+    // Don't call onZoomChange to avoid triggering layout recalculation
+    // Only apply visual transform to existing elements
 
     // Apply transform to visualization group
     const svg = d3.select(svgRef.current);
     svg.select('.visualization-group')
        .attr('transform', transform.toString());
-  }, [layout, svgRef, zoomState, onZoomChange]);
+  }, [layout, svgRef, zoomState]);
 
   // Create zoom behavior
   const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
@@ -144,17 +143,16 @@ export const useCircularZoom = ({
         targetTransform = d3.zoomIdentity;
     }
 
-    // Apply zoom transformation with animation
+    // Apply zoom transformation with animation - but don't call onZoomChange to avoid re-renders
     zoomTo(svg, zoomBehavior, targetTransform, { 
       duration: config.animationDuration 
     });
 
     setZoomState(newZoomState);
     
-    if (onZoomChange) {
-      onZoomChange(newZoomState);
-    }
-  }, [layout, svgRef, config, zoomBehavior, onZoomChange]);
+    // Only update internal zoom state, don't trigger layout recalculation
+    // Note: Removed onZoomChange call to prevent re-renders
+  }, [layout, svgRef, config, zoomBehavior]);
 
   // Zoom to specific tier
   const zoomToTier = useCallback((tier: number) => {

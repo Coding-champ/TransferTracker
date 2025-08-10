@@ -8,7 +8,6 @@ import { useCircularInteraction } from './hooks/useCircularInteraction';
 import { useCircularZoom } from './hooks/useCircularZoom';
 import { 
   CircularVisualizationConfig,
-  CircularZoomState,
   CircularNode
 } from './types';
 import { createLeagueColorScale } from '../shared/utils/d3-helpers';
@@ -29,14 +28,6 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 }) => {
   const [rotation, setRotation] = useState(0);
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
-  const [zoomState, setZoomState] = useState<CircularZoomState>({
-    level: 1,
-    focusedTier: null,
-    focusedLeague: null,
-    scale: 1,
-    translateX: 0,
-    translateY: 0
-  });
 
   // Get app context for filter management
   const { setFilters } = useAppContext();
@@ -44,8 +35,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   // Handle league selection with useCallback for performance
   const handleLeagueSelection = React.useCallback((node: CircularNode) => {
     setSelectedLeague(node.league);
-    // Focus zoom on the selected league
-    setZoomState(prev => ({ ...prev, focusedLeague: node.league }));
+    // Note: Zoom focusing is now handled internally by the zoom hook
   }, []);
 
   // Handle league filtering with useCallback
@@ -102,7 +92,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   // Clear selection handler
   const handleClearSelection = React.useCallback(() => {
     setSelectedLeague(null);
-    setZoomState(prev => ({ ...prev, focusedLeague: null }));
+    // Note: Zoom state is managed internally by zoom hook
   }, []);
 
   // Configuration for the visualization
@@ -130,8 +120,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   const layout = useCircularLayout({
     networkData: dataToUse,
     config,
-    rotation,
-    zoomState
+    rotation
   });
 
   // Setup interactions
@@ -148,11 +137,10 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
   const { zoomState: currentZoom, setZoomLevel, resetZoom } = useCircularZoom({
     layout,
     svgRef,
-    config,
-    onZoomChange: setZoomState
+    config
   });
 
-  // Render visualization
+  // Render visualization - simplified dependencies to prevent unnecessary re-renders
   React.useEffect(() => {
     if (!svg) return;
 

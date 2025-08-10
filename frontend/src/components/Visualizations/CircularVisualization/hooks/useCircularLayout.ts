@@ -11,8 +11,7 @@ import { calculateCircularPositions, groupNodesByTier } from '../utils/circularC
 export const useCircularLayout = ({
   networkData,
   config,
-  rotation,
-  zoomState
+  rotation
 }: UseCircularLayoutProps): CircularLayout | null => {
   
   return useMemo(() => {
@@ -41,27 +40,16 @@ export const useCircularLayout = ({
       const nodes = nodesByTier.get(tier)!;
       const radius = minRadius + tierIndex * radiusStep;
       
-      // Apply zoom filtering if needed
-      let filteredNodes = nodes;
-      if (zoomState.level === 2 && zoomState.focusedTier !== null) {
-        // Focus on specific tier
-        if (tier !== zoomState.focusedTier) {
-          filteredNodes = [];
-        }
-      } else if (zoomState.level === 3 && zoomState.focusedLeague !== null) {
-        // Focus on specific league
-        filteredNodes = nodes.filter(node => node.league === zoomState.focusedLeague);
-      }
-
+      // Always include all nodes - zoom will be handled by SVG transforms, not data filtering
       const positions = calculateCircularPositions(
-        filteredNodes.length,
+        nodes.length,
         radius,
         centerX,
         centerY,
         rotation
       );
 
-      const tierNodes: CircularNode[] = filteredNodes.map((node, nodeIndex) => {
+      const tierNodes: CircularNode[] = nodes.map((node, nodeIndex) => {
         const position = positions[nodeIndex];
         return {
           id: node.id,
@@ -120,5 +108,5 @@ export const useCircularLayout = ({
       minRadius
     };
 
-  }, [networkData, config, rotation, zoomState]);
+  }, [networkData, config, rotation]);
 };
