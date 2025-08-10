@@ -221,7 +221,7 @@ export const animatePulse = (
 };
 
 /**
- * Smooth filter transition animation
+ * Enhanced league filter animation with glow effect
  */
 export const animateFilterTransition = (
   layout: CircularLayout,
@@ -233,47 +233,78 @@ export const animateFilterTransition = (
   const arcs = svg.selectAll('.transfer-arc');
   
   if (filteredLeague) {
-    // Fade out non-matching elements
+    // Fade out and gray out non-matching elements
     nodes
       .filter((d: any) => d.league !== filteredLeague)
       .transition()
-      .duration(400)
-      .style('opacity', 0.1);
+      .duration(500)
+      .style('opacity', 0.15)
+      .attr('fill', '#9ca3af') // Gray color
+      .attr('stroke', '#d1d5db')
+      .attr('stroke-width', 1);
     
-    // Highlight matching elements
+    // Add prominent glow effect to selected league nodes
     nodes
       .filter((d: any) => d.league === filteredLeague)
       .transition()
-      .duration(400)
+      .duration(500)
       .style('opacity', 1)
-      .attr('stroke', '#10b981')
-      .attr('stroke-width', 3);
+      .attr('stroke', '#fbbf24') // Golden ring
+      .attr('stroke-width', 6) // Thicker ring
+      .style('filter', 'drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 16px #fbbf24)')
+      .attr('r', function(d: any) {
+        const currentR = +d3.select(this).attr('r');
+        return currentR * 1.3; // Slightly larger size
+      });
     
-    // Filter arcs
+    // Filter arcs - completely hide non-relevant ones
     arcs
       .filter((d: any) => d.source.league !== filteredLeague && d.target.league !== filteredLeague)
       .transition()
-      .duration(400)
-      .style('opacity', 0.05);
+      .duration(500)
+      .style('opacity', 0.02)
+      .attr('stroke', '#e5e7eb');
       
+    // Highlight relevant arcs with glow
     arcs
       .filter((d: any) => d.source.league === filteredLeague || d.target.league === filteredLeague)
       .transition()
-      .duration(400)
-      .style('opacity', 0.8);
+      .duration(500)
+      .style('opacity', 0.9)
+      .style('filter', 'drop-shadow(0 0 4px #fbbf24)');
   } else {
-    // Reset all elements
+    // Reset all elements with smooth transitions
     nodes
       .transition()
-      .duration(400)
+      .duration(500)
       .style('opacity', 1)
       .attr('stroke', 'white')
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 2)
+      .style('filter', 'none')
+      .attr('fill', function(d: any) {
+        // Restore original color from the data
+        const uniqueLeagues = Array.from(new Set(layout.nodes.map(node => node.league)));
+        const leagueColorScale = d3.scaleOrdinal(d3.schemeSet3).domain(uniqueLeagues);
+        return leagueColorScale(d.league) as string;
+      })
+      .attr('r', function(d: any) {
+        // Reset to original size
+        const transferCount = d.transferCount || 1;
+        const sizeScale = d3.scaleLinear().domain([1, 10]).range([4, 12]);
+        return sizeScale(transferCount);
+      });
     
     arcs
       .transition()
-      .duration(400)
-      .style('opacity', 0.6);
+      .duration(500)
+      .style('opacity', 0.6)
+      .style('filter', 'none')
+      .attr('stroke', function(d: any) {
+        // Restore original arc color
+        const valueExtent = d3.extent(layout.arcs, arc => arc.value) as [number, number];
+        const colorScale = d3.scaleSequential(d3.interpolateBlues).domain(valueExtent);
+        return colorScale(d.value);
+      });
   }
 };
 

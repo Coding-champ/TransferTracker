@@ -116,7 +116,9 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     svgRef,
     config,
     onNodeClick: (node: CircularNode) => {
-      setSelectedLeague(node.league);
+      // Toggle league selection - if same league is clicked, deselect it
+      const newSelectedLeague = (selectedLeague === node.league) ? null : node.league;
+      setSelectedLeague(newSelectedLeague);
     },
     onLeagueFilter: (league: string) => {
       // Integrate with global filter state here
@@ -212,11 +214,6 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
     animateNodesEnter(nodes);
 
-    // Apply filter animation if league is selected
-    if (selectedLeague) {
-      animateFilterTransition(layout, svg, selectedLeague);
-    }
-
     // Add legend
     const legend = svg.append('g')
       .attr('class', 'legend')
@@ -245,7 +242,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       'Drag to rotate view',
       'Double-click to reset',
       'Mousewheel to zoom',
-      'Click node to filter league'
+      'Click node to filter league',
+      'Click same league to deselect'
     ];
 
     controls.forEach((control, i) => {
@@ -281,31 +279,8 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     const g = svg.select('.visualization-group');
     if (g.empty()) return;
 
-    // Apply filter animation if league is selected
-    if (selectedLeague) {
-      animateFilterTransition(layout, svg, selectedLeague);
-    }
-    
-    // Update nodes for selection highlighting
-    g.selectAll('.club-node')
-      .attr('stroke', (d: any) => {
-        if (selectedLeague && d.league === selectedLeague) {
-          return '#fbbf24'; // Golden highlight for selected league
-        }
-        return 'white';
-      })
-      .attr('stroke-width', (d: any) => {
-        if (selectedLeague && d.league === selectedLeague) {
-          return 4; // Thicker stroke for selected league
-        }
-        return 2;
-      })
-      .attr('opacity', (d: any) => {
-        if (selectedLeague && d.league !== selectedLeague) {
-          return 0.3; // Dim non-selected leagues
-        }
-        return 1;
-      });
+    // Apply enhanced filter animation if league is selected
+    animateFilterTransition(layout, svg, selectedLeague || undefined);
   }, [selectedLeague, svg, layout]);
   
   // Separate effect for zoom level indicator updates

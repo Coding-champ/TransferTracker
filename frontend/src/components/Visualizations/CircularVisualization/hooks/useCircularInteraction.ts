@@ -49,12 +49,15 @@ export const useCircularInteraction = ({
     tooltip.hideTooltip();
   }, [tooltip]);
 
-  // Handle node click
+  // Handle node click with enhanced visual feedback
   const handleNodeClick = useCallback((node: CircularNode) => {
+    // Toggle league selection - if same league is clicked, deselect it
+    const newSelectedLeague = (interactionState.selectedLeague === node.league) ? null : node.league;
+    
     setInteractionState(prev => ({ 
       ...prev, 
-      selectedNode: node,
-      selectedLeague: node.league
+      selectedNode: newSelectedLeague ? node : null,
+      selectedLeague: newSelectedLeague
     }));
     
     if (onNodeClick) {
@@ -62,9 +65,9 @@ export const useCircularInteraction = ({
     }
     
     if (onLeagueFilter) {
-      onLeagueFilter(node.league);
+      onLeagueFilter(newSelectedLeague || '');
     }
-  }, [onNodeClick, onLeagueFilter]);
+  }, [onNodeClick, onLeagueFilter, interactionState.selectedLeague]);
 
   // Handle arc hover
   const handleArcMouseOver = useCallback((arc: CircularArc, event: MouseEvent) => {
