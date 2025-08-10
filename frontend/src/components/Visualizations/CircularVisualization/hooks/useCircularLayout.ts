@@ -15,7 +15,8 @@ export const useCircularLayout = ({
 }: UseCircularLayoutProps): CircularLayout | null => {
   
   return useMemo(() => {
-    if (!networkData?.nodes || !networkData?.edges) {
+    // Provide immediate fallback if no data
+    if (!networkData?.nodes || !networkData?.edges || networkData.nodes.length === 0) {
       return null;
     }
 
@@ -108,5 +109,5 @@ export const useCircularLayout = ({
       minRadius
     };
 
-  }, [networkData, config, rotation]);
+  }, [networkData, config, rotation]); // Stable dependencies for immediate calculation
 };

@@ -95,7 +95,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     // Note: Zoom state is managed internally by zoom hook
   }, []);
 
-  // Configuration for the visualization
+  // Configuration for the visualization - stable object to prevent unnecessary re-renders
   const config = React.useMemo((): CircularVisualizationConfig => ({
     width,
     height,
@@ -140,7 +140,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
     config
   });
 
-  // Render visualization - simplified dependencies to prevent unnecessary re-renders
+  // Initial rendering - only depends on core data, not zoom level
   React.useEffect(() => {
     if (!svg) return;
 
@@ -230,60 +230,11 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('cy', d => d.y - config.margin.top)
       .attr('r', d => sizeScale(d.transferCount))
       .attr('fill', d => leagueColorScale(d.league) as string)
-      .attr('stroke', d => {
-        if (selectedLeague && d.league === selectedLeague) {
-          return '#fbbf24'; // Golden highlight for selected league
-        }
-        return 'white';
-      })
-      .attr('stroke-width', d => {
-        if (selectedLeague && d.league === selectedLeague) {
-          return 4; // Thicker stroke for selected league
-        }
-        return 2;
-      })
-      .attr('opacity', d => {
-        if (selectedLeague && d.league !== selectedLeague) {
-          return 0.3; // Dim non-selected leagues
-        }
-        return 1;
-      });
+      .attr('stroke', 'white')
+      .attr('stroke-width', 2)
+      .attr('opacity', 1);
 
     animateNodesEnter(nodes);
-
-    // Handle selection rings for selected league nodes
-    const selectedNodes = selectedLeague ? layout.nodes.filter(n => n.league === selectedLeague) : [];
-    
-    const selectionRings = g.selectAll('.selection-ring')
-      .data(selectedNodes);
-
-    // Remove old rings
-    selectionRings.exit()
-      .transition()
-      .duration(200)
-      .attr('opacity', 0)
-      .remove();
-
-    // Add new rings
-    selectionRings.enter()
-      .append('circle')
-      .attr('class', 'selection-ring')
-      .attr('cx', d => d.x - config.margin.left)
-      .attr('cy', d => d.y - config.margin.top)
-      .attr('r', d => sizeScale(d.transferCount) + 8)
-      .attr('fill', 'none')
-      .attr('stroke', '#fbbf24')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '5,3')
-      .attr('opacity', 0)
-      .transition()
-      .duration(300)
-      .attr('opacity', 0.8);
-
-    // Apply filter animation if league is selected
-    if (selectedLeague) {
-      animateFilterTransition(layout, svg, selectedLeague);
-    }
 
     // Add legend
     const legend = svg.append('g')
@@ -328,13 +279,14 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
 
     yOffset += controls.length * 16 + 10;
 
-    // Add zoom level indicator
+    // Add zoom level indicator - will be updated separately
     legendContent.append('text')
+      .attr('class', 'zoom-level-indicator')
       .attr('y', yOffset)
       .attr('font-size', '11px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text(`Zoom Level: ${currentZoom.level}`);
+      .text('Zoom Level: 1'); // Default value, updated in separate effect
 
     // Size legend background
     const legendBounds = legendContent.node()!.getBBox();
@@ -342,7 +294,88 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, config, selectedLeague, currentZoom.level, clearSvg, width, height]);
+  }, [svg, layout, config, clearSvg, width, height]); // Removed currentZoom.level and selectedLeague to prevent re-renders
+
+  // Separate effect for selected league visual updates - doesn't re-render everything
+  React.useEffect(() => {
+    if (!svg || !layout) return;
+
+    const g = svg.select('.visualization-group');
+    if (g.empty()) return;
+
+    // Node size scale
+    const sizeScale = d3.scaleLinear()
+      .domain(d3.extent(layout.nodes, d => d.transferCount) as [number, number])
+      .range([4, 12]);
+
+    // Update node styling for selection
+    g.selectAll('.club-node')
+      .transition()
+      .duration(300)
+      .attr('stroke', (d: any) => {
+        if (selectedLeague && d.league === selectedLeague) {
+          return '#fbbf24'; // Golden highlight for selected league
+        }
+        return 'white';
+      })
+      .attr('stroke-width', (d: any) => {
+        if (selectedLeague && d.league === selectedLeague) {
+          return 4; // Thicker stroke for selected league
+        }
+        return 2;
+      })
+      .attr('opacity', (d: any) => {
+        if (selectedLeague && d.league !== selectedLeague) {
+          return 0.3; // Dim non-selected leagues
+        }
+        return 1;
+      });
+
+    // Handle selection rings for selected league nodes
+    const selectedNodes = selectedLeague ? layout.nodes.filter(n => n.league === selectedLeague) : [];
+    
+    const selectionRings = g.selectAll('.selection-ring')
+      .data(selectedNodes);
+
+    // Remove old rings
+    selectionRings.exit()
+      .transition()
+      .duration(200)
+      .attr('opacity', 0)
+      .remove();
+
+    // Add new rings
+    selectionRings.enter()
+      .append('circle')
+      .attr('class', 'selection-ring')
+      .attr('cx', d => d.x - config.margin.left)
+      .attr('cy', d => d.y - config.margin.top)
+      .attr('r', d => sizeScale(d.transferCount) + 8)
+      .attr('fill', 'none')
+      .attr('stroke', '#fbbf24')
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '5,3')
+      .attr('opacity', 0)
+      .transition()
+      .duration(300)
+      .attr('opacity', 0.8);
+
+    // Apply filter animation if league is selected
+    if (selectedLeague) {
+      animateFilterTransition(layout, svg, selectedLeague);
+    }
+
+  }, [selectedLeague, svg, layout, config]);
+
+  // Separate effect for zoom level indicator updates
+  React.useEffect(() => {
+    if (!svg) return;
+
+    const zoomIndicator = svg.select('.zoom-level-indicator');
+    if (!zoomIndicator.empty()) {
+      zoomIndicator.text(`Zoom Level: ${currentZoom.level}`);
+    }
+  }, [currentZoom.level, svg]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
