@@ -121,14 +121,25 @@ export const useNetworkData = (filters: FilterState): UseNetworkDataReturn => {
           console.error('Network request failed:', processedError);
           
           if (!signal?.aborted) {
-            if (isApiTimeoutError(processedError) || isNetworkError(processedError)) {
+            // Check for network errors more broadly - include connection errors, network errors, etc.
+            const errorMessage = (processedError as any).message || '';
+            const errorName = (processedError as any).name || '';
+            
+            const isNetworkIssue = isApiTimeoutError(processedError) || 
+                                   isNetworkError(processedError) ||
+                                   errorName === 'NetworkError' ||
+                                   errorMessage.toLowerCase().includes('network') ||
+                                   errorMessage.toLowerCase().includes('connection') ||
+                                   errorMessage.toLowerCase().includes('refused') ||
+                                   errorMessage.toLowerCase().includes('timeout');
+            
+            if (isNetworkIssue) {
               setNetworkData(MOCK_NETWORK_DATA as NetworkData);
               setError(null);
               showToast('Network issue detected, using fallback data', { type: 'warning' });
             } else {
-              const errorMessage = (processedError as any).message || 'An error occurred';
-              setError(errorMessage);
-              showToast(errorMessage, { type: 'error' });
+              setError(errorMessage || 'An error occurred');
+              showToast(errorMessage || 'An error occurred', { type: 'error' });
             }
           }
           
