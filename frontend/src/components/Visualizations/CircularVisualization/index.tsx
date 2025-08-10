@@ -208,9 +208,11 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('cx', d => d.x - stableConfig.margin.left)
       .attr('cy', d => d.y - stableConfig.margin.top)
       .attr('r', d => sizeScale(d.transferCount))
+      .attr('data-target-r', d => sizeScale(d.transferCount)) // Store target radius for animation
       .attr('fill', d => leagueColorScale(d.league) as string)
       .attr('stroke', 'white')
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 2)
+      .style('cursor', 'pointer'); // Add cursor pointer to indicate clickability
 
     animateNodesEnter(nodes);
 
@@ -270,7 +272,7 @@ export const CircularVisualization: React.FC<CircularVisualizationProps> = ({
       .attr('width', legendBounds.width + 24)
       .attr('height', legendBounds.height + 24);
 
-  }, [svg, layout, stableConfig, clearSvg, selectedLeague, zoomState.level]); // Use stableConfig instead of config
+  }, [svg, layout, stableConfig, clearSvg, zoomState.level]); // Removed selectedLeague to prevent re-renders
   
   // Separate effect for league selection updates - only updates styling, doesn't re-render everything  
   React.useEffect(() => {

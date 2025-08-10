@@ -55,18 +55,21 @@ export const animateNodesEnter = (
   nodeSelection: d3.Selection<SVGCircleElement, CircularNode, any, any>,
   config: AnimationConfig = {}
 ) => {
-  return staggeredFadeIn(
-    nodeSelection,
-    50, // 50ms stagger between nodes
-    { duration: 600, ease: d3.easeBackOut, ...config }
-  ).attr('r', 0)
-   .transition()
-   .duration(600)
-   .delay((d, i) => i * 50 + (config.delay || 0))
-   .ease(d3.easeBackOut)
-   .attr('r', d => d.originalData ? 
-     Math.max(4, Math.log(d.originalData.stats.transfersIn + d.originalData.stats.transfersOut + 1) * 3) : 8
-   );
+  // Start with proper radius and opacity, then animate in
+  const targetRadius = nodeSelection.attr('data-target-r');
+  
+  return nodeSelection
+    .attr('r', 0) // Start with 0 radius
+    .style('opacity', 1) // But visible opacity (not 0 like staggeredFadeIn does)
+    .transition()
+    .duration(600)
+    .delay((d, i) => i * 50 + (config.delay || 0))
+    .ease(d3.easeBackOut)
+    .attr('r', function(d) {
+      // Use the stored target radius
+      const currentR = d3.select(this).attr('data-target-r');
+      return currentR ? parseFloat(currentR) : 8;
+    });
 };
 
 /**
@@ -108,7 +111,7 @@ export const animateArcsEnter = (
   config: AnimationConfig = {}
 ) => {
   return arcSelection
-    .style('opacity', 0)
+    .style('opacity', 0.6) // Start with target opacity (not 0)
     .attr('stroke-dasharray', function() {
       const totalLength = (this as SVGPathElement).getTotalLength();
       return `${totalLength} ${totalLength}`;
@@ -120,7 +123,6 @@ export const animateArcsEnter = (
     .duration(1000)
     .ease(d3.easeLinear)
     .delay((d, i) => i * 20)
-    .style('opacity', 0.6)
     .attr('stroke-dashoffset', 0)
     .on('end', function() {
       d3.select(this).attr('stroke-dasharray', null);
