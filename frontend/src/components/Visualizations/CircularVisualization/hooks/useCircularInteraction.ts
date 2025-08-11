@@ -28,16 +28,20 @@ export const useCircularInteraction = ({
   });
 
   const tooltip = useTooltip({
-    delay: 300,
+    delay: 0, // Remove delay for immediate response
     followMouse: true
   });
 
   // Handle node hover
   const handleNodeMouseOver = useCallback((node: CircularNode, event: MouseEvent) => {
+    // Clear any existing tooltip immediately
+    tooltip.hideTooltip();
+    
     setInteractionState(prev => ({ ...prev, hoveredNode: node }));
     
     const tooltipContent = `${node.name}\nLeague: ${node.league}\nTier: ${node.tier}\nTransfers: ${node.transferCount}\nTotal Value: €${(node.totalValue / 1000000).toFixed(1)}M`;
 
+    // Show new tooltip immediately
     tooltip.showTooltip({
       title: 'Club Details',
       content: tooltipContent
@@ -49,12 +53,15 @@ export const useCircularInteraction = ({
     tooltip.hideTooltip();
   }, [tooltip]);
 
-  // Handle node click
+  // Handle node click with enhanced visual feedback
   const handleNodeClick = useCallback((node: CircularNode) => {
+    // Toggle league selection - if same league is clicked, deselect it
+    const newSelectedLeague = (interactionState.selectedLeague === node.league) ? null : node.league;
+    
     setInteractionState(prev => ({ 
       ...prev, 
-      selectedNode: node,
-      selectedLeague: node.league
+      selectedNode: newSelectedLeague ? node : null,
+      selectedLeague: newSelectedLeague
     }));
     
     if (onNodeClick) {
@@ -62,16 +69,20 @@ export const useCircularInteraction = ({
     }
     
     if (onLeagueFilter) {
-      onLeagueFilter(node.league);
+      onLeagueFilter(newSelectedLeague || '');
     }
-  }, [onNodeClick, onLeagueFilter]);
+  }, [onNodeClick, onLeagueFilter, interactionState.selectedLeague]);
 
   // Handle arc hover
   const handleArcMouseOver = useCallback((arc: CircularArc, event: MouseEvent) => {
+    // Clear any existing tooltip immediately
+    tooltip.hideTooltip();
+    
     setInteractionState(prev => ({ ...prev, hoveredArc: arc }));
     
     const tooltipContent = `${arc.source.name} → ${arc.target.name}\nTransfers: ${arc.count}\nTotal Value: €${(arc.value / 1000000).toFixed(1)}M\nType: ${arc.type}`;
 
+    // Show new tooltip immediately
     tooltip.showTooltip({
       title: 'Transfer Flow',
       content: tooltipContent
@@ -150,56 +161,119 @@ export const useCircularInteraction = ({
   useEffect(() => {
     if (!svgRef.current || !layout) return;
 
-    const svg = d3.select(svgRef.current);
-    
-    // Clear existing listeners
-    svg.selectAll('*').on('mouseover', null)
-                     .on('mouseout', null)
-                     .on('click', null);
+    const svgElement = svgRef.current; // Capture ref value once
 
-    // Add node event listeners
-    svg.selectAll('.club-node')
-       .on('mouseover', function(event, d) {
-         const node = d as CircularNode;
-         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) * 1.3);
-         handleNodeMouseOver(node, event);
-       })
-       .on('mouseout', function() {
-         d3.select(this).transition().duration(200).attr('r', (+d3.select(this).attr('r')) / 1.3);
-         handleNodeMouseOut();
-       })
-       .on('click', function(event, d) {
-         const node = d as CircularNode;
-         handleNodeClick(node);
-       });
-
-    // Add arc event listeners
-    svg.selectAll('.transfer-arc')
-       .on('mouseover', function(event, d) {
-         d3.select(this).transition().duration(200).attr('opacity', 1);
-         handleArcMouseOver(d as any, event);
-       })
-       .on('mouseout', function() {
-         d3.select(this).transition().duration(200).attr('opacity', 0.6);
-         handleArcMouseOut();
-       });
-
-    // Add rotation drag listeners
-    if (config.enableRotation) {
-      svg.on('mousedown', function(event) {
-        // Only start rotation if clicking on empty space
-        if (event.target === this) {
-          handleRotationStart(event);
-        }
-      })
-      .on('dblclick', handleDoubleClick);
-    }
-
-    return () => {
+    // Use a small delay to ensure DOM elements are created
+    const timeoutId = setTimeout(() => {
+      const svg = d3.select(svgElement);
+      
+      // Clear existing listeners
       svg.selectAll('*').on('mouseover', null)
                        .on('mouseout', null)
                        .on('click', null);
-      svg.on('mousedown', null).on('dblclick', null);
+
+      // Add node event listeners with enhanced interactions
+      svg.selectAll('.club-node')
+         .on('mouseover', function(event, d) {
+           const node = d as CircularNode;
+           const currentNode = d3.select(this);
+           const currentRadius = +currentNode.attr('r');
+           
+           // Scale node to 1.2x size (not 1.3x to be more subtle)
+           currentNode.transition()
+             .duration(200)
+             .attr('r', currentRadius * 1.2)
+             .attr('stroke-width', 3);
+           
+           // Highlight all transfer lines connected to this node
+           svg.selectAll('.transfer-arc')
+             .transition()
+             .duration(200)
+             .attr('opacity', function(arcData: any) {
+               const arc = arcData as CircularArc;
+               return (arc.source.id === node.id || arc.target.id === node.id) ? 1 : 0.1;
+             })
+             .attr('stroke-width', function(arcData: any) {
+               const arc = arcData as CircularArc;
+               const baseWidth = Math.max(1, Math.log(arc.value / 1000000 + 1) * 2);
+               return (arc.source.id === node.id || arc.target.id === node.id) ? baseWidth * 1.5 : baseWidth;
+             });
+           
+           // Dim other nodes
+           svg.selectAll('.club-node')
+             .filter(function() { return this !== currentNode.node(); })
+             .transition()
+             .duration(200)
+             .attr('opacity', 0.3);
+           
+           handleNodeMouseOver(node, event);
+         })
+         .on('mouseout', function(event, d) {
+           const currentNode = d3.select(this);
+           const currentRadius = +currentNode.attr('r');
+           
+           // Reset node size
+           currentNode.transition()
+             .duration(200)
+             .attr('r', currentRadius / 1.2)
+             .attr('stroke-width', 2);
+           
+           // Reset all transfer lines
+           svg.selectAll('.transfer-arc')
+             .transition()
+             .duration(200)
+             .attr('opacity', 0.6)
+             .attr('stroke-width', function(arcData: any) {
+               const arc = arcData as CircularArc;
+               return Math.max(1, Math.log(arc.value / 1000000 + 1) * 2);
+             });
+           
+           // Reset other nodes
+           svg.selectAll('.club-node')
+             .transition()
+             .duration(200)
+             .attr('opacity', 1);
+           
+           handleNodeMouseOut();
+         })
+         .on('click', function(event, d) {
+           const node = d as CircularNode;
+           event.stopPropagation();
+           handleNodeClick(node);
+         });
+
+      // Add arc event listeners
+      svg.selectAll('.transfer-arc')
+         .on('mouseover', function(event, d) {
+           d3.select(this).transition().duration(200).attr('opacity', 1);
+           handleArcMouseOver(d as any, event);
+         })
+         .on('mouseout', function() {
+           d3.select(this).transition().duration(200).attr('opacity', 0.6);
+           handleArcMouseOut();
+         });
+
+      // Add rotation drag listeners
+      if (config.enableRotation) {
+        svg.on('mousedown', function(event) {
+          // Only start rotation if clicking on empty space
+          if (event.target === this) {
+            handleRotationStart(event);
+          }
+        })
+        .on('dblclick', handleDoubleClick);
+      }
+    }, 100); // 100ms delay to ensure elements are created
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (svgElement) {
+        const svg = d3.select(svgElement);
+        svg.selectAll('*').on('mouseover', null)
+                         .on('mouseout', null)
+                         .on('click', null);
+        svg.on('mousedown', null).on('dblclick', null);
+      }
     };
   }, [layout, svgRef, config.enableRotation, handleNodeMouseOver, handleNodeMouseOut, 
       handleNodeClick, handleArcMouseOver, handleArcMouseOut, handleRotationStart, handleDoubleClick]);
@@ -207,13 +281,15 @@ export const useCircularInteraction = ({
   // Handle mouse move for tooltip following
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      tooltip.updateTooltipPosition(event);
+      // Always update tooltip position if it's visible, and immediately update content
+      if (interactionState.hoveredNode || interactionState.hoveredArc) {
+        tooltip.updateTooltipPosition(event);
+      }
     };
 
-    if (interactionState.hoveredNode || interactionState.hoveredArc) {
-      document.addEventListener('mousemove', handleMouseMove);
-      return () => document.removeEventListener('mousemove', handleMouseMove);
-    }
+    // Attach to document to catch all mouse movements
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
   }, [interactionState.hoveredNode, interactionState.hoveredArc, tooltip]);
 
   return {
