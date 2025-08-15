@@ -1,6 +1,7 @@
 import { 
   formatCurrency, 
   formatDate, 
+  formatNumber,
   formatPercentage, 
   formatTransferType, 
   formatTransferWindow, 
@@ -67,6 +68,24 @@ describe('Formatter Utilities', () => {
     });
   });
 
+  describe('formatNumber', () => {
+    it('should format numbers with locale formatting', () => {
+      expect(formatNumber(1000)).toBe('1,000');
+      expect(formatNumber(1234567)).toBe('1,234,567');
+      expect(formatNumber(999)).toBe('999');
+    });
+
+    it('should handle decimal numbers', () => {
+      expect(formatNumber(1234.56)).toBe('1,234.56');
+      expect(formatNumber(0.123)).toBe('0.123');
+    });
+
+    it('should handle zero and negative numbers', () => {
+      expect(formatNumber(0)).toBe('0');
+      expect(formatNumber(-1234)).toBe('-1,234');
+    });
+  });
+
   describe('formatPercentage', () => {
     it('should return "N/A" for null or undefined values', () => {
       expect(formatPercentage(null)).toBe('N/A');
@@ -86,10 +105,17 @@ describe('Formatter Utilities', () => {
       expect(formatPercentage(85.567, 3)).toBe('85.567%');
     });
 
+    it('should handle decimal values when isDecimal=true', () => {
+      expect(formatPercentage(0.855, 1, true)).toBe('85.5%');
+      expect(formatPercentage(0.1, 0, true)).toBe('10%');
+      expect(formatPercentage(1.5, 1, true)).toBe('150.0%');
+    });
+
     it('should handle edge cases', () => {
       expect(formatPercentage(-10.5)).toBe('-10.5%');
       expect(formatPercentage(0.1)).toBe('0.1%');
       expect(formatPercentage(999.999)).toBe('1000.0%');
+      expect(formatPercentage(-0.1, 1, true)).toBe('-10.0%');
     });
   });
 

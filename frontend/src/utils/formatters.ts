@@ -40,14 +40,29 @@ export const formatDate = (dateString: string | Date): string => {
 };
 
 /**
- * Formatiert Prozentwerte
- * @param value - Prozentwert als Dezimalzahl
+ * Formatiert Zahlen in lesbarer Form mit Tausender-Trennzeichen
+ * @param value - Zahl die formatiert werden soll
+ * @returns Formatierte Zahl (z.B. "1,234,567")
+ */
+export const formatNumber = (value: number): string => {
+  return value.toLocaleString();
+};
+
+/**
+ * Formatiert Prozentwerte (unterstützt sowohl Prozent- als auch Dezimalwerte)
+ * @param value - Prozentwert (kann als Prozent 85.5 oder Dezimal 0.855 vorliegen)
  * @param decimals - Anzahl Dezimalstellen (default: 1)
+ * @param isDecimal - Ob der Wert als Dezimal (0.855) statt Prozent (85.5) vorliegt
  * @returns Formatierter Prozentstring (z.B. "85.5%")
  */
-export const formatPercentage = (value: number | null | undefined, decimals: number = 1): string => {
+export const formatPercentage = (
+  value: number | null | undefined, 
+  decimals: number = 1,
+  isDecimal: boolean = false
+): string => {
   if (value === null || value === undefined) return 'N/A';
-  return `${value.toFixed(decimals)}%`;
+  const percentValue = isDecimal ? value * 100 : value;
+  return `${percentValue.toFixed(decimals)}%`;
 };
 
 /**
