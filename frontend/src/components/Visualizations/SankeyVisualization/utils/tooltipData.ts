@@ -1,18 +1,8 @@
 import { NetworkData, NetworkNode, NetworkEdge } from '../../../../types';
 import { NodeTooltipData, FlowTooltipData } from '../components/SankeyTooltip';
+import { formatCurrency, formatPercentage } from '../../../../utils';
 
-export const formatCurrency = (amount: number): string => {
-  if (amount >= 1000000) {
-    return `€${(amount / 1000000).toFixed(1)}M`;
-  } else if (amount >= 1000) {
-    return `€${(amount / 1000).toFixed(1)}K`;
-  }
-  return `€${amount.toFixed(0)}`;
-};
 
-export const formatPercentage = (value: number): string => {
-  return `${value.toFixed(1)}%`;
-};
 
 export const createNodeTooltipData = (
   nodeId: string,
