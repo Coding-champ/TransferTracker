@@ -9,6 +9,7 @@
 export {
   formatCurrency,
   formatDate,
+  formatNumber,
   formatPercentage,
   formatTransferType,
   formatTransferWindow,
@@ -51,3 +52,12 @@ export {
   debugLog,
   createPerformanceTimer
 } from './debug';
+
+// Re-export data processing utilities
+export {
+  groupBy,
+  aggregateValues,
+  getUniqueValues,
+  sortBy,
+  filterValidValues
+} from './data-processing';

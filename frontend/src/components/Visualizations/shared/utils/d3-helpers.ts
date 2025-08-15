@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { formatCurrency } from '../../../../utils/formatters';
 
 // Common color scales for visualizations
 export const createLeagueColorScale = (leagues: string[]) => {
@@ -24,24 +25,7 @@ export const createSizeScale = (values: number[], range: [number, number] = [4, 
   return d3.scaleLinear().domain(extent).range(range);
 };
 
-// Common formatting functions
-export const formatCurrency = (value: number): string => {
-  if (value >= 1000000) {
-    return `€${(value / 1000000).toFixed(1)}M`;
-  } else if (value >= 1000) {
-    return `€${(value / 1000).toFixed(0)}K`;
-  } else {
-    return `€${value.toFixed(0)}`;
-  }
-};
-
-export const formatNumber = (value: number): string => {
-  return value.toLocaleString();
-};
-
-export const formatPercentage = (value: number): string => {
-  return `${(value * 100).toFixed(1)}%`;
-};
+// Common formatting functions - imported from centralized utils
 
 // Geometric helper functions
 export const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -108,35 +92,9 @@ export const getZoomTransform = (selection: d3.Selection<any, any, any, any>) =>
   return d3.zoomTransform(selection.node());
 };
 
-// Animation utilities
-export const createTransition = (duration: number = 500, ease = d3.easeLinear) => {
-  return d3.transition().duration(duration).ease(ease);
-};
+// Animation utilities - use animation-utils.ts for comprehensive animation features
 
-// Data transformation utilities
-export const groupBy = <T>(array: T[], keyFunc: (item: T) => string): Map<string, T[]> => {
-  return array.reduce((groups, item) => {
-    const key = keyFunc(item);
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-    groups.get(key)!.push(item);
-    return groups;
-  }, new Map<string, T[]>());
-};
-
-export const aggregateValues = <T>(
-  array: T[],
-  keyFunc: (item: T) => string,
-  valueFunc: (item: T) => number
-): Map<string, number> => {
-  return array.reduce((aggregates, item) => {
-    const key = keyFunc(item);
-    const value = valueFunc(item);
-    aggregates.set(key, (aggregates.get(key) || 0) + value);
-    return aggregates;
-  }, new Map<string, number>());
-};
+// Data transformation utilities - imported from centralized utils
 
 // Legend creation utilities
 export interface LegendItem {
