@@ -130,7 +130,7 @@ export const SANKEY_STRATEGIES: SankeyStrategy[] = [
 /**
  * Default strategy to use when none is selected
  */
-export const DEFAULT_STRATEGY = SANKEY_STRATEGIES[3]; // Net League Flows
+export const DEFAULT_STRATEGY = SANKEY_STRATEGIES[1];
 
 /**
  * Find strategy by ID
